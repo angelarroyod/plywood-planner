@@ -33,16 +33,24 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Span limits (max unsupported shelf span): 12 mm → 500, 15 mm → 650, 18 mm → 800 (configurable in `DEFAULT_CONFIG`).
 - Templates must produce panels that always fit a sheet within their param limits; `nest()` throws otherwise.
 
+## UI conventions
+
+- Zustand stores raw state only (template id, user-touched params, exploded flag). Designs are derived per render via `template.generate()` — never stored.
+- While params are invalid, the viewer keeps the last valid design dimmed with an overlay message; issues render under their field via `paramKey`.
+- Sliders are clamped to param ranges, so only cross-param issues (span, shelf fit) surface in the UI — that is intended.
+- `@types/react` is pinned to v18 via `overrides` in `pnpm-workspace.yaml`; without it, transitive deps pull v19 types and JSX breaks. `three` is installed as a required peer of @react-three/fiber.
+
 ## Commands
 
+- `pnpm dev` — Vite dev server
 - `pnpm test` — full Vitest suite
 - `pnpm typecheck` — tsc strict, no emit
 - `pnpm demo` — print default bookshelf cut layout (ASCII + JSON)
 
 ## Phase plan and status
 
-- [x] **Phase 1 — Engine + tests (no UI)**: types, validation, nesting, bookshelf + side table templates, ASCII demo. *Implemented; awaiting user approval.*
-- [ ] **Phase 2 — Core UI**: template picker, param form with live validation, 3D view (box geometry per placement, exploded toggle, orbit controls). Do not start until Phase 1 approved.
+- [x] **Phase 1 — Engine + tests (no UI)**: types, validation, nesting, bookshelf + side table templates, ASCII demo. *Approved.*
+- [x] **Phase 2 — Core UI**: template picker, param form with live validation, 3D view (box geometry per placement, exploded toggle, orbit controls). *Implemented; awaiting user approval.*
 - [ ] **Phase 3 — Outputs**: SVG cut diagram, instructions view with 3D highlighting, PDF export, deploy to Vercel.
 - [ ] **Phase 4 — Community (do not start)**: Supabase auth, save/share/remix designs.
 
