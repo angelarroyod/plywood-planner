@@ -50,7 +50,8 @@ A furniture template is NOT a static 3D model. It is a pure function:
 ## Phase plan and status
 
 - [x] **Phase 1 — Engine + tests (no UI)**: types, validation, nesting, bookshelf + side table templates, ASCII demo. *Approved.*
-- [x] **Phase 2 — Core UI**: template picker, param form with live validation, 3D view (box geometry per placement, exploded toggle, orbit controls). *Implemented; awaiting user approval.*
+- [x] **Phase 2 — Core UI**: template picker, param form with live validation, 3D view (box geometry per placement, exploded toggle, orbit controls). *Approved.*
+- [x] **Phase 3 — Outputs**: SVG cut diagram (`SheetSvg`, 1 unit = 1 mm), steps view with 3D highlighting (step explode offsets + dimmed non-referenced panels), PDF export via print stylesheet (`PrintReport` is `hidden print:block`; app shell is `print:hidden`; "Exportar PDF" = `window.print()`), Vercel deploy. *Implemented; awaiting user approval.*
 - [ ] **Phase 3 — Outputs**: SVG cut diagram, instructions view with 3D highlighting, PDF export, deploy to Vercel.
 - [ ] **Phase 4 — Community (do not start)**: Supabase auth, save/share/remix designs.
 
