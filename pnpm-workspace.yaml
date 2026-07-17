@@ -1,2 +1,7 @@
 allowBuilds:
   esbuild: true
+
+# react 18 pinned by project spec; stop transitive deps pulling v19 types
+overrides:
+  "@types/react": ^18.3.31
+  "@types/react-dom": ^18.3.7
