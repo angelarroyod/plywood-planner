@@ -5,3 +5,5 @@ allowBuilds:
 overrides:
   "@types/react": ^18.3.31
   "@types/react-dom": ^18.3.7
+  # transitive dev dep; 8.5.23 fixes the sourceMappingURL arbitrary-file read
+  postcss: ^8.5.23
