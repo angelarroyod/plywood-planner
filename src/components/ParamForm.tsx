@@ -15,27 +15,45 @@ export function ParamForm({ template, params, issues }: Props) {
   const general = issues.filter((i) => !i.paramKey);
 
   return (
-    <div className="mt-6 space-y-4">
-      <h2 className="text-sm font-semibold text-neutral-600">Medidas</h2>
-      {template.params.map((spec) => (
-        <Field
-          key={spec.key}
-          spec={spec}
-          value={params[spec.key] ?? spec.default}
-          issues={issues.filter((i) => i.paramKey === spec.key)}
-          onChange={(v) => setParam(spec.key, v)}
-        />
-      ))}
-      {general.map((issue, n) => (
-        <p key={n} className="text-sm text-red-600">
-          {issue.message}
-        </p>
-      ))}
-      <label className="mt-4 flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={exploded} onChange={toggleExploded} />
-        Vista explosionada
+    <section className="mt-8">
+      <h2 className="rule-label">Medidas</h2>
+      <div className="mt-4 space-y-5">
+        {template.params.map((spec) => (
+          <Field
+            key={spec.key}
+            spec={spec}
+            value={params[spec.key] ?? spec.default}
+            issues={issues.filter((i) => i.paramKey === spec.key)}
+            onChange={(v) => setParam(spec.key, v)}
+          />
+        ))}
+      </div>
+
+      {general.length > 0 && (
+        <div className="mt-5 rounded-md border-l-2 border-cut bg-cut-tint px-3 py-2">
+          {general.map((issue, n) => (
+            <p key={n} className="text-xs leading-relaxed text-cut">
+              {issue.message}
+            </p>
+          ))}
+        </div>
+      )}
+
+      <h2 className="rule-label mt-8">Vista</h2>
+      <label className="mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-rule bg-panel px-3 py-2.5 transition-colors hover:border-ink-soft">
+        <span className="text-sm">Vista explosionada</span>
+        <span className="relative inline-flex h-5 w-9 shrink-0 items-center">
+          <input
+            type="checkbox"
+            checked={exploded}
+            onChange={toggleExploded}
+            className="peer sr-only"
+          />
+          <span className="h-5 w-9 rounded-full bg-rule transition-colors peer-checked:bg-ink" />
+          <span className="absolute left-0.5 h-4 w-4 rounded-full bg-panel shadow-sm transition-transform peer-checked:translate-x-4" />
+        </span>
       </label>
-    </div>
+    </section>
   );
 }
 
@@ -53,32 +71,52 @@ function Field({
   const hasError = issues.length > 0;
   return (
     <div>
-      <div className="flex items-baseline justify-between">
-        <label className="text-sm">{spec.label}</label>
-        <span className="text-sm tabular-nums text-neutral-500">
+      <div className="flex items-baseline justify-between gap-2">
+        <label className="text-sm leading-tight" htmlFor={spec.key}>
+          {spec.label}
+        </label>
+        <span
+          className={`shrink-0 rounded border px-1.5 py-0.5 font-mono text-xs tabular-nums ${
+            hasError
+              ? 'border-cut/40 bg-cut-tint text-cut'
+              : 'border-rule bg-ply-tint/50 text-ply-deep'
+          }`}
+        >
           {value}
-          {spec.unit && ` ${spec.unit}`}
+          {spec.unit && <span className="text-ink-soft/70"> {spec.unit}</span>}
         </span>
       </div>
+
       {spec.kind === 'number' ? (
-        <input
-          type="range"
-          min={spec.min}
-          max={spec.max}
-          step={spec.step}
-          value={value}
-          aria-label={spec.label}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className={`w-full ${hasError ? 'accent-red-600' : 'accent-amber-700'}`}
-        />
+        <>
+          <input
+            id={spec.key}
+            type="range"
+            min={spec.min}
+            max={spec.max}
+            step={spec.step}
+            value={value}
+            aria-label={spec.label}
+            data-invalid={hasError}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className="mt-1"
+          />
+          <div className="-mt-1 flex justify-between font-mono text-[9px] tabular-nums text-ink-soft/60">
+            <span>{spec.min}</span>
+            <span>{spec.max}</span>
+          </div>
+        </>
       ) : (
-        <div className="mt-1 flex gap-2">
+        <div className="mt-2 flex gap-1.5">
           {spec.options.map((opt) => (
             <button
               key={opt}
               onClick={() => onChange(opt)}
-              className={`flex-1 rounded border py-1 text-sm ${
-                opt === value ? 'border-amber-600 bg-amber-50' : 'border-neutral-200'
+              aria-pressed={opt === value}
+              className={`flex-1 rounded border py-1.5 font-mono text-xs tabular-nums transition-colors ${
+                opt === value
+                  ? 'border-ink bg-ink text-paper'
+                  : 'border-rule bg-panel text-ink-soft hover:border-ink-soft hover:text-ink'
               }`}
             >
               {opt}
@@ -86,8 +124,9 @@ function Field({
           ))}
         </div>
       )}
+
       {issues.map((issue, n) => (
-        <p key={n} className="mt-1 text-sm text-red-600">
+        <p key={n} className="mt-1.5 border-l-2 border-cut pl-2 text-xs leading-relaxed text-cut">
           {issue.message}
         </p>
       ))}

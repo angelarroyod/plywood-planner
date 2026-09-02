@@ -20,13 +20,13 @@ export function PrintReport({ design }: { design: Design | null }) {
 
   return (
     <div className="hidden print:block">
-      <h1 className="text-2xl font-bold">{template?.name ?? design.templateId}</h1>
-      <p className="mt-1 text-sm">{paramLine}</p>
+      <h1 className="font-display text-3xl font-extrabold tracking-tight">{template?.name ?? design.templateId}</h1>
+      <p className="mt-1 font-mono text-[11px] text-ink-soft">{paramLine}</p>
 
-      <h2 className="mt-6 text-lg font-semibold">Lista de cortes</h2>
+      <h2 className="mt-7 border-b border-ink pb-1 font-display text-lg font-bold tracking-tight">Lista de cortes</h2>
       <table className="mt-2 w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-neutral-400 text-left">
+          <tr className="border-b border-ink/40 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
             <th className="py-1">Pieza</th>
             <th>Largo × ancho × grosor (mm)</th>
             <th>Cantidad</th>
@@ -34,18 +34,18 @@ export function PrintReport({ design }: { design: Design | null }) {
         </thead>
         <tbody>
           {design.panels.map((p) => (
-            <tr key={p.id} className="border-b border-neutral-200">
+            <tr key={p.id} className="border-b border-rule">
               <td className="py-1">{p.label}</td>
-              <td>
+              <td className="font-mono text-xs tabular-nums">
                 {p.length} × {p.width} × {p.thickness}
               </td>
-              <td>{p.qty}</td>
+              <td className="font-mono text-xs tabular-nums">{p.qty}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <h2 className="mt-6 text-lg font-semibold">Tornillería</h2>
+      <h2 className="mt-7 border-b border-ink pb-1 font-display text-lg font-bold tracking-tight">Tornillería</h2>
       <ul className="mt-2 list-disc pl-5 text-sm">
         {design.hardware.map((h, i) => (
           <li key={i}>
@@ -60,11 +60,11 @@ export function PrintReport({ design }: { design: Design | null }) {
         {price > 0 ? ` · costo estimado de triplay $${estimateCost(layout, price).toFixed(2)} MXN` : ''}
       </p>
 
-      <h2 className="mt-6 text-lg font-semibold">Plan de corte</h2>
+      <h2 className="mt-7 border-b border-ink pb-1 font-display text-lg font-bold tracking-tight">Plan de corte</h2>
       <div className="mt-2 flex flex-wrap gap-4">
         {layout.sheets.map((sheet, i) => (
           <figure key={i} className="break-inside-avoid">
-            <SheetSvg sheet={sheet} labels={labels} className="h-[26rem] border border-neutral-400" />
+            <SheetSvg sheet={sheet} labels={labels} className="h-[26rem] border border-rule" />
             <figcaption className="mt-1 text-xs">
               Hoja {i + 1} — triplay de {sheet.thickness} mm · veta a lo largo
             </figcaption>
@@ -72,7 +72,7 @@ export function PrintReport({ design }: { design: Design | null }) {
         ))}
       </div>
 
-      <h2 className="mt-6 break-before-page text-lg font-semibold">Pasos de armado</h2>
+      <h2 className="mt-7 break-before-page border-b border-ink pb-1 font-display text-lg font-bold tracking-tight">Pasos de armado</h2>
       <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm">
         {design.steps.map((st) => (
           <li key={st.order} className="break-inside-avoid">

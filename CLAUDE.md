@@ -38,6 +38,9 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Zustand stores raw state only (template id, user-touched params, exploded flag). Designs are derived per render via `template.generate()` — never stored.
 - While params are invalid, the viewer keeps the last valid design dimmed with an overlay message; issues render under their field via `paramKey`.
 - Sliders are clamped to param ranges, so only cross-param issues (span, shelf fit) surface in the UI — that is intended.
+- Visual language is "taller" (carpenter's shop drawing): warm paper ground, espresso ink, plywood amber, one vermilion `cut` accent. All tokens live in `@theme` in `src/index.css` (Tailwind v4 — there is no config file), so use `bg-paper`/`text-ink-soft`/`border-rule`/`text-ply-deep`, never raw `neutral-*` or `amber-*`.
+- Fonts: Bricolage Grotesque (`font-display`, headings only), IBM Plex Sans (body), IBM Plex Mono (`font-mono` — every number, measurement, and small-caps label). Loaded from Google Fonts in `index.html`.
+- Reusable bits in `@layer components`: `.rule-label` (section heading + hairline), `.ruler` (tick strip), `.rise` (view-change entry animation). Selected states are `border-ink bg-ply-tint` with a 2px hard offset shadow.
 - `@types/react` is pinned to v18 via `overrides` in `pnpm-workspace.yaml`; without it, transitive deps pull v19 types and JSX breaks. `three` is installed as a required peer of @react-three/fiber.
 
 ## Commands

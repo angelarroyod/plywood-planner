@@ -9,10 +9,10 @@ import { CutDiagram } from './components/CutDiagram.tsx';
 import { StepsPanel } from './components/StepsPanel.tsx';
 import { PrintReport } from './components/PrintReport.tsx';
 
-const TABS: { id: View; label: string }[] = [
-  { id: 'design', label: 'Diseño' },
-  { id: 'cuts', label: 'Cortes' },
-  { id: 'steps', label: 'Pasos' },
+const TABS: { id: View; label: string; hint: string }[] = [
+  { id: 'design', label: 'Diseño', hint: '3D' },
+  { id: 'cuts', label: 'Cortes', hint: 'Hojas' },
+  { id: 'steps', label: 'Pasos', hint: 'Armado' },
 ];
 
 export default function App() {
@@ -32,35 +32,73 @@ export default function App() {
 
   return (
     <>
-      <div className="flex h-screen bg-neutral-100 text-neutral-900 print:hidden">
-        <aside className="w-80 shrink-0 overflow-y-auto border-r border-neutral-200 bg-white p-4">
-          <h1 className="text-lg font-bold">Planificador de triplay</h1>
-          <TemplatePicker />
-          <ParamForm template={template} params={params} issues={result.ok ? [] : result.issues} />
+      <div className="flex h-screen bg-paper text-ink print:hidden">
+        <aside className="flex w-[21rem] shrink-0 flex-col border-r border-rule bg-panel">
+          <header className="flex items-center gap-3 px-5 pb-4 pt-5">
+            <Wordmark />
+            <div className="leading-tight">
+              <h1 className="font-display text-[17px] font-extrabold tracking-tight">
+                Planificador
+              </h1>
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
+                Muebles de triplay
+              </p>
+            </div>
+          </header>
+          <div className="ruler h-1.5 shrink-0 opacity-70" />
+          <div className="flex-1 overflow-y-auto px-5 pb-8 pt-6">
+            <TemplatePicker />
+            <ParamForm
+              template={template}
+              params={params}
+              issues={result.ok ? [] : result.issues}
+            />
+          </div>
+          <footer className="border-t border-rule px-5 py-3 font-mono text-[10px] leading-relaxed text-ink-soft">
+            Hoja 1220 × 2440 mm · sierra 3 mm
+            <br />
+            Todas las medidas en milímetros
+          </footer>
         </aside>
-        <main className="flex flex-1 flex-col">
-          <nav className="flex items-center gap-1 border-b border-neutral-200 bg-white px-4 py-2">
-            {TABS.map((tab) => (
+
+        <main className="flex min-w-0 flex-1 flex-col">
+          <nav className="flex items-end gap-6 border-b border-rule px-6 pt-4">
+            {TABS.map((tab) => {
+              const active = view === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setView(tab.id)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`group -mb-px border-b-2 pb-3 text-left transition-colors ${
+                    active
+                      ? 'border-cut text-ink'
+                      : 'border-transparent text-ink-soft hover:border-rule hover:text-ink'
+                  }`}
+                >
+                  <span className="block font-display text-base font-bold tracking-tight">
+                    {tab.label}
+                  </span>
+                  <span
+                    className={`block font-mono text-[9px] uppercase tracking-[0.18em] ${
+                      active ? 'text-cut' : 'text-ink-soft/70'
+                    }`}
+                  >
+                    {tab.hint}
+                  </span>
+                </button>
+              );
+            })}
+            <div className="ml-auto pb-3">
               <button
-                key={tab.id}
-                onClick={() => setView(tab.id)}
-                className={`rounded px-3 py-1 text-sm ${
-                  view === tab.id
-                    ? 'bg-amber-100 font-medium text-amber-900'
-                    : 'text-neutral-600 hover:bg-neutral-100'
-                }`}
+                onClick={() => window.print()}
+                className="rounded-md bg-ink px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-paper transition-colors hover:bg-cut"
               >
-                {tab.label}
+                Exportar PDF
               </button>
-            ))}
-            <button
-              onClick={() => window.print()}
-              className="ml-auto rounded bg-amber-700 px-3 py-1 text-sm font-medium text-white hover:bg-amber-800"
-            >
-              Exportar PDF
-            </button>
+            </div>
           </nav>
-          <div className="relative flex-1 overflow-hidden">
+          <div key={view} className="rise relative flex-1 overflow-hidden">
             {design && view === 'design' && <Viewer3D design={design} stale={!result.ok} />}
             {design && view === 'cuts' && <CutDiagram design={design} />}
             {design && view === 'steps' && <StepsPanel design={design} stale={!result.ok} />}
@@ -69,5 +107,17 @@ export default function App() {
       </div>
       <PrintReport design={design} />
     </>
+  );
+}
+
+/** Plywood edge-grain: stacked veneer plies seen from the cut side. */
+function Wordmark() {
+  return (
+    <svg viewBox="0 0 32 32" className="h-9 w-9 shrink-0" aria-hidden="true">
+      <rect width="32" height="32" rx="7" fill="#1d1913" />
+      {['#f4e5cd', '#c98a3c', '#f4e5cd', '#8a5a25', '#f4e5cd'].map((fill, i) => (
+        <rect key={i} x="6" y={7 + i * 3.8} width="20" height="2.6" rx="1" fill={fill} />
+      ))}
+    </svg>
   );
 }

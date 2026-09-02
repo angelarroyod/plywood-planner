@@ -14,44 +14,75 @@ export function StepsPanel({ design, stale }: { design: Design; stale: boolean }
 
   return (
     <div className="flex h-full">
-      <div className="relative flex-1">
+      <div className="relative min-w-0 flex-1">
         <Viewer3D design={design} stale={stale} highlightStep={step} />
       </div>
-      <aside className="w-80 shrink-0 overflow-y-auto border-l border-neutral-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-neutral-600">Pasos de armado</h2>
-        <p className="mt-1 text-xs text-neutral-400">
-          Toca un paso para resaltar sus piezas en el modelo.
-        </p>
-        <ol className="mt-3 space-y-2">
-          {design.steps.map((st) => (
-            <li key={st.order}>
-              <button
-                onClick={() => setActiveStep(st.order === activeStep ? null : st.order)}
-                className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                  st.order === activeStep
-                    ? 'border-amber-600 bg-amber-50'
-                    : 'border-neutral-200 hover:border-neutral-400'
-                }`}
-              >
-                <div className="font-medium">
-                  {st.order}. {st.title}
-                </div>
-                <div className="mt-1 text-xs text-neutral-600">{st.description}</div>
-                {st.panelRefs.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {st.panelRefs.map((id) => (
-                      <span
-                        key={id}
-                        className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-900"
-                      >
-                        {labels[id] ?? id}
-                      </span>
-                    ))}
-                  </div>
+
+      <aside className="flex w-[22rem] shrink-0 flex-col border-l border-rule bg-panel">
+        <div className="px-5 pb-3 pt-5">
+          <h2 className="font-display text-lg font-extrabold tracking-tight">Pasos de armado</h2>
+          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+            {design.steps.length} pasos · toca para resaltar
+          </p>
+        </div>
+        <div className="ruler h-1.5 shrink-0 opacity-70" />
+
+        <ol className="flex-1 overflow-y-auto px-5 py-5">
+          {design.steps.map((st, i) => {
+            const active = st.order === activeStep;
+            const last = i === design.steps.length - 1;
+            return (
+              <li key={st.order} className="relative flex gap-3 pb-3">
+                {/* timeline spine */}
+                {!last && (
+                  <span
+                    aria-hidden
+                    className="absolute left-[13px] top-8 bottom-0 w-px bg-rule"
+                  />
                 )}
-              </button>
-            </li>
-          ))}
+                <span
+                  aria-hidden
+                  className={`relative z-10 mt-1 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border font-mono text-[11px] tabular-nums transition-colors ${
+                    active
+                      ? 'border-ink bg-ink text-paper'
+                      : 'border-rule bg-panel text-ink-soft'
+                  }`}
+                >
+                  {st.order}
+                </span>
+                <button
+                  onClick={() => setActiveStep(active ? null : st.order)}
+                  aria-pressed={active}
+                  className={`min-w-0 flex-1 rounded-lg border p-3 text-left transition-all ${
+                    active
+                      ? 'border-ink bg-ply-tint shadow-[2px_2px_0_0_var(--color-ink)]'
+                      : 'border-rule bg-panel hover:border-ink-soft hover:bg-ply-tint/30'
+                  }`}
+                >
+                  <div className="font-display text-[15px] font-bold leading-snug tracking-tight">
+                    {st.title}
+                  </div>
+                  <div className="mt-1 text-xs leading-relaxed text-ink-soft">{st.description}</div>
+                  {st.panelRefs.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {st.panelRefs.map((id) => (
+                        <span
+                          key={id}
+                          className={`rounded border px-1.5 py-0.5 font-mono text-[10px] ${
+                            active
+                              ? 'border-ply-deep/40 bg-panel text-ply-deep'
+                              : 'border-rule bg-ply-tint/50 text-ply-deep'
+                          }`}
+                        >
+                          {labels[id] ?? id}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </button>
+              </li>
+            );
+          })}
         </ol>
       </aside>
     </div>
