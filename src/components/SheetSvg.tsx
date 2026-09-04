@@ -8,7 +8,7 @@ interface Props {
   config?: NestingConfig;
 }
 
-const MONO = 'IBM Plex Mono, ui-monospace, monospace';
+const MONO = 'Roboto Mono, ui-monospace, monospace';
 
 /** One plywood sheet as SVG, 1 SVG unit = 1 mm. Shared by screen view and print report. */
 export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nesting }: Props) {
@@ -20,11 +20,19 @@ export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nes
       <defs>
         {/* ponytail: fixed id — several sheets render per page but the pattern is identical */}
         <pattern id="ply-grain" width="26" height="26" patternUnits="userSpaceOnUse">
-          <line x1="0" y1="0" x2="0" y2="26" stroke="#8a5a25" strokeWidth="2.5" />
+          <line x1="0" y1="0" x2="0" y2="26" stroke="var(--color-grain)" strokeWidth="2.5" />
         </pattern>
       </defs>
 
-      <rect x={0} y={0} width={w} height={h} fill="#faf6ef" stroke="#c9bda6" strokeWidth={6} />
+      <rect
+        x={0}
+        y={0}
+        width={w}
+        height={h}
+        fill="var(--color-sheet)"
+        stroke="var(--color-sheet-edge)"
+        strokeWidth={6}
+      />
 
       {sheet.pieces.map((p) => (
         <g key={`${p.panelId}-${p.instance}`}>
@@ -33,8 +41,8 @@ export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nes
             y={p.y}
             width={p.width}
             height={p.length}
-            fill="#e9c186"
-            stroke="#8a5a25"
+            fill="var(--color-piece)"
+            stroke="var(--color-piece-edge)"
             strokeWidth={5}
           />
           <text
@@ -44,7 +52,7 @@ export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nes
             fontFamily={MONO}
             fontWeight={600}
             textAnchor="middle"
-            fill="#3d2a11"
+            fill="var(--color-piece-label)"
           >
             {labels[p.panelId] ?? p.panelId} #{p.instance + 1}
           </text>
@@ -54,7 +62,7 @@ export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nes
             fontSize={34}
             fontFamily={MONO}
             textAnchor="middle"
-            fill="#8a5a25"
+            fill="var(--color-piece-dims)"
           >
             {p.width} × {p.length}
           </text>
@@ -73,7 +81,7 @@ export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nes
         <path
           key={i}
           d={`M ${x! + sx! * tick} ${y} H ${x} V ${y! + sy! * tick}`}
-          stroke="#1d1913"
+          stroke="var(--color-mark)"
           strokeWidth={7}
           fill="none"
         />
@@ -84,7 +92,7 @@ export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nes
         y={h / 2}
         fontSize={40}
         fontFamily={MONO}
-        fill="#75695a"
+        fill="var(--color-ink-faint)"
         letterSpacing={10}
         textAnchor="middle"
         transform={`rotate(-90 26 ${h / 2})`}

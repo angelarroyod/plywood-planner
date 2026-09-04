@@ -37,9 +37,7 @@ export default function App() {
           <header className="flex items-center gap-3 px-5 pb-4 pt-5">
             <Wordmark />
             <div className="leading-tight">
-              <h1 className="font-display text-[17px] font-extrabold tracking-tight">
-                Planificador
-              </h1>
+              <h1 className="display text-[17px] font-extrabold">Planificador</h1>
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
                 Muebles de triplay
               </p>
@@ -76,12 +74,10 @@ export default function App() {
                       : 'border-transparent text-ink-soft hover:border-rule hover:text-ink'
                   }`}
                 >
-                  <span className="block font-display text-base font-bold tracking-tight">
-                    {tab.label}
-                  </span>
+                  <span className="display block text-base font-bold">{tab.label}</span>
                   <span
                     className={`block font-mono text-[9px] uppercase tracking-[0.18em] ${
-                      active ? 'text-cut' : 'text-ink-soft/70'
+                      active ? 'text-cut' : 'text-ink-faint'
                     }`}
                   >
                     {tab.hint}
@@ -92,7 +88,7 @@ export default function App() {
             <div className="ml-auto pb-3">
               <button
                 onClick={() => window.print()}
-                className="rounded-md bg-ink px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-paper transition-colors hover:bg-cut"
+                className="rounded-md bg-cut px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-white transition-[filter] hover:brightness-110"
               >
                 Exportar PDF
               </button>
@@ -114,8 +110,8 @@ export default function App() {
 function Wordmark() {
   return (
     <svg viewBox="0 0 32 32" className="h-9 w-9 shrink-0" aria-hidden="true">
-      <rect width="32" height="32" rx="7" fill="#1d1913" />
-      {['#f4e5cd', '#c98a3c', '#f4e5cd', '#8a5a25', '#f4e5cd'].map((fill, i) => (
+      <rect width="32" height="32" rx="3" fill="#db011c" />
+      {['#ffffff', '#f5f6f7', '#ffffff', '#f5f6f7', '#ffffff'].map((fill, i) => (
         <rect key={i} x="6" y={7 + i * 3.8} width="20" height="2.6" rx="1" fill={fill} />
       ))}
     </svg>

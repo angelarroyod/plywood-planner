@@ -1,43 +1,66 @@
 @import "tailwindcss";
 
-/* "Taller" — carpenter's shop-drawing aesthetic: warm paper, espresso ink,
-   plywood amber, one sharp vermilion cut-line accent. */
+/* "Taller Nocturno" — dark industrial shop drawing: graphite panels, plywood
+   amber, one signal-red cut line. Screen is dark; print re-binds the same
+   tokens to ink-on-paper further down, so components never branch on medium. */
 @theme {
-  --font-display: "Bricolage Grotesque", "IBM Plex Sans", ui-sans-serif, sans-serif;
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font-display: "Barlow Condensed", "Archivo", ui-sans-serif, sans-serif;
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, "SFMono-Regular", monospace;
 
-  --color-paper: #f1ebdf;
-  --color-panel: #fcf9f3;
-  --color-ink: #1d1913;
-  --color-ink-soft: #75695a;
-  --color-rule: #ded3c1;
-  --color-ply: #c98a3c;
-  --color-ply-tint: #f4e5cd;
-  --color-ply-deep: #8a5a25;
-  --color-cut: #c33f14;
-  --color-cut-tint: #f8e2d9;
+  --color-paper: #0e0f11;
+  --color-panel: #14161a;
+  --color-raised: #23262b;
+  --color-ink: #f5f6f7;
+  --color-ink-soft: #9ba0a6;
+  --color-ink-faint: #6e747c;
+  --color-rule: #2e3238;
+  --color-rule-strong: #3a3f45;
+  --color-ply: #c08a4e;
+  --color-ply-tint: #23262b;
+  --color-ply-deep: #c08a4e;
+  --color-cut: #db011c;
+  --color-cut-tint: #2a0f14;
+
+  /* Cut-diagram SVG. Kept as tokens so the print block below re-skins the
+     same markup for paper without a second component. */
+  --color-sheet: #1a1c20;
+  --color-sheet-edge: #3a3f45;
+  --color-piece: #c08a4e;
+  --color-piece-edge: #8a5f2c;
+  --color-piece-label: #1a1206;
+  --color-piece-dims: #f5f6f7;
+  --color-grain: #6b4b22;
+  --color-mark: #db011c;
 }
 
 @layer base {
   html {
-    color-scheme: light;
+    color-scheme: dark;
   }
 
   body {
     @apply bg-paper font-sans text-ink antialiased;
   }
 
-  /* Paper grain. Sits above everything, passes clicks through, never prints. */
+  /* Sensor grain. Sits above everything, passes clicks through, never prints. */
   body::after {
     content: "";
     position: fixed;
     inset: 0;
     z-index: 60;
     pointer-events: none;
-    opacity: 0.22;
-    mix-blend-mode: multiply;
+    opacity: 0.07;
+    mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  a {
+    color: var(--color-cut);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--color-ply);
   }
 
   :focus-visible {
@@ -45,12 +68,13 @@
     outline-offset: 2px;
   }
 
-  /* Sliders as calipers: hairline track, ink block thumb. */
+  /* Sliders as calipers: hairline track, red-collared block thumb. */
   input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
     height: 1.25rem;
+    margin: 0;
     background: transparent;
     cursor: ew-resize;
   }
@@ -65,12 +89,13 @@
     height: 18px;
     margin-top: -8px;
     border-radius: 1px;
+    border: 3px solid var(--color-cut);
     background: var(--color-ink);
-    box-shadow: 0 1px 2px rgb(29 25 19 / 0.35);
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
     transition: background 0.15s ease, height 0.15s ease, margin-top 0.15s ease;
   }
   input[type="range"]:hover::-webkit-slider-thumb {
-    background: var(--color-cut);
+    background: #fff;
     height: 22px;
     margin-top: -10px;
   }
@@ -81,7 +106,7 @@
   input[type="range"]::-moz-range-thumb {
     width: 10px;
     height: 18px;
-    border: 0;
+    border: 3px solid var(--color-cut);
     border-radius: 1px;
     background: var(--color-ink);
   }
@@ -91,11 +116,17 @@
   }
 
   ::selection {
-    background: var(--color-ply-tint);
+    background: var(--color-cut);
+    color: #fff;
   }
 }
 
 @layer components {
+  /* Condensed caps — the display voice, always uppercase with a hair of tracking. */
+  .display {
+    @apply font-display uppercase tracking-[0.01em];
+  }
+
   /* Section heading: mono small-caps followed by a hairline rule to the edge. */
   .rule-label {
     @apply flex items-center gap-3 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft;
@@ -134,11 +165,42 @@
   margin: 16mm;
 }
 
+/* Paper is not a screen: re-bind the palette to ink-on-white so the build
+   report stays legible and does not flood a sheet with graphite. */
 @media print {
-  body::after {
-    display: none;
+  :root {
+    --color-paper: #ffffff;
+    --color-panel: #ffffff;
+    --color-raised: #f4e5cd;
+    --color-ink: #1d1913;
+    --color-ink-soft: #5f564a;
+    --color-ink-faint: #75695a;
+    --color-rule: #ded3c1;
+    --color-rule-strong: #b9ab93;
+    --color-ply-tint: #f4e5cd;
+    --color-ply-deep: #8a5a25;
+    --color-cut: #b03410;
+    --color-cut-tint: #f8e2d9;
+
+    --color-sheet: #faf6ef;
+    --color-sheet-edge: #c9bda6;
+    --color-piece: #e9c186;
+    --color-piece-edge: #8a5a25;
+    --color-piece-label: #3d2a11;
+    --color-piece-dims: #6b4b22;
+    --color-grain: #8a5a25;
+    --color-mark: #1d1913;
   }
+
+  html {
+    color-scheme: light;
+  }
+
   body {
     background: #fff;
+  }
+
+  body::after {
+    display: none;
   }
 }

@@ -1,14 +1,14 @@
 import { Canvas } from '@react-three/fiber';
-import { ContactShadows, Edges, Grid, OrbitControls } from '@react-three/drei';
+import { Edges, OrbitControls } from '@react-three/drei';
 import { useMemo } from 'react';
 import type { Design, Step, Vec3 } from '../engine/types.ts';
 import { useAppStore } from '../state/store.ts';
 
 const EXPLODE_FACTOR = 1.6; // panels move away from the centroid by this factor
 
-const BASE_COLOR = '#d9a05b';
-const HIGHLIGHT_COLOR = '#f0a832';
-const DIMMED_COLOR = '#e6dccb';
+const BASE_COLOR = '#c08a4e'; // plywood amber
+const HIGHLIGHT_COLOR = '#db011c'; // signal red — the step being explained
+const DIMMED_COLOR = '#4a5057'; // graphite — everything else in that step
 
 export function Viewer3D({
   design,
@@ -37,18 +37,33 @@ export function Viewer3D({
 
   return (
     <div
-      className={`relative h-full bg-[radial-gradient(circle_at_50%_30%,#fbf7ef_0%,#e8e0d0_100%)] transition-opacity duration-300 ${
+      className={`relative h-full bg-[radial-gradient(circle_at_50%_32%,#23262b_0%,#0e0f11_100%)] transition-opacity duration-300 ${
         stale ? 'opacity-40' : ''
       }`}
     >
       <Canvas
+        shadows="soft"
         dpr={[1, 2]}
         gl={{ antialias: true }}
         camera={{ position: [1600, 1400, 2000], fov: 45, near: 10, far: 30000 }}
       >
-        <hemisphereLight args={['#fff6e6', '#bfae91', 0.75]} />
-        <directionalLight position={[1500, 3000, 2000]} intensity={1.15} />
-        <directionalLight position={[-2000, 1200, -1500]} intensity={0.35} color="#ffd9a0" />
+        <hemisphereLight args={['#dfe4ea', '#14161a', 0.65]} />
+        <directionalLight
+          position={[1500, 3000, 2000]}
+          intensity={1.25}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-camera-left={-2200}
+          shadow-camera-right={2200}
+          shadow-camera-top={2200}
+          shadow-camera-bottom={-2200}
+          shadow-camera-near={100}
+          shadow-camera-far={9000}
+        />
+        {/* Cool-red bounce so the shadow side picks up the accent, not mud. */}
+        <directionalLight position={[-2000, 1200, -1500]} intensity={0.22} color="#ff5a68" />
+
         {design.placements.map((p) => {
           let pos: Vec3 = exploded
             ? [
@@ -67,44 +82,42 @@ export function Viewer3D({
               ? HIGHLIGHT_COLOR
               : DIMMED_COLOR;
           return (
-            <mesh key={`${p.panelId}-${p.instance}`} position={pos}>
+            <mesh key={`${p.panelId}-${p.instance}`} position={pos} castShadow>
               <boxGeometry args={p.size} />
               <meshStandardMaterial color={color} roughness={0.68} metalness={0} />
-              <Edges color="#7a5326" />
+              <Edges color="#1a1c20" />
             </mesh>
           );
         })}
-        <ContactShadows
-          position={[centroid[0], 1, centroid[2]]}
-          scale={4000}
-          resolution={512}
-          blur={2.4}
-          far={1500}
-          opacity={0.42}
-          color="#3b2a16"
+
+        {/* Catches the key light's shadow without painting a visible floor slab. */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 1, 0]} receiveShadow>
+          <planeGeometry args={[9000, 9000]} />
+          <shadowMaterial color="#000000" opacity={0.55} />
+        </mesh>
+
+        {/* 100 mm cells over 500 mm sections — the drawing grid, read at two scales. */}
+        <gridHelper
+          args={[8000, 80, '#2e3238', '#2e3238']}
+          material-transparent
+          material-opacity={0.55}
         />
-        <Grid
-          args={[8000, 8000]}
-          cellSize={100}
-          cellThickness={0.6}
-          cellColor="#cfc3ad"
-          sectionSize={500}
-          sectionThickness={1}
-          sectionColor="#a8977c"
-          fadeDistance={9000}
-          fadeStrength={1.5}
-          infiniteGrid
+        <gridHelper
+          args={[8000, 16, '#4a5057', '#4a5057']}
+          material-transparent
+          material-opacity={0.8}
         />
+
         <OrbitControls target={centroid} makeDefault />
       </Canvas>
 
-      <div className="pointer-events-none absolute bottom-4 left-4 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft/70">
+      <div className="pointer-events-none absolute bottom-4 left-4 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
         Cuadrícula 100 mm · arrastra para girar
       </div>
 
       {stale && (
         <div className="pointer-events-none absolute inset-x-0 top-5 flex justify-center">
-          <span className="rounded-full border border-cut/30 bg-cut-tint px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-cut">
+          <span className="rounded-full border border-cut bg-cut-tint px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-cut">
             Corrige los errores para actualizar el modelo
           </span>
         </div>

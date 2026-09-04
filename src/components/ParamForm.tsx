@@ -49,7 +49,7 @@ export function ParamForm({ template, params, issues }: Props) {
             onChange={toggleExploded}
             className="peer sr-only"
           />
-          <span className="h-5 w-9 rounded-full bg-rule transition-colors peer-checked:bg-ink" />
+          <span className="h-5 w-9 rounded-full bg-rule transition-colors peer-checked:bg-cut" />
           <span className="absolute left-0.5 h-4 w-4 rounded-full bg-panel shadow-sm transition-transform peer-checked:translate-x-4" />
         </span>
       </label>
@@ -79,11 +79,11 @@ function Field({
           className={`shrink-0 rounded border px-1.5 py-0.5 font-mono text-xs tabular-nums ${
             hasError
               ? 'border-cut/40 bg-cut-tint text-cut'
-              : 'border-rule bg-ply-tint/50 text-ply-deep'
+              : 'border-rule bg-raised text-ply'
           }`}
         >
           {value}
-          {spec.unit && <span className="text-ink-soft/70"> {spec.unit}</span>}
+          {spec.unit && <span className="text-ink-faint"> {spec.unit}</span>}
         </span>
       </div>
 
@@ -101,7 +101,7 @@ function Field({
             onChange={(e) => onChange(Number(e.target.value))}
             className="mt-1"
           />
-          <div className="-mt-1 flex justify-between font-mono text-[9px] tabular-nums text-ink-soft/60">
+          <div className="-mt-1 flex justify-between font-mono text-[9px] tabular-nums text-ink-faint">
             <span>{spec.min}</span>
             <span>{spec.max}</span>
           </div>
@@ -115,7 +115,7 @@ function Field({
               aria-pressed={opt === value}
               className={`flex-1 rounded border py-1.5 font-mono text-xs tabular-nums transition-colors ${
                 opt === value
-                  ? 'border-ink bg-ink text-paper'
+                  ? 'border-cut bg-cut text-white'
                   : 'border-rule bg-panel text-ink-soft hover:border-ink-soft hover:text-ink'
               }`}
             >

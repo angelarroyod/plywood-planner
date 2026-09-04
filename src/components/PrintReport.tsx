@@ -20,10 +20,10 @@ export function PrintReport({ design }: { design: Design | null }) {
 
   return (
     <div className="hidden print:block">
-      <h1 className="font-display text-3xl font-extrabold tracking-tight">{template?.name ?? design.templateId}</h1>
+      <h1 className="display text-3xl font-extrabold">{template?.name ?? design.templateId}</h1>
       <p className="mt-1 font-mono text-[11px] text-ink-soft">{paramLine}</p>
 
-      <h2 className="mt-7 border-b border-ink pb-1 font-display text-lg font-bold tracking-tight">Lista de cortes</h2>
+      <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Lista de cortes</h2>
       <table className="mt-2 w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-ink/40 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
@@ -45,7 +45,7 @@ export function PrintReport({ design }: { design: Design | null }) {
         </tbody>
       </table>
 
-      <h2 className="mt-7 border-b border-ink pb-1 font-display text-lg font-bold tracking-tight">Tornillería</h2>
+      <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Tornillería</h2>
       <ul className="mt-2 list-disc pl-5 text-sm">
         {design.hardware.map((h, i) => (
           <li key={i}>
@@ -60,7 +60,7 @@ export function PrintReport({ design }: { design: Design | null }) {
         {price > 0 ? ` · costo estimado de triplay $${estimateCost(layout, price).toFixed(2)} MXN` : ''}
       </p>
 
-      <h2 className="mt-7 border-b border-ink pb-1 font-display text-lg font-bold tracking-tight">Plan de corte</h2>
+      <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Plan de corte</h2>
       <div className="mt-2 flex flex-wrap gap-4">
         {layout.sheets.map((sheet, i) => (
           <figure key={i} className="break-inside-avoid">
@@ -72,7 +72,7 @@ export function PrintReport({ design }: { design: Design | null }) {
         ))}
       </div>
 
-      <h2 className="mt-7 break-before-page border-b border-ink pb-1 font-display text-lg font-bold tracking-tight">Pasos de armado</h2>
+      <h2 className="mt-7 break-before-page border-b border-ink pb-1 display text-lg font-bold">Pasos de armado</h2>
       <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm">
         {design.steps.map((st) => (
           <li key={st.order} className="break-inside-avoid">

@@ -18,19 +18,19 @@ export function TemplatePicker() {
               aria-pressed={active}
               className={`relative flex w-full gap-3 rounded-lg border p-3 text-left transition-all ${
                 active
-                  ? 'border-ink bg-ply-tint shadow-[2px_2px_0_0_var(--color-ink)]'
-                  : 'border-rule bg-panel hover:border-ink-soft hover:bg-ply-tint/30'
+                  ? 'border-cut bg-raised shadow-[2px_2px_0_0_var(--color-cut)]'
+                  : 'border-rule bg-panel hover:border-ink-soft'
               }`}
             >
               <span
                 className={`mt-0.5 font-mono text-[10px] tabular-nums ${
-                  active ? 'text-ply-deep' : 'text-ink-soft/60'
+                  active ? 'text-ply' : 'text-ink-faint'
                 }`}
               >
                 {String(i + 1).padStart(2, '0')}
               </span>
               <span className="min-w-0">
-                <span className="block font-display text-[15px] font-bold leading-snug tracking-tight">
+                <span className="display block text-[15px] font-bold leading-snug">
                   {t.name}
                 </span>
                 <span className="mt-0.5 block text-xs leading-snug text-ink-soft">

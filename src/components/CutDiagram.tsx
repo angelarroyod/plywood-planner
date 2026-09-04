@@ -15,10 +15,10 @@ export function CutDiagram({ design }: { design: Design }) {
   );
 
   return (
-    <div className="h-full overflow-y-auto bg-[radial-gradient(circle_at_50%_0%,#fbf7ef_0%,#ece5d7_100%)] px-8 py-7">
+    <div className="h-full overflow-y-auto bg-panel px-8 py-7">
       <div className="mx-auto max-w-[1400px]">
         <header>
-          <h2 className="font-display text-2xl font-extrabold tracking-tight">Plan de corte</h2>
+          <h2 className="display text-2xl font-extrabold">Plan de corte</h2>
           <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
             Hoja 1220 × 2440 mm · veta a lo largo · sierra 3 mm
           </p>
@@ -66,7 +66,7 @@ export function CutDiagram({ design }: { design: Design }) {
               <h3 className="rule-label">Lista de cortes</h3>
               <table className="mt-3 w-full text-sm">
                 <thead>
-                  <tr className="border-b border-ink/25 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                  <tr className="border-b border-rule-strong text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
                     <th className="pb-1.5 font-medium">Pieza</th>
                     <th className="pb-1.5 font-medium">mm</th>
                     <th className="pb-1.5 text-right font-medium">Cant.</th>
@@ -115,7 +115,7 @@ export function CutDiagram({ design }: { design: Design }) {
                 min={0}
                 value={price || ''}
                 onChange={(e) => setPrice(Number(e.target.value) || 0)}
-                className="mt-1.5 w-full rounded-md border border-rule bg-panel px-2.5 py-2 font-mono text-sm tabular-nums transition-colors focus:border-ink focus:outline-none"
+                className="mt-1.5 w-full rounded-md border border-rule bg-panel px-2.5 py-2 font-mono text-sm tabular-nums transition-colors focus:border-cut focus:outline-none"
                 placeholder="950"
               />
               {price > 0 && (
@@ -148,10 +148,8 @@ function Stat({
   return (
     <div className="min-w-[10rem] flex-1 rounded-lg border border-rule bg-panel px-4 py-3">
       <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">{label}</div>
-      <div className="mt-1 font-display text-2xl font-extrabold tracking-tight tabular-nums">
-        {value}
-      </div>
-      <div className="font-mono text-[10px] text-ink-soft/70">{unit}</div>
+      <div className="display mt-1 text-2xl font-extrabold tabular-nums">{value}</div>
+      <div className="font-mono text-[10px] text-ink-faint">{unit}</div>
       {children}
     </div>
   );

@@ -20,7 +20,7 @@ export function StepsPanel({ design, stale }: { design: Design; stale: boolean }
 
       <aside className="flex w-[22rem] shrink-0 flex-col border-l border-rule bg-panel">
         <div className="px-5 pb-3 pt-5">
-          <h2 className="font-display text-lg font-extrabold tracking-tight">Pasos de armado</h2>
+          <h2 className="display text-lg font-extrabold">Pasos de armado</h2>
           <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
             {design.steps.length} pasos · toca para resaltar
           </p>
@@ -44,7 +44,7 @@ export function StepsPanel({ design, stale }: { design: Design; stale: boolean }
                   aria-hidden
                   className={`relative z-10 mt-1 flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border font-mono text-[11px] tabular-nums transition-colors ${
                     active
-                      ? 'border-ink bg-ink text-paper'
+                      ? 'border-cut bg-cut text-white'
                       : 'border-rule bg-panel text-ink-soft'
                   }`}
                 >
@@ -55,11 +55,11 @@ export function StepsPanel({ design, stale }: { design: Design; stale: boolean }
                   aria-pressed={active}
                   className={`min-w-0 flex-1 rounded-lg border p-3 text-left transition-all ${
                     active
-                      ? 'border-ink bg-ply-tint shadow-[2px_2px_0_0_var(--color-ink)]'
-                      : 'border-rule bg-panel hover:border-ink-soft hover:bg-ply-tint/30'
+                      ? 'border-cut bg-raised shadow-[2px_2px_0_0_var(--color-cut)]'
+                      : 'border-rule bg-panel hover:border-ink-soft'
                   }`}
                 >
-                  <div className="font-display text-[15px] font-bold leading-snug tracking-tight">
+                  <div className="display text-[15px] font-bold leading-snug">
                     {st.title}
                   </div>
                   <div className="mt-1 text-xs leading-relaxed text-ink-soft">{st.description}</div>
@@ -70,8 +70,8 @@ export function StepsPanel({ design, stale }: { design: Design; stale: boolean }
                           key={id}
                           className={`rounded border px-1.5 py-0.5 font-mono text-[10px] ${
                             active
-                              ? 'border-ply-deep/40 bg-panel text-ply-deep'
-                              : 'border-rule bg-ply-tint/50 text-ply-deep'
+                              ? 'border-ply/40 bg-panel text-ply'
+                              : 'border-rule bg-raised text-ply'
                           }`}
                         >
                           {labels[id] ?? id}
