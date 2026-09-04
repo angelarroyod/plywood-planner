@@ -1,7 +1,3 @@
-import type { Hardware } from '../engine/types.ts';
-
-export const HARDWARE_LABELS: Record<Hardware['type'], string> = {
-  confirmat: 'Tornillo confirmat',
-  screw: 'Tornillo',
-  dowel: 'Taquete',
-};
+// Moved into the engine so the native app shares one copy. Re-exported here so
+// existing view imports keep working.
+export { HARDWARE_LABELS } from '../engine/labels.ts';

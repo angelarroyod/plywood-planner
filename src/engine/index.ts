@@ -2,6 +2,7 @@ export * from './types.ts';
 export * from './validation.ts';
 export * from './nesting.ts';
 export * from './ascii.ts';
+export * from './labels.ts';
 export { bookshelf, generateBookshelf } from './templates/bookshelf.ts';
 export { sideTable, generateSideTable } from './templates/side-table.ts';
 
