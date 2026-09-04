@@ -44,6 +44,16 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Reusable bits in `@layer components`: `.display` (condensed caps), `.rule-label` (section heading + hairline), `.ruler` (tick strip), `.rise` (view-change entry animation). Selected states are `border-cut bg-raised` with a 2px hard offset red shadow.
 - `@types/react` is pinned to v18 via `overrides` in `pnpm-workspace.yaml`; without it, transitive deps pull v19 types and JSX breaks. `three` is installed as a required peer of @react-three/fiber.
 
+## Native app (`mobile/`)
+
+- Expo SDK 57 + Expo Router, npm (not pnpm — Expo's tooling assumes it, and `.npmrc` sets `legacy-peer-deps`). It is a separate install; the web app's pnpm workspace does not cover it.
+- **It imports the same `src/engine/`, never a copy.** `mobile/src/lib/engine.ts` is the single re-export, `metro.config.js` adds `../src/engine` to `watchFolders`, and `tsconfig.json` maps `@engine/*`. Editing the engine changes both clients — that is the point, so do not fork it.
+- Anything user-facing that both clients need (validation copy, `HARDWARE_LABELS`, template names) belongs in the engine, not in a client's components. The engine stays free of React/DOM/three, but it does own Spanish copy.
+- 3D is `expo-gl` + plain `three` driven imperatively (`components/viewer-3d.tsx`), not react-three-fiber — same visual spec as the web viewer without coupling to a renderer's React version. Cut diagrams are `react-native-svg`, mirroring `SheetSvg`.
+- Screens live in `src/app` (routes only) and `src/screens` (bodies), per Expo's project-structure guidance.
+- Not real yet, by design: saved projects and the account footer are fixtures (needs Phase 4), and the camera screen's distance is simulated and labelled as such — LiDAR needs a custom ARKit native module.
+- Verify with `npx tsc --noEmit` and `npx expo export --platform ios`; a device build needs EAS, since there is no Mac here.
+
 ## Commands
 
 - `pnpm dev` — Vite dev server
