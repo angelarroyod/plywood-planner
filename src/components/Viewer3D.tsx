@@ -2,13 +2,48 @@ import { Canvas } from '@react-three/fiber';
 import { Edges, OrbitControls } from '@react-three/drei';
 import { useMemo } from 'react';
 import type { Design, Step, Vec3 } from '../engine/types.ts';
-import { useAppStore } from '../state/store.ts';
+import { useAppStore, type Theme } from '../state/store.ts';
 
 const EXPLODE_FACTOR = 1.6; // panels move away from the centroid by this factor
 
-const BASE_COLOR = '#c08a4e'; // plywood amber
-const HIGHLIGHT_COLOR = '#db011c'; // signal red — the step being explained
-const DIMMED_COLOR = '#4a5057'; // graphite — everything else in that step
+/** WebGL cannot read CSS variables, so the palette is mirrored here per theme. */
+const PALETTE: Record<Theme, {
+  base: string;
+  highlight: string;
+  dimmed: string;
+  edge: string;
+  sky: string;
+  ground: string;
+  bounce: string;
+  shadow: number;
+  gridCell: string;
+  gridSection: string;
+}> = {
+  dark: {
+    base: '#c08a4e', // plywood amber
+    highlight: '#db011c', // signal red — the step being explained
+    dimmed: '#4a5057', // graphite — everything else in that step
+    edge: '#1a1c20',
+    sky: '#dfe4ea',
+    ground: '#14161a',
+    bounce: '#ff5a68',
+    shadow: 0.55,
+    gridCell: '#2e3238',
+    gridSection: '#4a5057',
+  },
+  light: {
+    base: '#c08a4e',
+    highlight: '#b03410',
+    dimmed: '#cfc6b5',
+    edge: '#8a5f2c',
+    sky: '#ffffff',
+    ground: '#c9bda6',
+    bounce: '#ffd9a0',
+    shadow: 0.28,
+    gridCell: '#cfc3ad',
+    gridSection: '#a8977c',
+  },
+};
 
 export function Viewer3D({
   design,
@@ -20,6 +55,7 @@ export function Viewer3D({
   highlightStep?: Step | null;
 }) {
   const exploded = useAppStore((s) => s.exploded);
+  const c = PALETTE[useAppStore((s) => s.theme)];
 
   const centroid = useMemo<Vec3>(() => {
     const n = design.placements.length || 1;
@@ -37,7 +73,7 @@ export function Viewer3D({
 
   return (
     <div
-      className={`relative h-full bg-[radial-gradient(circle_at_50%_32%,#23262b_0%,#0e0f11_100%)] transition-opacity duration-300 ${
+      className={`relative h-full bg-[radial-gradient(circle_at_50%_32%,var(--color-stage-near)_0%,var(--color-stage-far)_100%)] transition-opacity duration-300 ${
         stale ? 'opacity-40' : ''
       }`}
     >
@@ -47,7 +83,7 @@ export function Viewer3D({
         gl={{ antialias: true }}
         camera={{ position: [1600, 1400, 2000], fov: 45, near: 10, far: 30000 }}
       >
-        <hemisphereLight args={['#dfe4ea', '#14161a', 0.65]} />
+        <hemisphereLight args={[c.sky, c.ground, 0.65]} />
         <directionalLight
           position={[1500, 3000, 2000]}
           intensity={1.25}
@@ -61,8 +97,8 @@ export function Viewer3D({
           shadow-camera-near={100}
           shadow-camera-far={9000}
         />
-        {/* Cool-red bounce so the shadow side picks up the accent, not mud. */}
-        <directionalLight position={[-2000, 1200, -1500]} intensity={0.22} color="#ff5a68" />
+        {/* Bounce so the shadow side picks up the accent, not mud. */}
+        <directionalLight position={[-2000, 1200, -1500]} intensity={0.22} color={c.bounce} />
 
         {design.placements.map((p) => {
           let pos: Vec3 = exploded
@@ -77,15 +113,15 @@ export function Viewer3D({
             pos = [pos[0] + stepOffset[0], pos[1] + stepOffset[1], pos[2] + stepOffset[2]];
           }
           const color = !highlightIds
-            ? BASE_COLOR
+            ? c.base
             : highlightIds.has(p.panelId)
-              ? HIGHLIGHT_COLOR
-              : DIMMED_COLOR;
+              ? c.highlight
+              : c.dimmed;
           return (
             <mesh key={`${p.panelId}-${p.instance}`} position={pos} castShadow>
               <boxGeometry args={p.size} />
               <meshStandardMaterial color={color} roughness={0.68} metalness={0} />
-              <Edges color="#1a1c20" />
+              <Edges color={c.edge} />
             </mesh>
           );
         })}
@@ -93,17 +129,17 @@ export function Viewer3D({
         {/* Catches the key light's shadow without painting a visible floor slab. */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 1, 0]} receiveShadow>
           <planeGeometry args={[9000, 9000]} />
-          <shadowMaterial color="#000000" opacity={0.55} />
+          <shadowMaterial color="#000000" opacity={c.shadow} />
         </mesh>
 
         {/* 100 mm cells over 500 mm sections — the drawing grid, read at two scales. */}
         <gridHelper
-          args={[8000, 80, '#2e3238', '#2e3238']}
+          args={[8000, 80, c.gridCell, c.gridCell]}
           material-transparent
           material-opacity={0.55}
         />
         <gridHelper
-          args={[8000, 16, '#4a5057', '#4a5057']}
+          args={[8000, 16, c.gridSection, c.gridSection]}
           material-transparent
           material-opacity={0.8}
         />
