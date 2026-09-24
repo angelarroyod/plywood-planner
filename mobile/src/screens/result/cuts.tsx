@@ -2,7 +2,15 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Body, Display, Mono } from '@/components/ui';
 import { SheetSvg } from '@/components/sheet-svg';
-import { EDGE_BANDING_NOTE, HARDWARE_LABELS, edgeBandTotals, edgeCodes } from '@/lib/engine';
+import {
+  CUT_TIP,
+  EDGE_BANDING_NOTE,
+  HARDWARE_LABELS,
+  cutText,
+  edgeBandTotals,
+  edgeCodes,
+  sheetCuts,
+} from '@/lib/engine';
 import { useApp } from '@/lib/store';
 import { color, font, radius, space } from '@/theme';
 import { StatCards, useStats } from './stats';
@@ -24,8 +32,10 @@ export function CutsPane() {
     [design],
   );
   const allPieces = useMemo(() => layout.sheets.flatMap((s) => s.pieces), [layout]);
-  const done = allPieces.filter((p) => checked.includes(`${p.panelId}#${p.instance}`)).length;
-  const pct = allPieces.length ? (done / allPieces.length) * 100 : 0;
+  const cutsBySheet = useMemo(() => layout.sheets.map((s) => sheetCuts(s)), [layout]);
+  const cutIds = cutsBySheet.flatMap((cuts, i) => cuts.map((c) => `${i + 1}:${c.n}`));
+  const done = cutIds.filter((id) => checked.includes(id)).length;
+  const pct = cutIds.length ? (done / cutIds.length) * 100 : 0;
 
   const shopping = [
     ...layout.byStock.map((g) => ({
@@ -65,7 +75,7 @@ export function CutsPane() {
         {layout.sheets.map((sheet, i) => (
           <View key={i}>
             <View style={styles.sheetFrame}>
-              <SheetSvg sheet={sheet} labels={labels} edges={edges} checked={checked} />
+              <SheetSvg sheet={sheet} labels={labels} edges={edges} checked={checked} sheetNo={i + 1} />
             </View>
             <Mono tone={color.textSoft} size={10} style={styles.caption}>
               {`Hoja ${i + 1} de ${layout.sheets.length} — ${sheet.stock.label}`}
@@ -80,52 +90,78 @@ export function CutsPane() {
             Checklist de cortes
           </Display>
           <Mono tone={color.red} size={11}>
-            {`${done} de ${allPieces.length} cortes`}
+            {`${done} de ${cutIds.length} cortes`}
           </Mono>
         </View>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${pct}%` }]} />
         </View>
 
+        <Mono tone={color.textSoft} size={11} style={{ marginTop: 10, lineHeight: 16 }}>
+          {CUT_TIP}
+        </Mono>
+
         <View style={{ marginTop: 12, gap: 6 }}>
-          {allPieces.map((p) => {
-            const id = `${p.panelId}#${p.instance}`;
-            const isDone = checked.includes(id);
+          {cutsBySheet.map((cuts, i) => (
+            <View key={i} style={{ gap: 6 }}>
+              <Mono tone={color.textSoft} size={10} style={styles.sheetHead}>
+                {`Hoja ${i + 1} — ${layout.sheets[i]!.stock.label}`}
+              </Mono>
+              {cuts.map((c) => {
+                const id = `${i + 1}:${c.n}`;
+                const isDone = checked.includes(id);
+                return (
+                  <Pressable
+                    key={id}
+                    onPress={() => toggleCut(id)}
+                    style={({ pressed }) => [
+                      styles.check,
+                      taller && { minHeight: 68, borderWidth: 2 },
+                      isDone && { backgroundColor: color.cardAlt, opacity: 0.7 },
+                      pressed && { transform: [{ scale: 0.99 }] },
+                    ]}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isDone }}
+                  >
+                    <View style={[styles.box, isDone && { borderColor: color.red, backgroundColor: color.red }]}>
+                      <Text style={{ fontSize: 15, color: isDone ? color.white : 'transparent' }}>✓</Text>
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          styles.checkLabel,
+                          isDone && { color: color.textSoft, textDecorationLine: 'line-through' },
+                        ]}
+                      >
+                        {`${c.n} · ${cutText(c)}`}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Display size={22} semi style={{ letterSpacing: 0.66 }}>
+          Piezas
+        </Display>
+        <View style={styles.shopping}>
+          {allPieces.map((p, i) => {
             const band = edges[p.panelId];
             const codes = band ? edgeCodes(band) : '—';
             const panel = panelsById[p.panelId];
             return (
-              <Pressable
-                key={id}
-                onPress={() => toggleCut(id)}
-                style={({ pressed }) => [
-                  styles.check,
-                  taller && { minHeight: 68, borderWidth: 2 },
-                  isDone && { backgroundColor: color.cardAlt, opacity: 0.7 },
-                  pressed && { transform: [{ scale: 0.99 }] },
-                ]}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: isDone }}
-              >
-                <View style={[styles.box, isDone && { borderColor: color.red, backgroundColor: color.red }]}>
-                  <Text style={{ fontSize: 15, color: isDone ? color.white : 'transparent' }}>✓</Text>
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    style={[
-                      styles.checkLabel,
-                      isDone && { color: color.textSoft, textDecorationLine: 'line-through' },
-                    ]}
-                  >
-                    {`${labels[p.panelId] ?? p.panelId} ${p.instance + 1}`}
-                  </Text>
-                  <Mono tone={color.textSoft} size={11}>
-                    {`${panel?.length ?? p.length} × ${panel?.width ?? p.width} mm${
-                      codes === '—' ? '' : ` · ${codes}`
-                    }`}
-                  </Mono>
-                </View>
-              </Pressable>
+              <View key={`${p.panelId}#${p.instance}`} style={[styles.shopRow, i > 0 && styles.shopDivider]}>
+                <Body tone={color.text} size={14} style={{ flex: 1 }}>
+                  {`${labels[p.panelId] ?? p.panelId} ${p.instance + 1}`}
+                </Body>
+                <Mono tone={color.textSoft} size={12}>
+                  {`${panel?.length ?? p.length} × ${panel?.width ?? p.width} mm${codes === '—' ? '' : ` · ${codes}`}`}
+                </Mono>
+              </View>
             );
           })}
         </View>
@@ -175,6 +211,7 @@ const styles = StyleSheet.create({
   caption: { marginTop: 8, textAlign: 'center', letterSpacing: 1.4, textTransform: 'uppercase' },
   section: { paddingHorizontal: space.xl, paddingTop: 20 },
   sectionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 },
+  sheetHead: { marginTop: 6, letterSpacing: 1.2, textTransform: 'uppercase' },
   progressTrack: { marginTop: 8, height: 5, backgroundColor: color.border },
   progressFill: { height: '100%', backgroundColor: color.red },
   check: {

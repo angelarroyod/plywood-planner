@@ -54,6 +54,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...p.paramsByTemplate,
             [p.templateId]: { ...p.paramsByTemplate[p.templateId], [key]: value },
           },
+          // cut ids ("{sheet}:{n}") follow the layout, which any param can change
+          checked: [],
           // the Cubrecanto choice adds/removes a step, so step numbers shift
           ...(key === 'edgeBanding' ? { activeStep: INITIAL.activeStep, doneSteps: [] } : null),
         })),

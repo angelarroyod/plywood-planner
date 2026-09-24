@@ -1,5 +1,5 @@
-import Svg, { Defs, G, Line, Pattern, Rect, Text as SvgText } from 'react-native-svg';
-import { NO_EDGES, bandSegments, type EdgeBands, type SheetLayout } from '@/lib/engine';
+import Svg, { Circle, Defs, G, Line, Pattern, Rect, Text as SvgText } from 'react-native-svg';
+import { NO_EDGES, bandSegments, cutBadge, sheetCuts, type EdgeBands, type SheetLayout } from '@/lib/engine';
 import { color, piece as pieceTone } from '@/theme';
 
 interface Props {
@@ -7,15 +7,17 @@ interface Props {
   labels: Record<string, string>;
   /** panelId → banded edges, drawn as dark lines inside the piece. */
   edges: Record<string, EdgeBands>;
-  /** `${panelId}#${instance}` ids already cut — they grey out on the sheet. */
+  /** `"{sheet}:{n}"` ids of saw cuts already made — their badges grey out. */
   checked: string[];
+  /** 1-based position of this sheet in the layout, the first half of each cut id. */
+  sheetNo: number;
   height?: number;
 }
 
 const BAND_INSET = 7; // mm; banded edges are 14 mm lines that stay inside the piece
 
 /** One sheet, 1 SVG unit = 1 mm, sized by its stock — same geometry the web app draws. */
-export function SheetSvg({ sheet, labels, edges, checked, height = 330 }: Props) {
+export function SheetSvg({ sheet, labels, edges, checked, sheetNo, height = 330 }: Props) {
   const { width: W, length: H } = sheet.stock.sheet;
   return (
     <Svg viewBox={`0 0 ${W} ${H}`} height={height} width={(height * W) / H}>
@@ -28,8 +30,7 @@ export function SheetSvg({ sheet, labels, edges, checked, height = 330 }: Props)
       <Rect x={0} y={0} width={W} height={H} fill={color.sheet} stroke={color.borderStrong} strokeWidth={6} />
 
       {sheet.pieces.map((p) => {
-        const done = checked.includes(`${p.panelId}#${p.instance}`);
-        const tone = done ? pieceTone.done : pieceTone.todo;
+        const tone = pieceTone.todo; // progress is tracked per saw cut now (see the badges)
         const cx = p.x + p.width / 2;
         const cy = p.y + p.length / 2;
         return (
@@ -74,6 +75,20 @@ export function SheetSvg({ sheet, labels, edges, checked, height = 330 }: Props)
           ↑ VETA
         </SvgText>
       )}
+
+      {/* Numbered cuts, drawn last so they sit on top; placed where the saw enters. */}
+      {sheetCuts(sheet).map((c) => {
+        const b = cutBadge(c);
+        const done = checked.includes(`${sheetNo}:${c.n}`);
+        return (
+          <G key={c.n}>
+            <Circle cx={b.x} cy={b.y} r={34} fill={done ? color.border : color.red} />
+            <SvgText x={b.x} y={b.y + 14} fontSize={40} fontWeight="700" textAnchor="middle" fill={color.white}>
+              {String(c.n)}
+            </SvgText>
+          </G>
+        );
+      })}
     </Svg>
   );
 }
