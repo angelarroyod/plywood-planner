@@ -62,6 +62,22 @@ describe('sheetCuts', () => {
     ]);
   });
 
+  it('trims a short run in a second row that ends at the sheet edge', () => {
+    const cuts = sheetCuts(
+      sheet(
+        piece({ width: 1220 }),
+        piece({ instance: 1, y: 603, length: 500, width: 400 }),
+        piece({ instance: 2, x: 403, y: 603, length: 300, width: 817 }),
+      ),
+    );
+    expect(cuts).toEqual([
+      { n: 1, kind: 'cross', x1: 0, y1: 600, x2: 1220, y2: 600, from: 'top', mm: 600 },
+      { n: 2, kind: 'cross', x1: 0, y1: 1103, x2: 1220, y2: 1103, from: 'top', mm: 500 },
+      { n: 3, kind: 'rip', x1: 400, y1: 603, x2: 400, y2: 1103, from: 'left', mm: 400 },
+      { n: 4, kind: 'trim', x1: 403, y1: 903, x2: 1220, y2: 903, from: 'top', mm: 300 },
+    ]);
+  });
+
   it('walks rows top to bottom and numbers cuts in order', () => {
     const cuts = sheetCuts(sheet(piece({ instance: 1, y: 603 }), piece({})));
     expect(cuts.filter((c) => c.kind === 'cross').map((c) => c.y1)).toEqual([600, 1203]);
