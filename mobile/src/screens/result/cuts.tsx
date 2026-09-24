@@ -65,7 +65,7 @@ export function CutsPane() {
       <View style={styles.section}>
         <View style={styles.sectionHead}>
           <Display size={22} semi style={{ letterSpacing: 0.66 }}>
-            Checklist de cortes
+            Lista de cortes
           </Display>
           <Mono tone={color.red} size={11}>
             {`${done} de ${allPieces.length} cortes`}

@@ -61,7 +61,7 @@ export function StepsPane() {
           <View style={{ minWidth: 0, flex: 1 }}>
             <Display size={28}>Armado</Display>
             <Mono tone={color.textSoft} size={10} style={styles.sub}>
-              {done === steps.length ? 'Terminado · nice work' : 'Toca un paso para verlo en 3D'}
+              {done === steps.length ? 'Terminado · buen trabajo' : 'Toca un paso para verlo en 3D'}
             </Mono>
           </View>
         </View>

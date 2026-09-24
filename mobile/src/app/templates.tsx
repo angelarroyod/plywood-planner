@@ -20,7 +20,7 @@ export default function Templates() {
           ¿Qué vas a hacer?
         </Display>
         <Kicker tone={color.textFaint} style={{ marginTop: 2 }}>
-          Pick a template
+          Elige una plantilla
         </Kicker>
       </ScreenHeader>
 

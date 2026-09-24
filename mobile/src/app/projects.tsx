@@ -30,7 +30,7 @@ export default function Projects() {
   return (
     <View style={styles.root}>
       <ScreenHeader>
-        <Kicker tone={color.red}>Mis proyectos / projects</Kicker>
+        <Kicker tone={color.red}>Mis proyectos</Kicker>
         <Display size={34} style={{ marginTop: 3 }}>
           Taller
         </Display>

@@ -51,7 +51,7 @@ export default function Onboarding() {
 
       <PrimaryButton label="Empezar" onPress={go} style={{ marginTop: 26 }} />
       <Pressable onPress={go} style={styles.signIn} accessibilityRole="button">
-        <Text style={styles.signInLabel}>Ya tengo proyectos · Sign in</Text>
+        <Text style={styles.signInLabel}>Ya tengo proyectos · Entrar</Text>
       </Pressable>
     </View>
   );
