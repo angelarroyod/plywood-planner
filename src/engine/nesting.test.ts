@@ -173,6 +173,13 @@ describe('nest', () => {
     assertNoOverlapWithKerf(r);
   });
 
+  it('throws when two different Stock objects share the same id', () => {
+    const clashing: Stock = { ...PLY18, sheet: { length: 2500, width: 1830 } };
+    expect(() => nest([panel({ stock: PLY18 }), panel({ id: 'p2', stock: clashing })])).toThrow(
+      /two different stock objects/,
+    );
+  });
+
   it('throws when a panel cannot fit any sheet orientation', () => {
     expect(() => nest([panel({ grain: 'length', length: 2500, width: 300 })])).toThrow(
       /does not fit/,

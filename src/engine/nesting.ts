@@ -121,7 +121,11 @@ export function nest(panels: Panel[], config: NestingConfig = DEFAULT_CONFIG.nes
       ? o
       : { xExtent: o.yExtent, yExtent: o.xExtent, rotated: !o.rotated, canRotate: o.canRotate };
 
-    const group = groups.get(panel.stock.id) ?? { stock: panel.stock, pieces: [] };
+    const existing = groups.get(panel.stock.id);
+    if (existing && existing.stock !== panel.stock) {
+      throw new Error(`Stock id ${panel.stock.id} is used by two different stock objects`);
+    }
+    const group = existing ?? { stock: panel.stock, pieces: [] };
     for (let i = 0; i < panel.qty; i++) {
       group.pieces.push({ panelId: panel.id, instance: i, ...base });
     }

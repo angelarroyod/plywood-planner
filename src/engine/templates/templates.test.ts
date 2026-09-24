@@ -83,16 +83,25 @@ describe('bookshelf', () => {
   });
 
   it('keeps the overall depth, with the back behind a shallower case', () => {
-    const D = 300;
-    const design = designOrThrow(bookshelf, { depth: D });
-    const zMin = Math.min(...design.placements.map((p) => p.position[2] - p.size[2] / 2));
-    const zMax = Math.max(...design.placements.map((p) => p.position[2] + p.size[2] / 2));
-    expect(zMin).toBeCloseTo(-D / 2);
-    expect(zMax).toBeCloseTo(D / 2);
+    for (const D of [200, 300, 400]) {
+      const design = designOrThrow(bookshelf, { depth: D });
+      const zMin = Math.min(...design.placements.map((p) => p.position[2] - p.size[2] / 2));
+      const zMax = Math.max(...design.placements.map((p) => p.position[2] + p.size[2] / 2));
+      expect(zMin).toBeCloseTo(-D / 2);
+      expect(zMax).toBeCloseTo(D / 2);
 
-    const back = design.placements.find((p) => p.panelId === 'back')!;
-    expect(back.size).toEqual([800, 1200, 3]);
-    expect(back.position[2] - back.size[2] / 2).toBeCloseTo(-D / 2); // rear is −z; camera looks from +z
+      // the case (everything but the back) starts exactly where the back ends
+      const caseRear = -D / 2 + FIBRACEL_3.thickness;
+      for (const p of design.placements) {
+        if (p.panelId === 'back') continue;
+        expect(p.position[2] - p.size[2] / 2).toBeCloseTo(caseRear);
+        expect(p.position[2] + p.size[2] / 2).toBeCloseTo(D / 2);
+      }
+
+      const back = design.placements.find((p) => p.panelId === 'back')!;
+      expect(back.size).toEqual([800, 1200, FIBRACEL_3.thickness]);
+      expect(back.position[2] - back.size[2] / 2).toBeCloseTo(-D / 2); // rear is −z; camera looks from +z
+    }
   });
 
   it('ends with a step that screws on the back', () => {
