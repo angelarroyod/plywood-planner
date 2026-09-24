@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { missingPricesText, orderCost } from '../engine/cost.ts';
+import { CUT_TIP, cutText, cutTotals, sheetCuts } from '../engine/cuts.ts';
 import { nest } from '../engine/nesting.ts';
 import { buildOrder } from '../engine/order.ts';
 import { EDGE_BANDING_NOTE, edgeBandTotals, edgeCodes } from '../engine/edge-banding.ts';
@@ -15,6 +16,7 @@ export function CutDiagram({ design }: { design: Design }) {
   const setView = useAppStore((s) => s.setView);
   // title is unused by orderCost; prices are edited in the Pedido tab
   const cost = orderCost(buildOrder(design, layout, ''), prices);
+  const cuts = cutTotals(layout);
   const labels = useMemo(
     () => Object.fromEntries(design.panels.map((p) => [p.id, p.label])),
     [design],
@@ -56,6 +58,7 @@ export function CutDiagram({ design }: { design: Design }) {
                 </span>
               </Stat>
             ))}
+            <Stat label="Cortes" value={String(cuts.count)} unit={`${cuts.meters.toFixed(1)} m lineales`} />
             <Stat
               label="Costo"
               value={cost.total > 0 ? `$${Math.round(cost.total)}` : '—'}
@@ -69,6 +72,8 @@ export function CutDiagram({ design }: { design: Design }) {
               </button>
             </Stat>
           </div>
+
+          <p className="mt-4 max-w-2xl text-xs leading-relaxed text-ink-soft">{CUT_TIP}</p>
         </header>
 
         <div className="mt-8 flex flex-wrap items-start gap-10">
@@ -85,6 +90,13 @@ export function CutDiagram({ design }: { design: Design }) {
                   Hoja {i + 1} — {sheet.stock.label}
                   {sheet.stock.hasGrain ? ' · veta a lo largo' : ''}
                 </figcaption>
+                <ol className="mt-2 w-[15rem] space-y-0.5 font-mono text-[11px] tabular-nums text-ink-soft">
+                  {sheetCuts(sheet).map((c) => (
+                    <li key={c.n}>
+                      <span className="text-ink">{c.n}.</span> {cutText(c)}
+                    </li>
+                  ))}
+                </ol>
               </figure>
             ))}
           </section>

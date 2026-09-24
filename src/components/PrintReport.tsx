@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { missingPricesText, orderCost } from '../engine/cost.ts';
+import { CUT_TIP, cutText, sheetCuts } from '../engine/cuts.ts';
 import { nest } from '../engine/nesting.ts';
 import { ORDER_BAND_NOTE, buildOrder } from '../engine/order.ts';
 import { EDGE_BANDING_NOTE, edgeBandTotals, edgeCodes } from '../engine/edge-banding.ts';
@@ -159,6 +160,7 @@ export function PrintReport({ design }: { design: Design | null }) {
       )}
 
       <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Plan de corte</h2>
+      <p className="mt-1 text-xs text-ink-soft">{CUT_TIP}</p>
       <div className="mt-2 flex flex-wrap gap-4">
         {layout.sheets.map((sheet, i) => (
           <figure key={i} className="break-inside-avoid">
@@ -167,6 +169,13 @@ export function PrintReport({ design }: { design: Design | null }) {
               Hoja {i + 1} — {sheet.stock.label}
               {sheet.stock.hasGrain ? ' · veta a lo largo' : ''}
             </figcaption>
+            <ol className="mt-1 space-y-0.5 font-mono text-[10px] tabular-nums">
+              {sheetCuts(sheet).map((c) => (
+                <li key={c.n}>
+                  {c.n}. {cutText(c)}
+                </li>
+              ))}
+            </ol>
           </figure>
         ))}
       </div>
