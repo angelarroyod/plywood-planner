@@ -101,7 +101,9 @@ export default function App() {
             {design && view === 'design' && <Viewer3D design={design} stale={!result.ok} />}
             {design && view === 'cuts' && <CutDiagram design={design} />}
             {design && view === 'steps' && <StepsPanel design={design} stale={!result.ok} />}
-            {design && view === 'order' && <OrderPanel design={design} title={template.name} />}
+            {design && view === 'order' && (
+              <OrderPanel design={design} title={template.name} stale={!result.ok} />
+            )}
           </div>
         </main>
       </div>

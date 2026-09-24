@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { orderCost } from '../engine/cost.ts';
+import { missingPricesText, orderCost } from '../engine/cost.ts';
 import { nest } from '../engine/nesting.ts';
 import { ORDER_BAND_NOTE, buildOrder } from '../engine/order.ts';
 import { EDGE_BANDING_NOTE, edgeBandTotals, edgeCodes } from '../engine/edge-banding.ts';
@@ -84,11 +84,16 @@ export function PrintReport({ design }: { design: Design | null }) {
           <li>
             Cortes: {order.cuts.count} ({order.cuts.meters.toFixed(1)} m lineales)
           </li>
+          {order.hardware.map((h, i) => (
+            <li key={i}>
+              {HARDWARE_LABELS[h.type]} {h.size} × {h.qty}
+            </li>
+          ))}
         </ul>
         {cost.total > 0 && (
           <p className="mt-3 text-sm">
             Costo estimado: ${cost.total.toFixed(2)} MXN
-            {cost.missing > 0 && ` (faltan ${cost.missing} precios)`}
+            {cost.missing > 0 && ` (${missingPricesText(cost.missing)})`}
           </p>
         )}
       </section>

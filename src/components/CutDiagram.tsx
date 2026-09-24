@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from 'react';
-import { orderCost } from '../engine/cost.ts';
+import { missingPricesText, orderCost } from '../engine/cost.ts';
 import { nest } from '../engine/nesting.ts';
 import { buildOrder } from '../engine/order.ts';
 import { EDGE_BANDING_NOTE, edgeBandTotals, edgeCodes } from '../engine/edge-banding.ts';
@@ -59,7 +59,7 @@ export function CutDiagram({ design }: { design: Design }) {
             <Stat
               label="Costo"
               value={cost.total > 0 ? `$${Math.round(cost.total)}` : '—'}
-              unit={cost.missing > 0 ? `faltan ${cost.missing} precios` : 'MXN estimado'}
+              unit={cost.missing > 0 ? missingPricesText(cost.missing) : 'MXN estimado'}
             >
               <button
                 onClick={() => setView('order')}

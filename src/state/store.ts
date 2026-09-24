@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { TemplateParams } from '../engine/types.ts';
 import { templates } from '../engine/index.ts';
-import { EMPTY_PRICES, type Prices } from '../engine/cost.ts';
+import { EMPTY_PRICES, normalizePrices, type Prices } from '../engine/cost.ts';
 
 export type View = 'design' | 'cuts' | 'steps' | 'order';
 
@@ -63,6 +63,11 @@ export const useAppStore = create<AppState>()(
       name: 'planificador.prices',
       version: 1,
       partialize: (s) => ({ prices: s.prices }),
+      // a hand-edited or stale stored `prices` must never replace the in-memory one wholesale
+      merge: (persisted, current) => ({
+        ...current,
+        prices: normalizePrices((persisted as { prices?: unknown } | undefined)?.prices),
+      }),
     },
   ),
 );
