@@ -39,7 +39,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
 
 ## UI conventions
 
-- Zustand stores raw state only (template id, user-touched params, exploded flag). Designs are derived per render via `template.generate()` — never stored.
+- Zustand stores raw state only (template id, user-touched params, exploded flag, view, active step, prices). Designs, orders and costs are derived per render — never stored. Only `prices` persists (Zustand `persist`, `localStorage` key `planificador.prices`); everything else resets per session.
 - While params are invalid, the viewer keeps the last valid design dimmed with an overlay message; issues render under their field via `paramKey`.
 - Sliders are clamped to param ranges, so only cross-param issues (span, shelf fit) surface in the UI — that is intended.
 - Visual language is "taller nocturno" (dark industrial shop drawing): graphite grounds, plywood amber, one signal-red `cut` accent that marks every selected/active/invalid state. All tokens live in `@theme` in `src/index.css` (Tailwind v4 — there is no config file), so use `bg-paper`/`bg-panel`/`bg-raised`/`text-ink-soft`/`text-ink-faint`/`border-rule`/`text-ply`, never raw `neutral-*` or `amber-*`.
