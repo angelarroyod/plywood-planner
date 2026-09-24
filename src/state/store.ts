@@ -33,6 +33,8 @@ export const useAppStore = create<AppState>((set) => ({
         ...s.paramsByTemplate,
         [s.templateId]: { ...s.paramsByTemplate[s.templateId], [key]: value },
       },
+      // the Cubrecanto choice adds/removes a step, so step numbers shift
+      ...(key === 'edgeBanding' ? { activeStep: null } : null),
     })),
   toggleExploded: () => set((s) => ({ exploded: !s.exploded })),
   setView: (view) => set({ view }),
