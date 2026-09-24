@@ -5,6 +5,7 @@ export * from './ascii.ts';
 export * from './labels.ts';
 export * from './stock.ts';
 export * from './edge-banding.ts';
+export * from './cuts.ts';
 export { bookshelf, generateBookshelf } from './templates/bookshelf.ts';
 export { sideTable, generateSideTable } from './templates/side-table.ts';
 

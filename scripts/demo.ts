@@ -3,6 +3,7 @@
 import { nest } from '../src/engine/nesting.ts';
 import { renderAscii } from '../src/engine/ascii.ts';
 import { edgeBandTotals } from '../src/engine/edge-banding.ts';
+import { cutTotals } from '../src/engine/cuts.ts';
 import { bookshelf } from '../src/engine/templates/bookshelf.ts';
 
 const result = bookshelf.generate({});
@@ -25,6 +26,7 @@ console.log(
         wastePercent: Number(g.wastePercent.toFixed(1)),
       })),
       edgeBanding: edgeBandTotals(result.design.panels),
+      cuts: cutTotals(layout),
     },
     null,
     2,
