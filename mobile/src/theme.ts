@@ -46,11 +46,8 @@ export const color = {
   white: '#FFFFFF',
 } as const;
 
-/** Cut-diagram piece colors, split by whether the cut is checked off. */
-export const piece = {
-  todo: { fill: color.ply, stroke: color.plyEdge, label: color.plyLabel, sub: color.plySub },
-  done: { fill: color.border, stroke: color.borderMuted, label: color.textSoft, sub: color.textFaint },
-} as const;
+/** Cut-diagram piece colors. */
+export const piece = { fill: color.ply, stroke: color.plyEdge, label: color.plyLabel, sub: color.plySub } as const;
 
 export const font = {
   display: 'BarlowCondensed_700Bold',

@@ -17,7 +17,7 @@ export function useStats(design: Design) {
           value: String(layout.sheets.length),
           sub: layout.byStock.length > 1 ? `${layout.byStock.length} materiales` : 'en total',
         },
-        { label: 'Piezas', value: String(pieces), sub: 'cortes' },
+        { label: 'Piezas', value: String(pieces), sub: 'en total' },
         ...layout.byStock.map((g) => ({
           label: 'Merma',
           value: `${g.wastePercent.toFixed(0)}%`,

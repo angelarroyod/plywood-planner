@@ -30,7 +30,7 @@ export function SheetSvg({ sheet, labels, edges, checked, sheetNo, height = 330 
       <Rect x={0} y={0} width={W} height={H} fill={color.sheet} stroke={color.borderStrong} strokeWidth={6} />
 
       {sheet.pieces.map((p) => {
-        const tone = pieceTone.todo; // progress is tracked per saw cut now (see the badges)
+        const tone = pieceTone;
         const cx = p.x + p.width / 2;
         const cy = p.y + p.length / 2;
         return (

@@ -12,7 +12,7 @@ import {
   sheetCuts,
 } from '@/lib/engine';
 import { useApp } from '@/lib/store';
-import { color, font, radius, space } from '@/theme';
+import { color, radius, space } from '@/theme';
 import { StatCards, useStats } from './stats';
 
 export function CutsPane() {
@@ -127,14 +127,13 @@ export function CutsPane() {
                       <Text style={{ fontSize: 15, color: isDone ? color.white : 'transparent' }}>✓</Text>
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text
-                        style={[
-                          styles.checkLabel,
-                          isDone && { color: color.textSoft, textDecorationLine: 'line-through' },
-                        ]}
+                      <Mono
+                        size={14}
+                        tone={isDone ? color.textSoft : color.text}
+                        style={isDone && { textDecorationLine: 'line-through' }}
                       >
                         {`${c.n} · ${cutText(c)}`}
-                      </Text>
+                      </Mono>
                     </View>
                   </Pressable>
                 );
@@ -235,13 +234,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: color.borderMuted,
     backgroundColor: color.bg,
-  },
-  checkLabel: {
-    fontFamily: font.displaySemi,
-    fontSize: 19,
-    letterSpacing: 0.57,
-    textTransform: 'uppercase',
-    color: color.text,
   },
   shopping: {
     marginTop: 10,
