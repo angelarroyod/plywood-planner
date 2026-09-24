@@ -10,7 +10,14 @@ import type {
   ValidationIssue,
 } from '../types.ts';
 import { DEFAULT_MATERIAL, MATERIAL_OPTIONS, getStock } from '../stock.ts';
-import { NO_EDGES } from '../edge-banding.ts';
+import {
+  DEFAULT_EDGE_BANDING,
+  EDGE_BANDING_OPTIONS,
+  bandEdges,
+  edgeBandingMode,
+  ironStep,
+  prepSentence,
+} from '../edge-banding.ts';
 import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
 
 const SHELF_CLEARANCE = 100; // lower shelf height off the floor, mm
@@ -20,6 +27,14 @@ const params: ParamSpec[] = [
   { kind: 'number', key: 'depth', label: 'Profundidad', unit: 'mm', min: 250, max: 500, step: 10, default: 350 },
   { kind: 'number', key: 'height', label: 'Alto', unit: 'mm', min: 300, max: 900, step: 10, default: 450 },
   { kind: 'select', key: 'material', label: 'Material', unit: '', options: MATERIAL_OPTIONS, default: DEFAULT_MATERIAL },
+  {
+    kind: 'select',
+    key: 'edgeBanding',
+    label: 'Cubrecanto',
+    unit: '',
+    options: EDGE_BANDING_OPTIONS,
+    default: DEFAULT_EDGE_BANDING,
+  },
 ];
 
 /** Side table: full-width top over two side panels, plus a low shelf for rigidity. */
@@ -28,11 +43,12 @@ export function generateSideTable(raw: TemplateParams): GenerateResult {
   const rangeIssues = paramIssues(params, p);
   if (rangeIssues.length > 0) return { ok: false, issues: rangeIssues };
 
-  // resolveParams guarantees every spec key exists; paramIssues vetted the material id
+  // resolveParams guarantees every spec key exists; paramIssues vetted the select values
   const W = p['width']!;
   const D = p['depth']!;
   const H = p['height']!;
   const stock = getStock(p['material']!);
+  const mode = edgeBandingMode(p['edgeBanding']!);
   const t = stock.thickness;
 
   const issues: ValidationIssue[] = [];
@@ -43,10 +59,12 @@ export function generateSideTable(raw: TemplateParams): GenerateResult {
 
   const sideHeight = H - t; // top rests on the sides
 
+  // A side table is seen from every side: the top is banded all round, the sides and
+  // shelf front and back. The sides' ends hide under the top and on the floor.
   const panels: Panel[] = [
-    { id: 'top', label: 'Cubierta', length: W, width: D, stock, grain: 'length', edges: NO_EDGES, qty: 1 },
-    { id: 'side', label: 'Lateral', length: sideHeight, width: D, stock, grain: 'length', edges: NO_EDGES, qty: 2 },
-    { id: 'shelf', label: 'Entrepaño', length: span, width: D, stock, grain: 'length', edges: NO_EDGES, qty: 1 },
+    { id: 'top', label: 'Cubierta', length: W, width: D, stock, grain: 'length', edges: bandEdges(mode, 'L1', 'L2', 'A1', 'A2'), qty: 1 },
+    { id: 'side', label: 'Lateral', length: sideHeight, width: D, stock, grain: 'length', edges: bandEdges(mode, 'L1', 'L2'), qty: 2 },
+    { id: 'shelf', label: 'Entrepaño', length: span, width: D, stock, grain: 'length', edges: bandEdges(mode, 'L1', 'L2'), qty: 1 },
   ];
 
   const placements: Placement[] = [
@@ -56,29 +74,28 @@ export function generateSideTable(raw: TemplateParams): GenerateResult {
     { panelId: 'top', instance: 0, position: [0, H - t / 2, 0], size: [W, t, D] },
   ];
 
-  const steps: Step[] = [
+  const steps: Omit<Step, 'order'>[] = [
     {
-      order: 1,
       title: 'Prepara y marca',
-      description: `Lija todas las piezas y marca en los laterales la posición del entrepaño a ${SHELF_CLEARANCE} mm del piso.`,
+      description:
+        `${prepSentence(stock, mode)} ` +
+        `Marca en los laterales la posición del entrepaño a ${SHELF_CLEARANCE} mm del piso.`,
       panelRefs: ['side'],
     },
+    ...(mode === 'diy' ? [ironStep(['top', 'side', 'shelf'])] : []),
     {
-      order: 2,
       title: 'Une el entrepaño',
       description: 'Fija el entrepaño entre los dos laterales con 2 tornillos confirmat por lado.',
       panelRefs: ['side', 'shelf'],
       explodeOffsets: { shelf: [0, 0, 200] },
     },
     {
-      order: 3,
       title: 'Coloca la cubierta',
       description: 'Centra la cubierta sobre los laterales y fíjala desde arriba con 2 confirmat por lado.',
       panelRefs: ['top'],
       explodeOffsets: { top: [0, 150, 0] },
     },
     {
-      order: 4,
       title: 'Verifica la escuadra',
       description: 'Apoya la mesa en el piso y comprueba que no cojee antes de apretar del todo.',
       panelRefs: [],
@@ -91,8 +108,8 @@ export function generateSideTable(raw: TemplateParams): GenerateResult {
     panels,
     placements,
     hardware: [{ type: 'confirmat', size: '5x50', qty: 8 }],
-    steps,
-    edgeBanding: 'none',
+    steps: steps.map((s, i) => ({ ...s, order: i + 1 })),
+    edgeBanding: mode,
   };
   return { ok: true, design };
 }

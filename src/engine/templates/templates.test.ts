@@ -4,6 +4,7 @@ import { sideTable } from './side-table.ts';
 import { nest } from '../nesting.ts';
 import type { Design, Template } from '../types.ts';
 import { FIBRACEL_3 } from '../stock.ts';
+import { NO_EDGES, edgeBandTotals } from '../edge-banding.ts';
 
 function designOrThrow(template: Template, params = {}): Design {
   const result = template.generate(params);
@@ -189,5 +190,87 @@ describe('side table', () => {
       expect(result.issues[0]!.paramKey).toBe('width');
       expect(result.issues[0]!.message).toContain('triplay de pino 12 mm');
     }
+  });
+});
+
+describe('edge banding in templates', () => {
+  it('defaults to banding applied by the lumber yard', () => {
+    expect(designOrThrow(bookshelf).edgeBanding).toBe('yard');
+    expect(designOrThrow(sideTable).edgeBanding).toBe('yard');
+  });
+
+  it('bands nothing when the user opts out', () => {
+    for (const template of [bookshelf, sideTable]) {
+      const design = designOrThrow(template, { edgeBanding: 0 });
+      expect(design.edgeBanding).toBe('none');
+      for (const p of design.panels) expect(p.edges).toEqual(NO_EDGES);
+      expect(edgeBandTotals(design.panels)).toEqual([]);
+    }
+  });
+
+  it('bands the visible edges of the bookshelf', () => {
+    const byId = new Map(designOrThrow(bookshelf).panels.map((p) => [p.id, p.edges]));
+    expect(byId.get('side')).toEqual({ L1: true, L2: false, A1: true, A2: false }); // front + top end
+    for (const id of ['top', 'bottom', 'shelf']) {
+      expect(byId.get(id)).toEqual({ L1: true, L2: false, A1: false, A2: false }); // front only
+    }
+    expect(byId.get('back')).toEqual(NO_EDGES);
+  });
+
+  it('bands the visible edges of the side table', () => {
+    const byId = new Map(designOrThrow(sideTable).panels.map((p) => [p.id, p.edges]));
+    expect(byId.get('top')).toEqual({ L1: true, L2: true, A1: true, A2: true });
+    expect(byId.get('side')).toEqual({ L1: true, L2: true, A1: false, A2: false });
+    expect(byId.get('shelf')).toEqual({ L1: true, L2: true, A1: false, A2: false });
+  });
+
+  it('totals the band at the default sizes', () => {
+    // bookshelf: 2·1200 + 2·297 + 5·764 = 6814 mm over 9 edges, + 9·30 = 7084 mm
+    expect(edgeBandTotals(designOrThrow(bookshelf).panels)).toEqual([
+      { label: 'Cubrecanto de chapa de pino 22 mm', meters: 7.1, edges: 9 },
+    ]);
+    // side table: 2·500 + 2·350 + 2·2·432 + 2·464 = 4356 mm over 10 edges, + 10·30 = 4656 mm
+    expect(edgeBandTotals(designOrThrow(sideTable).panels)).toEqual([
+      { label: 'Cubrecanto de chapa de pino 22 mm', meters: 4.7, edges: 10 },
+    ]);
+  });
+
+  it('adds an ironing step when the user bands at home', () => {
+    const shelf = designOrThrow(bookshelf, { edgeBanding: 2 });
+    expect(shelf.edgeBanding).toBe('diy');
+    expect(shelf.steps.map((s) => s.order)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(shelf.steps[1]).toMatchObject({
+      title: 'Aplica el cubrecanto',
+      panelRefs: ['side', 'top', 'bottom', 'shelf'],
+    });
+    expect(shelf.steps.at(-1)).toMatchObject({ order: 6, title: 'Coloca el fondo' });
+
+    const table = designOrThrow(sideTable, { edgeBanding: 2 });
+    expect(table.steps.map((s) => s.order)).toEqual([1, 2, 3, 4, 5]);
+    expect(table.steps[1]).toMatchObject({ title: 'Aplica el cubrecanto', panelRefs: ['top', 'side', 'shelf'] });
+  });
+
+  it('opens with finishing advice for the material', () => {
+    const plywood = designOrThrow(sideTable, { material: 3 }).steps[0]!.description;
+    expect(plywood).toMatch(/^Lija todas las piezas con grano 180\./);
+
+    const melamine = designOrThrow(sideTable, { width: 500, material: 4 }).steps[0]!.description;
+    expect(melamine).toMatch(/^Limpia las piezas con un trapo húmedo; la melamina no se lija\./);
+    expect(melamine).toContain('Revisa que la maderería haya enchapado');
+    expect(melamine).toContain('Marca en los laterales la posición del entrepaño a 100 mm del piso.');
+
+    const shelf = designOrThrow(bookshelf).steps[0]!.description;
+    expect(shelf).toContain('Marca en los laterales la posición de la base, la tapa y los 3 entrepaños.');
+  });
+
+  it('warns about raw melamine edges', () => {
+    const d = designOrThrow(sideTable, { width: 500, material: 4, edgeBanding: 0 });
+    expect(d.steps[0]!.description).toContain('séllalos con pintura o barniz');
+  });
+
+  it('rejects an unknown banding choice', () => {
+    const result = bookshelf.generate({ edgeBanding: 5 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues[0]!.paramKey).toBe('edgeBanding');
   });
 });
