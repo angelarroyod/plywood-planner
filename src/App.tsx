@@ -85,7 +85,8 @@ export default function App() {
                 </button>
               );
             })}
-            <div className="ml-auto pb-3">
+            <div className="ml-auto flex items-center gap-2 pb-3">
+              <ThemeToggle />
               <button
                 onClick={() => window.print()}
                 className="rounded-md bg-cut px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-white transition-[filter] hover:brightness-110"
@@ -103,6 +104,48 @@ export default function App() {
       </div>
       <PrintReport design={design} />
     </>
+  );
+}
+
+/** Flips the palette between the dark shop and paper. Print is always paper. */
+function ThemeToggle() {
+  const theme = useAppStore((s) => s.theme);
+  const toggleTheme = useAppStore((s) => s.toggleTheme);
+  const next = theme === 'dark' ? 'Claro' : 'Oscuro';
+
+  return (
+    <button
+      onClick={toggleTheme}
+      title={`Cambiar a tema ${next.toLowerCase()}`}
+      aria-label={`Cambiar a tema ${next.toLowerCase()}`}
+      className="flex items-center gap-2 rounded-md border border-rule px-3 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-rule-strong hover:text-ink"
+    >
+      <svg
+        viewBox="0 0 16 16"
+        className="h-3.5 w-3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        {theme === 'dark' ? (
+          <>
+            <circle cx="8" cy="8" r="3.1" />
+            {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
+              <line key={a} x1="8" y1="1" x2="8" y2="2.5" transform={`rotate(${a} 8 8)`} />
+            ))}
+          </>
+        ) : (
+          <path
+            d="M13.2 9.8A5.8 5.8 0 0 1 6.2 2.8a5.9 5.9 0 1 0 7 7Z"
+            fill="currentColor"
+            stroke="none"
+          />
+        )}
+      </svg>
+      {next}
+    </button>
   );
 }
 
