@@ -40,7 +40,7 @@ export default function App() {
             <div className="leading-tight">
               <h1 className="display text-[17px] font-extrabold">Planificador</h1>
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
-                Muebles de triplay
+                Muebles de triplay y melamina
               </p>
             </div>
           </header>

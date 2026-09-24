@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { estimateCost, nest } from '../engine/nesting.ts';
+import { EDGE_BANDING_NOTE, edgeBandTotals, edgeCodes } from '../engine/edge-banding.ts';
 import { DEFAULT_CONFIG } from '../engine/types.ts';
 import type { Design } from '../engine/types.ts';
 import { useAppStore } from '../state/store.ts';
@@ -15,6 +16,12 @@ export function CutDiagram({ design }: { design: Design }) {
     () => Object.fromEntries(design.panels.map((p) => [p.id, p.label])),
     [design],
   );
+  const edges = useMemo(
+    () => Object.fromEntries(design.panels.map((p) => [p.id, p.edges])),
+    [design],
+  );
+  const bandTotals = edgeBandTotals(design.panels);
+  const banded = design.edgeBanding !== 'none';
 
   return (
     <div className="h-full overflow-y-auto bg-panel px-8 py-7">
@@ -61,6 +68,7 @@ export function CutDiagram({ design }: { design: Design }) {
                 <SheetSvg
                   sheet={sheet}
                   labels={labels}
+                  edges={edges}
                   className="h-[30rem] rounded-md border border-rule bg-panel shadow-[3px_3px_0_0_var(--color-rule)]"
                 />
                 <figcaption className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
@@ -79,6 +87,7 @@ export function CutDiagram({ design }: { design: Design }) {
                   <tr className="border-b border-rule-strong text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
                     <th className="pb-1.5 font-medium">Pieza</th>
                     <th className="pb-1.5 font-medium">mm</th>
+                    {banded && <th className="pb-1.5 font-medium">Cubrecanto</th>}
                     <th className="pb-1.5 text-right font-medium">Cant.</th>
                   </tr>
                 </thead>
@@ -89,6 +98,9 @@ export function CutDiagram({ design }: { design: Design }) {
                       <td className="py-1.5 font-mono text-xs tabular-nums text-ink-soft">
                         {p.length} × {p.width} × {p.stock.thickness}
                       </td>
+                      {banded && (
+                        <td className="py-1.5 pr-2 font-mono text-xs text-ink-soft">{edgeCodes(p.edges)}</td>
+                      )}
                       <td className="py-1.5 text-right font-mono text-xs tabular-nums">{p.qty}</td>
                     </tr>
                   ))}
@@ -110,6 +122,21 @@ export function CutDiagram({ design }: { design: Design }) {
                 ))}
               </ul>
             </div>
+
+            {bandTotals.length > 0 && design.edgeBanding !== 'none' && (
+              <div>
+                <h3 className="rule-label">Cubrecanto</h3>
+                <ul className="mt-3 space-y-1.5 text-sm">
+                  {bandTotals.map((t) => (
+                    <li key={t.label} className="flex items-baseline justify-between gap-2">
+                      <span>{t.label}</span>
+                      <span className="font-mono text-xs tabular-nums text-ply-deep">{t.meters.toFixed(1)} m</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-ink-soft">{EDGE_BANDING_NOTE[design.edgeBanding]}</p>
+              </div>
+            )}
 
             <div>
               <h3 className="rule-label">Costo</h3>

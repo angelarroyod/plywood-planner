@@ -34,7 +34,7 @@ export default function Onboarding() {
         {'Diseña,\ncorta,\narma.'}
       </Display>
       <Body size={15} style={{ marginTop: 14 }}>
-        Un mueble de triplay bien planeado, sin cuentas a mano ni desperdicio de más.
+        Un mueble bien planeado, sin cuentas a mano ni desperdicio de más.
       </Body>
 
       <View style={styles.points}>

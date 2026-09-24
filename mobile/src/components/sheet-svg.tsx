@@ -1,17 +1,21 @@
 import Svg, { Defs, G, Line, Pattern, Rect, Text as SvgText } from 'react-native-svg';
-import type { SheetLayout } from '@/lib/engine';
+import { NO_EDGES, bandSegments, type EdgeBands, type SheetLayout } from '@/lib/engine';
 import { color, piece as pieceTone } from '@/theme';
 
 interface Props {
   sheet: SheetLayout;
   labels: Record<string, string>;
+  /** panelId → banded edges, drawn as dark lines inside the piece. */
+  edges: Record<string, EdgeBands>;
   /** `${panelId}#${instance}` ids already cut — they grey out on the sheet. */
   checked: string[];
   height?: number;
 }
 
+const BAND_INSET = 7; // mm; banded edges are 14 mm lines that stay inside the piece
+
 /** One sheet, 1 SVG unit = 1 mm, sized by its stock — same geometry the web app draws. */
-export function SheetSvg({ sheet, labels, checked, height = 330 }: Props) {
+export function SheetSvg({ sheet, labels, edges, checked, height = 330 }: Props) {
   const { width: W, length: H } = sheet.stock.sheet;
   return (
     <Svg viewBox={`0 0 ${W} ${H}`} height={height} width={(height * W) / H}>
@@ -39,6 +43,9 @@ export function SheetSvg({ sheet, labels, checked, height = 330 }: Props) {
               stroke={tone.stroke}
               strokeWidth={5}
             />
+            {bandSegments(p, edges[p.panelId] ?? NO_EDGES, BAND_INSET).map((s, i) => (
+              <Line key={i} {...s} stroke={tone.label} strokeWidth={BAND_INSET * 2} />
+            ))}
             <SvgText x={cx} y={cy - 8} fontSize={46} fontWeight="700" textAnchor="middle" fill={tone.label}>
               {`${labels[p.panelId] ?? p.panelId} ${p.instance + 1}`}
             </SvgText>

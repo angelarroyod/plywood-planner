@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { estimateCost, nest } from '../engine/nesting.ts';
+import { EDGE_BANDING_NOTE, edgeBandTotals, edgeCodes } from '../engine/edge-banding.ts';
 import { templates } from '../engine/index.ts';
 import type { Design } from '../engine/types.ts';
 import { useAppStore } from '../state/store.ts';
@@ -15,6 +16,9 @@ export function PrintReport({ design }: { design: Design | null }) {
   const cost = estimateCost(layout, prices);
   const template = templates.find((t) => t.id === design.templateId);
   const labels = Object.fromEntries(design.panels.map((p) => [p.id, p.label]));
+  const edges = Object.fromEntries(design.panels.map((p) => [p.id, p.edges]));
+  const bandTotals = edgeBandTotals(design.panels);
+  const banded = design.edgeBanding !== 'none';
   const paramLine = template?.params
     .map((s) => {
       const v = design.params[s.key] ?? s.default;
@@ -37,6 +41,7 @@ export function PrintReport({ design }: { design: Design | null }) {
           <tr className="border-b border-ink/40 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
             <th className="py-1">Pieza</th>
             <th>Largo × ancho × grosor (mm)</th>
+            {banded && <th>Cubrecanto</th>}
             <th>Cantidad</th>
           </tr>
         </thead>
@@ -47,6 +52,7 @@ export function PrintReport({ design }: { design: Design | null }) {
               <td className="font-mono text-xs tabular-nums">
                 {p.length} × {p.width} × {p.stock.thickness}
               </td>
+              {banded && <td className="font-mono text-xs">{edgeCodes(p.edges)}</td>}
               <td className="font-mono text-xs tabular-nums">{p.qty}</td>
             </tr>
           ))}
@@ -74,11 +80,25 @@ export function PrintReport({ design }: { design: Design | null }) {
         {cost !== null ? ` · costo estimado de material $${cost.toFixed(2)} MXN` : ''}
       </p>
 
+      {bandTotals.length > 0 && design.edgeBanding !== 'none' && (
+        <>
+          <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Cubrecanto</h2>
+          <ul className="mt-2 list-disc pl-5 text-sm">
+            {bandTotals.map((t) => (
+              <li key={t.label}>
+                {t.label} — {t.meters.toFixed(1)} m
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs text-ink-soft">{EDGE_BANDING_NOTE[design.edgeBanding]}</p>
+        </>
+      )}
+
       <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Plan de corte</h2>
       <div className="mt-2 flex flex-wrap gap-4">
         {layout.sheets.map((sheet, i) => (
           <figure key={i} className="break-inside-avoid">
-            <SheetSvg sheet={sheet} labels={labels} className="h-[26rem] border border-rule" />
+            <SheetSvg sheet={sheet} labels={labels} edges={edges} className="h-[26rem] border border-rule" />
             <figcaption className="mt-1 text-xs">
               Hoja {i + 1} — {sheet.stock.label}
               {sheet.stock.hasGrain ? ' · veta a lo largo' : ''}

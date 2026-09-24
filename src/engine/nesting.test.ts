@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { estimateCost, nest } from './nesting.ts';
 import { getStock } from './stock.ts';
+import { NO_EDGES } from './edge-banding.ts';
 import { DEFAULT_CONFIG } from './types.ts';
 import type { NestingResult, Panel, PlacedPiece, Stock } from './types.ts';
 import { bookshelf } from './templates/bookshelf.ts';
@@ -13,7 +14,7 @@ const SHEET = PLY18.sheet; // 1220 × 2440
 const KERF = DEFAULT_CONFIG.nesting.kerf;
 
 function panel(over: Partial<Panel> = {}): Panel {
-  return { id: 'p', label: 'P', length: 600, width: 400, stock: PLY18, grain: 'any', qty: 1, ...over };
+  return { id: 'p', label: 'P', length: 600, width: 400, stock: PLY18, grain: 'any', edges: NO_EDGES, qty: 1, ...over };
 }
 
 function allPieces(r: NestingResult): PlacedPiece[] {

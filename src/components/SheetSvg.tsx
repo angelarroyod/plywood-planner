@@ -1,15 +1,19 @@
-import type { SheetLayout } from '../engine/types.ts';
+import { NO_EDGES, bandSegments } from '../engine/edge-banding.ts';
+import type { EdgeBands, SheetLayout } from '../engine/types.ts';
 
 interface Props {
   sheet: SheetLayout;
   labels: Record<string, string>; // panelId → Spanish label
+  edges: Record<string, EdgeBands>; // panelId → banded edges
   className?: string;
 }
+
+const BAND_INSET = 7; // mm; banded edges are 14 mm lines that stay inside the piece
 
 const MONO = 'Roboto Mono, ui-monospace, monospace';
 
 /** One sheet as SVG, 1 SVG unit = 1 mm, sized by its stock. Shared by screen view and print report. */
-export function SheetSvg({ sheet, labels, className }: Props) {
+export function SheetSvg({ sheet, labels, edges, className }: Props) {
   const { width: w, length: h } = sheet.stock.sheet;
   const tick = 90; // corner registration mark length
 
@@ -43,6 +47,9 @@ export function SheetSvg({ sheet, labels, className }: Props) {
             stroke="var(--color-piece-edge)"
             strokeWidth={5}
           />
+          {bandSegments(p, edges[p.panelId] ?? NO_EDGES, BAND_INSET).map((s, i) => (
+            <line key={i} {...s} stroke="var(--color-piece-label)" strokeWidth={BAND_INSET * 2} />
+          ))}
           <text
             x={p.x + p.width / 2}
             y={p.y + p.length / 2 - 10}

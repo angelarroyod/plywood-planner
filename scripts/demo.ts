@@ -2,6 +2,7 @@
 // Lives outside src/engine/ so the engine stays free of Node-specific entry points.
 import { nest } from '../src/engine/nesting.ts';
 import { renderAscii } from '../src/engine/ascii.ts';
+import { edgeBandTotals } from '../src/engine/edge-banding.ts';
 import { bookshelf } from '../src/engine/templates/bookshelf.ts';
 
 const result = bookshelf.generate({});
@@ -23,6 +24,7 @@ console.log(
         sheets: g.sheets,
         wastePercent: Number(g.wastePercent.toFixed(1)),
       })),
+      edgeBanding: edgeBandTotals(result.design.panels),
     },
     null,
     2,
