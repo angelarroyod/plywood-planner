@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { templates } from './engine/index.ts';
+import { DEFAULT_CONFIG } from './engine/types.ts';
 import type { Design } from './engine/types.ts';
 import { useAppStore, type View } from './state/store.ts';
 import { TemplatePicker } from './components/TemplatePicker.tsx';
@@ -53,7 +54,7 @@ export default function App() {
             />
           </div>
           <footer className="border-t border-rule px-5 py-3 font-mono text-[10px] leading-relaxed text-ink-soft">
-            Hoja 1220 × 2440 mm · sierra 3 mm
+            Sierra {DEFAULT_CONFIG.nesting.kerf} mm
             <br />
             Todas las medidas en milímetros
           </footer>

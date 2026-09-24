@@ -30,8 +30,9 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Kerf (default 3 mm) applies between adjacent pieces, not at sheet edges. Kerf counts as waste.
 - Panels of different stock never share a sheet. `NestingResult.byStock` reports sheets and waste per stock, thickest first — there is no single overall waste figure.
 - Nesting is FFDH shelf packing — guillotine-cuttable by construction. Upgrade to a free-rectangle guillotine packer only if waste % becomes a problem.
-- Assembly space: x = width, y = height (up), z = depth; floor at y = 0. `Placement` = axis-aligned box (center + size), maps directly to `<boxGeometry>` in Phase 2.
+- Assembly space: x = width, y = height (up), z = depth; floor at y = 0. +z is the front (camera side), so rear-mounted parts such as the bookshelf's back sit at −z. `Placement` = axis-aligned box (center + size), maps directly to `<boxGeometry>` in Phase 2.
 - Span limits (max unsupported shelf span) live on each stock as `maxSpan`: plywood 12 → 500, 15 → 650, 18 → 800, white melamine 16 → 550; `null` (Fibracel) means never a shelf.
+- `estimateCost` returns `null` until every stock in the layout has a positive price; `spanIssue` throws for a stock with `maxSpan: null` (templates only offer shelf-capable stocks, so it is unreachable from valid params).
 - Templates must produce panels that always fit a sheet within their param limits; `nest()` throws otherwise.
 
 ## UI conventions
