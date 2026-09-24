@@ -33,7 +33,7 @@ Out:
 ```ts
 /** One straight saw pass across a sheet, in sheet mm (origin top-left, x along width, y along length). */
 export interface Cut {
-  kind: 'rip' | 'cross' | 'trim';
+  kind: 'cross' | 'rip' | 'trim';
   x1: number; y1: number; x2: number; y2: number;
 }
 /** The guillotine cuts that produce a sheet's pieces from its FFDH shelf layout. */
@@ -44,16 +44,16 @@ export function cutTotals(layout: NestingResult): { count: number; meters: numbe
 
 Per sheet, pieces are grouped into rows (shelves) by their `y`. A row's height is the tallest `length` in it.
 
-- **Rip:** one cut under each row whose bottom (`y + height`) is above the sheet's bottom (`< sheet.length`). It runs `x 0 → sheet.width` at `y + height`.
-- **Cross:** within a row, pieces sorted by `x`. One cut after each piece whose right edge (`x + width`) is left of the sheet's right edge. It runs from the row's top to its bottom, at `x + width`.
+- **Cross:** one cut under each row whose bottom (`y + height`) is above the sheet's bottom (`< sheet.length`). It runs `x 0 → sheet.width` at `y + height`.
+- **Rip:** within a row, pieces sorted by `x`. One cut after each piece whose right edge (`x + width`) is left of the sheet's right edge. It runs from the row's top to its bottom, at `x + width`.
 - **Trim:** one cut for each piece shorter than its row (`length < height`). It runs across the piece at `y + length`.
 
 Meters: `Math.ceil(Σ length / 100) / 10`, where each cut's length is `|x2 − x1| + |y2 − y1|`.
 
 Default bookshelf (800 × 1200 × 300, 3 shelves, plywood 18):
 
-- Plywood sheet: 2 rips + 7 crosses + 2 trims = 11 cuts, 10 126 mm.
-- Fibracel sheet: 1 rip + 1 cross = 2 cuts, 2420 mm.
+- Plywood sheet: 2 crosscuts + 7 rips + 2 trims = 11 cuts, 10 126 mm.
+- Fibracel sheet: 1 crosscut + 1 rip = 2 cuts, 2420 mm.
 - Total: **13 cuts, 12.6 m**.
 
 ### `src/engine/order.ts` (new)
@@ -102,7 +102,7 @@ export const ORDER_BAND_NOTE: Record<'yard' | 'diy', string>;
   ```
 
   - The `veta` part appears only when `grain` is non-null.
-  - The `cubrecanto` part appears only when `edgeCodes(edges) !== '—'`.
+  - The `cubrecanto` part appears only when `edgeBanding === 'yard'` and `edgeCodes(edges) !== '—'`.
   - A single blank line separates the header, each group, and the totals block.
 
 Default bookshelf, exactly:

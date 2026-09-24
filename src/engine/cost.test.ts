@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_PRICES, hardwareKey, orderCost, type Prices } from './cost.ts';
+import { EMPTY_PRICES, hardwareKey, missingPricesText, normalizePrices, orderCost, type Prices } from './cost.ts';
 import { buildOrder } from './order.ts';
 import { nest } from './nesting.ts';
 import { bookshelf } from './templates/bookshelf.ts';
@@ -59,5 +59,44 @@ describe('orderCost', () => {
 
   it('starts with no prices', () => {
     expect(EMPTY_PRICES).toEqual({ sheets: {}, cut: { unit: 'meter', price: 0 }, bands: {}, hardware: {} });
+  });
+});
+
+describe('missingPricesText', () => {
+  it('uses the singular for one missing price', () => {
+    expect(missingPricesText(1)).toBe('falta 1 precio');
+  });
+
+  it('uses the plural otherwise', () => {
+    expect(missingPricesText(0)).toBe('faltan 0 precios');
+    expect(missingPricesText(2)).toBe('faltan 2 precios');
+  });
+});
+
+describe('normalizePrices', () => {
+  it('falls back to EMPTY_PRICES for undefined', () => {
+    expect(normalizePrices(undefined)).toEqual(EMPTY_PRICES);
+  });
+
+  it('keeps only the finite-number entries it finds, defaulting the rest', () => {
+    expect(normalizePrices({ sheets: { 3: 950 } })).toEqual({ ...EMPTY_PRICES, sheets: { 3: 950 } });
+  });
+
+  it('drops a malformed cut unit/price and non-numeric band entries', () => {
+    expect(normalizePrices({ cut: { unit: 'bogus', price: 'x' }, bands: { a: 5, b: 'x' } })).toEqual({
+      ...EMPTY_PRICES,
+      cut: EMPTY_PRICES.cut,
+      bands: { a: 5 },
+    });
+  });
+
+  it('round-trips a full valid object unchanged', () => {
+    const full: Prices = {
+      sheets: { 3: 950, 5: 180 },
+      cut: { unit: 'cut', price: 10 },
+      bands: { 'Cubrecanto de chapa de pino 22 mm': 12 },
+      hardware: { 'confirmat 5x50': 2 },
+    };
+    expect(normalizePrices(full)).toEqual(full);
   });
 });

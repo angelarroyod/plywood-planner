@@ -2,7 +2,7 @@ import type { NestingResult, PlacedPiece, SheetLayout } from './types.ts';
 
 /** One straight saw pass across a sheet, in sheet mm (origin top-left, x along width, y along length). */
 export interface Cut {
-  kind: 'rip' | 'cross' | 'trim';
+  kind: 'cross' | 'rip' | 'trim';
   x1: number;
   y1: number;
   x2: number;
@@ -11,10 +11,12 @@ export interface Cut {
 
 /**
  * The guillotine cuts that free a sheet's pieces from its FFDH shelf layout.
- * Pieces sharing a `y` form a row whose height is its tallest piece:
- * - rip: under each row that stops short of the sheet's bottom, across the full width;
- * - cross: after each piece that stops short of the sheet's right edge, down the row;
+ * Pieces sharing a `y` form a row whose height is its tallest piece. Grain runs along the
+ * sheet's length (y), so a cut across the width is a crosscut and a cut down a row is a rip:
+ * - cross: under each row that stops short of the sheet's bottom, across the full width;
+ * - rip: after each piece that stops short of the sheet's right edge, down the row;
  * - trim: across each piece shorter than its row.
+ * The count is an upper bound: a sawyer can trim several equal pieces in one pass.
  */
 export function sheetCuts(sheet: SheetLayout): Cut[] {
   const { width: W, length: L } = sheet.stock.sheet;
@@ -25,10 +27,10 @@ export function sheetCuts(sheet: SheetLayout): Cut[] {
   for (const y of [...rows.keys()].sort((a, b) => a - b)) {
     const row = rows.get(y)!.sort((a, b) => a.x - b.x);
     const height = Math.max(...row.map((p) => p.length));
-    if (y + height < L) cuts.push({ kind: 'rip', x1: 0, y1: y + height, x2: W, y2: y + height });
+    if (y + height < L) cuts.push({ kind: 'cross', x1: 0, y1: y + height, x2: W, y2: y + height });
     for (const p of row) {
       const right = p.x + p.width;
-      if (right < W) cuts.push({ kind: 'cross', x1: right, y1: y, x2: right, y2: y + height });
+      if (right < W) cuts.push({ kind: 'rip', x1: right, y1: y, x2: right, y2: y + height });
       if (p.length < height) {
         cuts.push({ kind: 'trim', x1: p.x, y1: y + p.length, x2: right, y2: y + p.length });
       }

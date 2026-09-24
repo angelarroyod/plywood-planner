@@ -75,7 +75,7 @@ export function orderText(order: Order): string {
     for (const l of g.lines) {
       const grain = l.grain === 'length' ? ' — veta a lo largo' : l.grain === 'width' ? ' — veta a lo ancho' : '';
       const codes = edgeCodes(l.edges);
-      const band = codes === '—' ? '' : ` — cubrecanto ${codes}`;
+      const band = order.edgeBanding === 'yard' && codes !== '—' ? ` — cubrecanto ${codes}` : '';
       out.push(`${l.n}. ${l.label} — ${l.length} × ${l.width} — ${count(l.qty, 'pza', 'pzas')}${grain}${band}`);
     }
   }

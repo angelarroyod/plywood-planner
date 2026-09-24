@@ -16,10 +16,10 @@ function sheet(...pieces: PlacedPiece[]): SheetLayout {
 }
 
 describe('sheetCuts', () => {
-  it('frees a corner piece with one rip and one crosscut', () => {
+  it('frees a corner piece with one crosscut and one rip', () => {
     expect(sheetCuts(sheet(piece({})))).toEqual([
-      { kind: 'rip', x1: 0, y1: 600, x2: 1220, y2: 600 },
-      { kind: 'cross', x1: 400, y1: 0, x2: 400, y2: 600 },
+      { kind: 'cross', x1: 0, y1: 600, x2: 1220, y2: 600 },
+      { kind: 'rip', x1: 400, y1: 0, x2: 400, y2: 600 },
     ]);
   });
 
@@ -27,10 +27,10 @@ describe('sheetCuts', () => {
     expect(sheetCuts(sheet(piece({ length: 2440, width: 1220 })))).toEqual([]);
   });
 
-  it('crosscuts after every piece in a row', () => {
+  it('rips after every piece in a row', () => {
     const cuts = sheetCuts(sheet(piece({ x: 0 }), piece({ instance: 1, x: 403 })));
-    expect(cuts.map((c) => c.kind)).toEqual(['rip', 'cross', 'cross']);
-    expect(cuts[2]).toEqual({ kind: 'cross', x1: 803, y1: 0, x2: 803, y2: 600 });
+    expect(cuts.map((c) => c.kind)).toEqual(['cross', 'rip', 'rip']);
+    expect(cuts[2]).toEqual({ kind: 'rip', x1: 803, y1: 0, x2: 803, y2: 600 });
   });
 
   it('trims a piece shorter than its row', () => {
@@ -40,15 +40,15 @@ describe('sheetCuts', () => {
     ]);
   });
 
-  it('does not rip under a row that reaches the sheet bottom', () => {
+  it('does not crosscut under a row that reaches the sheet bottom', () => {
     expect(sheetCuts(sheet(piece({ length: 2440 })))).toEqual([
-      { kind: 'cross', x1: 400, y1: 0, x2: 400, y2: 2440 },
+      { kind: 'rip', x1: 400, y1: 0, x2: 400, y2: 2440 },
     ]);
   });
 
   it('walks rows top to bottom whatever order the pieces come in', () => {
     const cuts = sheetCuts(sheet(piece({ instance: 1, y: 603 }), piece({})));
-    expect(cuts.filter((c) => c.kind === 'rip').map((c) => c.y1)).toEqual([600, 1203]);
+    expect(cuts.filter((c) => c.kind === 'cross').map((c) => c.y1)).toEqual([600, 1203]);
   });
 });
 
@@ -61,7 +61,7 @@ describe('cutTotals', () => {
   it('totals the default bookshelf', () => {
     const result = bookshelf.generate({});
     if (!result.ok) throw new Error('default bookshelf must validate');
-    // plywood: 2 rips + 7 crosses + 2 trims = 10 126 mm; Fibracel: 1 rip + 1 cross = 2420 mm → 12 546 mm
+    // plywood: 2 crosscuts + 7 rips + 2 trims = 10 126 mm; Fibracel: 1 crosscut + 1 rip = 2420 mm → 12 546 mm
     expect(cutTotals(nest(result.design.panels))).toEqual({ count: 13, meters: 12.6 });
   });
 });

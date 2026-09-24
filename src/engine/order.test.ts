@@ -70,9 +70,11 @@ describe('orderText', () => {
   });
 
   it('tells the yard when the customer bands at home', () => {
-    expect(orderText(orderFor(bookshelf, { edgeBanding: 2 }))).toContain(
+    const text = orderText(orderFor(bookshelf, { edgeBanding: 2 }));
+    expect(text).toContain(
       'Cubrecanto de chapa de pino 22 mm: 7.1 m. Solo el material (pre-engomado); yo lo aplico.',
     );
+    expect(text).not.toContain('— cubrecanto L');
   });
 
   it('never contains prices', () => {
