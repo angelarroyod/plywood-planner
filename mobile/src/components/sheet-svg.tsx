@@ -44,7 +44,7 @@ export function SheetSvg({ sheet, labels, edges, checked, height = 330 }: Props)
               strokeWidth={5}
             />
             {bandSegments(p, edges[p.panelId] ?? NO_EDGES, BAND_INSET).map((s, i) => (
-              <Line key={i} {...s} stroke={color.plyLabel} strokeWidth={BAND_INSET * 2} />
+              <Line key={i} {...s} stroke={tone.label} strokeWidth={BAND_INSET * 2} />
             ))}
             <SvgText x={cx} y={cy - 8} fontSize={46} fontWeight="700" textAnchor="middle" fill={tone.label}>
               {`${labels[p.panelId] ?? p.panelId} ${p.instance + 1}`}

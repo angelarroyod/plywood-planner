@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Body, Display, Mono } from '@/components/ui';
 import { SheetSvg } from '@/components/sheet-svg';
-import { HARDWARE_LABELS, edgeBandTotals, edgeCodes } from '@/lib/engine';
+import { EDGE_BANDING_NOTE, HARDWARE_LABELS, edgeBandTotals, edgeCodes } from '@/lib/engine';
 import { useApp } from '@/lib/store';
 import { color, font, radius, space } from '@/theme';
 import { StatCards, useStats } from './stats';
@@ -17,6 +17,10 @@ export function CutsPane() {
   );
   const edges = useMemo(
     () => Object.fromEntries(design!.panels.map((p) => [p.id, p.edges])),
+    [design],
+  );
+  const panelsById = useMemo(
+    () => Object.fromEntries(design!.panels.map((p) => [p.id, p])),
     [design],
   );
   const allPieces = useMemo(() => layout.sheets.flatMap((s) => s.pieces), [layout]);
@@ -89,6 +93,7 @@ export function CutsPane() {
             const isDone = checked.includes(id);
             const band = edges[p.panelId];
             const codes = band ? edgeCodes(band) : '—';
+            const panel = panelsById[p.panelId];
             return (
               <Pressable
                 key={id}
@@ -115,7 +120,9 @@ export function CutsPane() {
                     {`${labels[p.panelId] ?? p.panelId} ${p.instance + 1}`}
                   </Text>
                   <Mono tone={color.textSoft} size={11}>
-                    {`${p.width} × ${p.length} mm${codes === '—' ? '' : ` · ${codes}`}`}
+                    {`${panel?.length ?? p.length} × ${panel?.width ?? p.width} mm${
+                      codes === '—' ? '' : ` · ${codes}`
+                    }`}
                   </Mono>
                 </View>
               </Pressable>
@@ -140,6 +147,11 @@ export function CutsPane() {
             </View>
           ))}
         </View>
+        {design!.edgeBanding !== 'none' && (
+          <Mono tone={color.textSoft} size={11} style={{ marginTop: 8 }}>
+            {EDGE_BANDING_NOTE[design!.edgeBanding]}
+          </Mono>
+        )}
         <Mono tone={color.textFaint} size={10} style={styles.footnote}>
           Precio de referencia · maderería local
         </Mono>

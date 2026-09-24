@@ -54,6 +54,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...p.paramsByTemplate,
             [p.templateId]: { ...p.paramsByTemplate[p.templateId], [key]: value },
           },
+          // the Cubrecanto choice adds/removes a step, so step numbers shift
+          ...(key === 'edgeBanding' ? { activeStep: INITIAL.activeStep, doneSteps: [] } : null),
         })),
       setTab: (tab: ResultTab) => setS((p) => ({ ...p, tab })),
       setActiveStep: (order: number) => setS((p) => ({ ...p, activeStep: order })),
