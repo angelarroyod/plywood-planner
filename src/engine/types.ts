@@ -2,6 +2,19 @@
 // This module (and everything under src/engine/) must stay pure TypeScript:
 // no React, DOM, or three.js imports — it ships to React Native unchanged.
 
+/**
+ * A board the planner can cut: one material at one thickness, sold in one sheet
+ * size. The catalog lives in stock.ts.
+ */
+export interface Stock {
+  id: number; // stable; a template's numeric "material" param stores it
+  label: string; // Spanish display name, e.g. 'Triplay de pino 18 mm'
+  thickness: number; // mm
+  hasGrain: boolean; // false → nesting may rotate any panel
+  sheet: { length: number; width: number }; // mm; grain runs along length
+  maxSpan: number | null; // max unsupported shelf span, mm; null = never a shelf
+}
+
 export type PlywoodThickness = 12 | 15 | 18;
 
 /**
