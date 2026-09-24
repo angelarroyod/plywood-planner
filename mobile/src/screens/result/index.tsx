@@ -41,7 +41,7 @@ export function Result() {
   if (!design) return <View style={styles.root} />;
 
   const shareOrder = () => {
-    Share.share({ message: orderText(buildOrder(design, nest(design.panels), template.name)) }).catch(() =>
+    return Share.share({ message: orderText(buildOrder(design, nest(design.panels), template.name)) }).catch(() =>
       flash('No se pudo compartir'),
     );
   };
@@ -142,9 +142,13 @@ export function Result() {
               <Pressable
                 key={e.label}
                 onPress={() => {
-                  setSheetOpen(false);
-                  if (e.tag === 'TXT') shareOrder();
-                  else flash(`${e.label} listo`); // the other exports are still fixtures
+                  if (e.tag === 'TXT') {
+                    // present the share sheet before the modal finishes dismissing (iOS drops it otherwise)
+                    shareOrder().finally(() => setSheetOpen(false));
+                  } else {
+                    setSheetOpen(false);
+                    flash(`${e.label} listo`); // the other exports are still fixtures
+                  }
                 }}
                 style={({ pressed }) => [styles.exportRow, pressed && { borderColor: color.borderStrong }]}
                 accessibilityRole="button"
