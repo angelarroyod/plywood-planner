@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
-import { estimateCost, nest } from '../engine/nesting.ts';
+import { orderCost } from '../engine/cost.ts';
+import { nest } from '../engine/nesting.ts';
+import { ORDER_BAND_NOTE, buildOrder } from '../engine/order.ts';
 import { EDGE_BANDING_NOTE, edgeBandTotals, edgeCodes } from '../engine/edge-banding.ts';
 import { templates } from '../engine/index.ts';
 import type { Design } from '../engine/types.ts';
@@ -9,12 +11,13 @@ import { HARDWARE_LABELS } from './labels.ts';
 
 /** Full build report. Hidden on screen; becomes the document when printing (Exportar PDF). */
 export function PrintReport({ design }: { design: Design | null }) {
-  const prices = useAppStore((s) => s.pricesByStock);
+  const prices = useAppStore((s) => s.prices);
   const layout = useMemo(() => (design ? nest(design.panels) : null), [design]);
   if (!design || !layout) return null;
 
-  const cost = estimateCost(layout, prices);
   const template = templates.find((t) => t.id === design.templateId);
+  const order = buildOrder(design, layout, template?.name ?? design.templateId);
+  const cost = orderCost(order, prices);
   const labels = Object.fromEntries(design.panels.map((p) => [p.id, p.label]));
   const edges = Object.fromEntries(design.panels.map((p) => [p.id, p.edges]));
   const bandTotals = edgeBandTotals(design.panels);
@@ -32,6 +35,63 @@ export function PrintReport({ design }: { design: Design | null }) {
 
   return (
     <div className="hidden print:block">
+      <section className="break-after-page">
+        <h1 className="display text-3xl font-extrabold">Pedido para maderería — {order.title}</h1>
+        <p className="mt-1 font-mono text-[11px] text-ink-soft">Medidas en mm: largo × ancho.</p>
+        {order.groups.map((g) => (
+          <div key={g.stock.id} className="break-inside-avoid">
+            <h2 className="mt-6 border-b border-ink pb-1 display text-lg font-bold">
+              {g.stock.label} — {g.sheets} {g.sheets === 1 ? 'hoja' : 'hojas'} de {g.stock.sheet.width} ×{' '}
+              {g.stock.sheet.length}
+            </h2>
+            <table className="mt-2 w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-ink/40 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                  <th className="py-1">#</th>
+                  <th>Pieza</th>
+                  <th>Largo</th>
+                  <th>Ancho</th>
+                  <th>Cant.</th>
+                  <th>Veta</th>
+                  <th>Cubrecanto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {g.lines.map((l) => (
+                  <tr key={l.n} className="border-b border-rule">
+                    <td className="py-1 font-mono text-xs tabular-nums">{l.n}</td>
+                    <td>{l.label}</td>
+                    <td className="font-mono text-xs tabular-nums">{l.length}</td>
+                    <td className="font-mono text-xs tabular-nums">{l.width}</td>
+                    <td className="font-mono text-xs tabular-nums">{l.qty}</td>
+                    <td className="font-mono text-xs">
+                      {l.grain === 'length' ? 'largo' : l.grain === 'width' ? 'ancho' : '—'}
+                    </td>
+                    <td className="font-mono text-xs">{edgeCodes(l.edges)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
+        <ul className="mt-4 space-y-1 text-sm">
+          {order.bands.map((b) => (
+            <li key={b.label}>
+              {b.label}: {b.meters.toFixed(1)} m
+              {order.edgeBanding !== 'none' && ` — ${ORDER_BAND_NOTE[order.edgeBanding]}`}
+            </li>
+          ))}
+          <li>
+            Cortes: {order.cuts.count} ({order.cuts.meters.toFixed(1)} m lineales)
+          </li>
+        </ul>
+        {cost.total > 0 && (
+          <p className="mt-3 text-sm">
+            Costo estimado: ${cost.total.toFixed(2)} MXN
+            {cost.missing > 0 && ` (faltan ${cost.missing} precios)`}
+          </p>
+        )}
+      </section>
       <h1 className="display text-3xl font-extrabold">{template?.name ?? design.templateId}</h1>
       <p className="mt-1 font-mono text-[11px] text-ink-soft">{paramLine}</p>
 
@@ -77,7 +137,6 @@ export function PrintReport({ design }: { design: Design | null }) {
               `desperdicio ${g.wastePercent.toFixed(1)}%)`,
           )
           .join(' · ')}
-        {cost !== null ? ` · costo estimado de material $${cost.toFixed(2)} MXN` : ''}
       </p>
 
       {bandTotals.length > 0 && design.edgeBanding !== 'none' && (

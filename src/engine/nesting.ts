@@ -159,17 +159,3 @@ export function nest(panels: Panel[], config: NestingConfig = DEFAULT_CONFIG.nes
 
   return { sheets, byStock };
 }
-
-/**
- * Sheets × user-entered price per stock (MXN). Null until every stock in the
- * layout has a positive price, so the UI never shows a partial total.
- */
-export function estimateCost(result: NestingResult, prices: Record<number, number>): number | null {
-  let total = 0;
-  for (const { stock, sheets } of result.byStock) {
-    const price = prices[stock.id];
-    if (!(price && price > 0)) return null;
-    total += sheets * price;
-  }
-  return total;
-}

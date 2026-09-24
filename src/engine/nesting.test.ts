@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateCost, nest } from './nesting.ts';
+import { nest } from './nesting.ts';
 import { getStock } from './stock.ts';
 import { NO_EDGES } from './edge-banding.ts';
 import { DEFAULT_CONFIG } from './types.ts';
@@ -185,29 +185,5 @@ describe('nest', () => {
     expect(() => nest([panel({ grain: 'length', length: 2500, width: 300 })])).toThrow(
       /does not fit/,
     );
-  });
-});
-
-describe('estimateCost', () => {
-  // 3 plywood sheets + 1 Fibracel sheet
-  const layout = () =>
-    nest([
-      panel({ id: 'big', grain: 'length', length: 1100, width: 1100, qty: 5 }),
-      panel({ id: 'back', stock: FIBRACEL }),
-    ]);
-
-  it('sums sheets × price per stock', () => {
-    expect(estimateCost(layout(), { 3: 950, 5: 180 })).toBe(3 * 950 + 180);
-  });
-
-  it('returns null until every stock in the layout has a positive price', () => {
-    expect(estimateCost(layout(), { 3: 950 })).toBeNull();
-    expect(estimateCost(layout(), { 3: 950, 5: 0 })).toBeNull();
-    expect(estimateCost(layout(), {})).toBeNull();
-  });
-
-  it('ignores prices for stocks not in the layout', () => {
-    const plywoodOnly = nest([panel({ id: 'big', grain: 'length', length: 1100, width: 1100, qty: 5 })]);
-    expect(estimateCost(plywoodOnly, { 3: 950, 4: 700 })).toBe(2850);
   });
 });

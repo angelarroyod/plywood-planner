@@ -1,5 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
-import { estimateCost, nest } from '../engine/nesting.ts';
+import { orderCost } from '../engine/cost.ts';
+import { nest } from '../engine/nesting.ts';
+import { buildOrder } from '../engine/order.ts';
 import { EDGE_BANDING_NOTE, edgeBandTotals, edgeCodes } from '../engine/edge-banding.ts';
 import { DEFAULT_CONFIG } from '../engine/types.ts';
 import type { Design } from '../engine/types.ts';
@@ -9,9 +11,10 @@ import { HARDWARE_LABELS } from './labels.ts';
 
 export function CutDiagram({ design }: { design: Design }) {
   const layout = useMemo(() => nest(design.panels), [design]);
-  const prices = useAppStore((s) => s.pricesByStock);
-  const setPrice = useAppStore((s) => s.setPrice);
-  const cost = estimateCost(layout, prices);
+  const prices = useAppStore((s) => s.prices);
+  const setView = useAppStore((s) => s.setView);
+  // title is unused by orderCost; prices are edited in the Pedido tab
+  const cost = orderCost(buildOrder(design, layout, ''), prices);
   const labels = useMemo(
     () => Object.fromEntries(design.panels.map((p) => [p.id, p.label])),
     [design],
@@ -54,10 +57,17 @@ export function CutDiagram({ design }: { design: Design }) {
               </Stat>
             ))}
             <Stat
-              label="Costo material"
-              value={cost === null ? '—' : `$${cost.toFixed(0)}`}
-              unit={cost === null ? 'define precios' : 'MXN estimado'}
-            />
+              label="Costo"
+              value={cost.total > 0 ? `$${Math.round(cost.total)}` : '—'}
+              unit={cost.missing > 0 ? `faltan ${cost.missing} precios` : 'MXN estimado'}
+            >
+              <button
+                onClick={() => setView('order')}
+                className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft underline decoration-rule underline-offset-2 transition-colors hover:text-ink"
+              >
+                Editar precios
+              </button>
+            </Stat>
           </div>
         </header>
 
@@ -137,43 +147,6 @@ export function CutDiagram({ design }: { design: Design }) {
                 <p className="mt-2 text-xs text-ink-soft">{EDGE_BANDING_NOTE[design.edgeBanding]}</p>
               </div>
             )}
-
-            <div>
-              <h3 className="rule-label">Costo</h3>
-              {layout.byStock.map((g) => {
-                const id = `price-${g.stock.id}`;
-                const price = prices[g.stock.id] ?? 0;
-                return (
-                  <div key={g.stock.id} className="mt-3">
-                    <label
-                      className="block font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft"
-                      htmlFor={id}
-                    >
-                      Precio por hoja — {g.stock.label} (MXN)
-                    </label>
-                    <input
-                      id={id}
-                      type="number"
-                      min={0}
-                      value={price || ''}
-                      onChange={(e) => setPrice(g.stock.id, Number(e.target.value) || 0)}
-                      className="mt-1.5 w-full rounded-md border border-rule bg-panel px-2.5 py-2 font-mono text-sm tabular-nums transition-colors focus:border-cut focus:outline-none"
-                      placeholder="0"
-                    />
-                    {price > 0 && (
-                      <p className="mt-1 font-mono text-xs tabular-nums text-ink-soft">
-                        {g.sheets} × ${price} = ${(g.sheets * price).toFixed(2)}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-              {cost !== null && (
-                <p className="mt-3 text-sm text-ink-soft">
-                  Total: <strong className="font-mono text-ink">${cost.toFixed(2)} MXN</strong>
-                </p>
-              )}
-            </div>
           </section>
         </div>
       </div>

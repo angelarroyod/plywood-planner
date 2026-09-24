@@ -9,11 +9,13 @@ import { Viewer3D } from './components/Viewer3D.tsx';
 import { CutDiagram } from './components/CutDiagram.tsx';
 import { StepsPanel } from './components/StepsPanel.tsx';
 import { PrintReport } from './components/PrintReport.tsx';
+import { OrderPanel } from './components/OrderPanel.tsx';
 
 const TABS: { id: View; label: string; hint: string }[] = [
   { id: 'design', label: 'Diseño', hint: '3D' },
   { id: 'cuts', label: 'Cortes', hint: 'Hojas' },
   { id: 'steps', label: 'Pasos', hint: 'Armado' },
+  { id: 'order', label: 'Pedido', hint: 'Maderería' },
 ];
 
 export default function App() {
@@ -99,6 +101,7 @@ export default function App() {
             {design && view === 'design' && <Viewer3D design={design} stale={!result.ok} />}
             {design && view === 'cuts' && <CutDiagram design={design} />}
             {design && view === 'steps' && <StepsPanel design={design} stale={!result.ok} />}
+            {design && view === 'order' && <OrderPanel design={design} title={template.name} />}
           </div>
         </main>
       </div>
