@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Body, Display, Kicker, Mono, SecondaryButton } from '@/components/ui';
-import { getStock, templates } from '@/lib/engine';
+import { buildOrder, getStock, nest, orderText, templates } from '@/lib/engine';
 import { useApp, type ResultTab } from '@/lib/store';
 import { color, font, radius, space } from '@/theme';
 import { CutsPane } from './cuts';
@@ -19,7 +19,7 @@ const TABS: { id: ResultTab; label: string }[] = [
 
 const EXPORTS = [
   { tag: 'PDF', label: 'Plan de corte', sub: 'Hojas, lista de piezas y pasos' },
-  { tag: 'TXT', label: 'Lista de compras', sub: 'Para el mostrador de la maderería' },
+  { tag: 'TXT', label: 'Pedido para maderería', sub: 'Compártelo por WhatsApp o correo' },
   { tag: '↗', label: 'Compartir enlace', sub: 'Vista 3D en el navegador' },
   { tag: 'AD', label: 'AirDrop al carpintero', sub: 'Dispositivos cerca' },
 ];
@@ -39,6 +39,12 @@ export function Result() {
   const title = template.id === 'bookshelf' ? 'Librero sala' : 'Mesa auxiliar';
 
   if (!design) return <View style={styles.root} />;
+
+  const shareOrder = () => {
+    Share.share({ message: orderText(buildOrder(design, nest(design.panels), template.name)) }).catch(() =>
+      flash('No se pudo compartir'),
+    );
+  };
 
   return (
     <View style={styles.root}>
@@ -137,7 +143,8 @@ export function Result() {
                 key={e.label}
                 onPress={() => {
                   setSheetOpen(false);
-                  flash(`${e.label} listo`);
+                  if (e.tag === 'TXT') shareOrder();
+                  else flash(`${e.label} listo`); // the other exports are still fixtures
                 }}
                 style={({ pressed }) => [styles.exportRow, pressed && { borderColor: color.borderStrong }]}
                 accessibilityRole="button"
