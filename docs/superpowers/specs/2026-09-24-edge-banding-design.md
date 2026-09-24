@@ -96,7 +96,7 @@ export const EDGE_BANDING_NOTE: Record<'yard' | 'diy', string>;
   - Or, when the mode is `none` and the material is `melamina`, append ` Sin cubrecanto, los cantos de melamina absorben humedad y se despostillan: séllalos con pintura o barniz.`
 - **`ironStep`:**
   - title: `Aplica el cubrecanto`
-  - description: `Con la plancha a temperatura media y sin vapor, pasa despacio sobre el cubrecanto pre-engomado en cada canto marcado en la lista de cortes. Deja enfriar y recorta el sobrante con un cúter.`
+  - description: `Con la plancha a temperatura media y sin vapor, pasa despacio sobre el cubrecanto pre-engomado en cada canto marcado en la lista de cortes; en cubrecanto de PVC pon una hoja de papel entre la plancha y el cubrecanto. Presiona con un taco de madera mientras se enfría y recorta el sobrante con un cúter, cortando siempre hacia afuera de tu cuerpo.`
   - `panelRefs` as given.
 - **`EDGE_BANDING_NOTE`:**
   - yard: `Lo aplica la maderería en los cantos marcados.`

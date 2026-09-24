@@ -13,6 +13,7 @@ import {
   ironStep,
   prepSentence,
 } from './edge-banding.ts';
+import { nest } from './nesting.ts';
 import { getStock } from './stock.ts';
 import type { Panel, PlacedPiece } from './types.ts';
 
@@ -126,7 +127,9 @@ describe('ironStep / EDGE_BANDING_NOTE', () => {
       title: 'Aplica el cubrecanto',
       description:
         'Con la plancha a temperatura media y sin vapor, pasa despacio sobre el cubrecanto pre-engomado ' +
-        'en cada canto marcado en la lista de cortes. Deja enfriar y recorta el sobrante con un cúter.',
+        'en cada canto marcado en la lista de cortes; en cubrecanto de PVC pon una hoja de papel entre la ' +
+        'plancha y el cubrecanto. Presiona con un taco de madera mientras se enfría y recorta el sobrante ' +
+        'con un cúter, cortando siempre hacia afuera de tu cuerpo.',
       panelRefs: ['top'],
     });
   });
@@ -159,5 +162,27 @@ describe('bandSegments', () => {
 
   it('returns nothing for an unbanded piece', () => {
     expect(bandSegments(piece, NO_EDGES, 7)).toEqual([]);
+  });
+
+  it('ties a real nest() rotation to the right band segments', () => {
+    // 1220 mm sheet width: a panel wider than that only fits by rotating it so
+    // its 1000 mm side (<= 1220) lies along the sheet width and its 1500 mm
+    // side lies along the sheet length (<= 2440).
+    const rotating: Panel = {
+      id: 'rot',
+      label: 'Rot',
+      length: 1000,
+      width: 1500,
+      stock: PLY18,
+      grain: 'any',
+      edges: bandEdges('yard', 'L1', 'A1'),
+      qty: 1,
+    };
+    const { sheets } = nest([rotating]);
+    const placed = sheets[0]!.pieces[0]!;
+    expect(placed.rotated).toBe(true);
+    const [l1, a1] = bandSegments(placed, rotating.edges, 7);
+    expect(Math.hypot(l1!.x2 - l1!.x1, l1!.y2 - l1!.y1)).toBe(rotating.length);
+    expect(Math.hypot(a1!.x2 - a1!.x1, a1!.y2 - a1!.y1)).toBe(rotating.width);
   });
 });

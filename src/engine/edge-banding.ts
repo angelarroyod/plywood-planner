@@ -97,7 +97,9 @@ export function ironStep(panelRefs: string[]): Omit<Step, 'order'> {
     title: 'Aplica el cubrecanto',
     description:
       'Con la plancha a temperatura media y sin vapor, pasa despacio sobre el cubrecanto pre-engomado ' +
-      'en cada canto marcado en la lista de cortes. Deja enfriar y recorta el sobrante con un cúter.',
+      'en cada canto marcado en la lista de cortes; en cubrecanto de PVC pon una hoja de papel entre la ' +
+      'plancha y el cubrecanto. Presiona con un taco de madera mientras se enfría y recorta el sobrante ' +
+      'con un cúter, cortando siempre hacia afuera de tu cuerpo.',
     panelRefs,
   };
 }
