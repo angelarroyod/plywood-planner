@@ -51,15 +51,22 @@ for (const template of [bookshelf, sideTable]) {
     it('produces panels that nest without error', () => {
       const layout = nest(design.panels);
       expect(layout.sheets.length).toBeGreaterThanOrEqual(1);
-      expect(layout.wastePercent).toBeGreaterThanOrEqual(0);
-      expect(layout.wastePercent).toBeLessThan(100);
+      for (const g of layout.byStock) {
+        expect(g.wastePercent).toBeGreaterThanOrEqual(0);
+        expect(g.wastePercent).toBeLessThan(100);
+      }
+    });
+
+    it('uses the chosen material for its panels', () => {
+      const melamine = designOrThrow(template, { width: 500, material: 4 }); // span ≤ 550
+      expect(melamine.panels.filter((p) => p.id !== 'back').every((p) => p.stock.id === 4)).toBe(true);
     });
   });
 }
 
 describe('bookshelf', () => {
   it('builds the expected panel set', () => {
-    const design = designOrThrow(bookshelf, { width: 800, height: 1200, depth: 300, shelfCount: 3, thickness: 18 });
+    const design = designOrThrow(bookshelf, { width: 800, height: 1200, depth: 300, shelfCount: 3, material: 3 });
     const byId = new Map(design.panels.map((p) => [p.id, p]));
     expect(byId.get('side')).toMatchObject({ length: 1200, width: 300, qty: 2 });
     expect(byId.get('top')).toMatchObject({ length: 764, width: 300, qty: 1 }); // 800 - 2*18
@@ -69,11 +76,21 @@ describe('bookshelf', () => {
   });
 
   it('rejects unsafe shelf spans in Spanish', () => {
-    const result = bookshelf.generate({ width: 1200, thickness: 12 }); // span 1176 > 500
+    const result = bookshelf.generate({ width: 1200, material: 1 }); // span 1176 > 500
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.issues[0]!.paramKey).toBe('width');
-      expect(result.issues[0]!.message).toContain('triplay de 12 mm');
+      expect(result.issues[0]!.message).toContain('triplay de pino 12 mm');
+    }
+  });
+
+  it('holds melamine to its shorter span', () => {
+    const result = bookshelf.generate({ width: 800, material: 4 }); // span 768 > 550
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues[0]!.paramKey).toBe('width');
+      expect(result.issues[0]!.message).toContain('768 mm');
+      expect(result.issues[0]!.message).toContain('melamina blanca 16 mm');
     }
   });
 
@@ -95,7 +112,7 @@ describe('bookshelf', () => {
   });
 
   it('spaces shelves evenly between base and top', () => {
-    const design = designOrThrow(bookshelf, { height: 1200, shelfCount: 3, thickness: 18 });
+    const design = designOrThrow(bookshelf, { height: 1200, shelfCount: 3, material: 3 });
     const ys = design.placements
       .filter((p) => p.panelId === 'shelf')
       .map((p) => p.position[1])
@@ -108,7 +125,7 @@ describe('bookshelf', () => {
 
 describe('side table', () => {
   it('builds the expected panel set', () => {
-    const design = designOrThrow(sideTable, { width: 500, depth: 350, height: 450, thickness: 18 });
+    const design = designOrThrow(sideTable, { width: 500, depth: 350, height: 450, material: 3 });
     const byId = new Map(design.panels.map((p) => [p.id, p]));
     expect(byId.get('top')).toMatchObject({ length: 500, width: 350, qty: 1 });
     expect(byId.get('side')).toMatchObject({ length: 432, width: 350, qty: 2 }); // 450 - 18
@@ -116,11 +133,11 @@ describe('side table', () => {
   });
 
   it('rejects unsafe top spans', () => {
-    const result = sideTable.generate({ width: 800, thickness: 12 }); // span 776 > 500
+    const result = sideTable.generate({ width: 800, material: 1 }); // span 776 > 500
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.issues[0]!.paramKey).toBe('width');
-      expect(result.issues[0]!.message).toContain('triplay de 12 mm');
+      expect(result.issues[0]!.message).toContain('triplay de pino 12 mm');
     }
   });
 });

@@ -1,17 +1,15 @@
 import type {
   Design,
-  EngineConfig,
   GenerateResult,
   Panel,
   ParamSpec,
   Placement,
-  PlywoodThickness,
   Step,
   Template,
   TemplateParams,
   ValidationIssue,
 } from '../types.ts';
-import { DEFAULT_CONFIG } from '../types.ts';
+import { DEFAULT_MATERIAL, MATERIAL_OPTIONS, getStock } from '../stock.ts';
 import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
 
 const MIN_SHELF_GAP = 100; // mm of clear space between shelves
@@ -21,28 +19,26 @@ const params: ParamSpec[] = [
   { kind: 'number', key: 'height', label: 'Alto', unit: 'mm', min: 400, max: 2000, step: 10, default: 1200 },
   { kind: 'number', key: 'depth', label: 'Profundidad', unit: 'mm', min: 200, max: 400, step: 10, default: 300 },
   { kind: 'number', key: 'shelfCount', label: 'Número de entrepaños', unit: '', min: 1, max: 8, step: 1, default: 3 },
-  { kind: 'select', key: 'thickness', label: 'Grosor del triplay', unit: 'mm', options: [12, 15, 18], default: 18 },
+  { kind: 'select', key: 'material', label: 'Material', unit: '', options: MATERIAL_OPTIONS, default: DEFAULT_MATERIAL },
 ];
 
-/** Open bookshelf: two sides, top, bottom, N fixed shelves. Config injectable for tests. */
-export function generateBookshelf(
-  raw: TemplateParams,
-  config: EngineConfig = DEFAULT_CONFIG,
-): GenerateResult {
+/** Open bookshelf: two sides, top, bottom, N fixed shelves. */
+export function generateBookshelf(raw: TemplateParams): GenerateResult {
   const p = resolveParams(params, raw);
   const rangeIssues = paramIssues(params, p);
   if (rangeIssues.length > 0) return { ok: false, issues: rangeIssues };
 
-  // resolveParams guarantees every spec key exists
+  // resolveParams guarantees every spec key exists; paramIssues vetted the material id
   const W = p['width']!;
   const H = p['height']!;
   const D = p['depth']!;
   const N = p['shelfCount']!;
-  const t = p['thickness'] as PlywoodThickness;
+  const stock = getStock(p['material']!);
+  const t = stock.thickness;
 
   const issues: ValidationIssue[] = [];
   const span = W - 2 * t; // shelves rest between the sides
-  const spanProblem = spanIssue(span, t, config);
+  const spanProblem = spanIssue(span, stock);
   if (spanProblem) issues.push({ paramKey: 'width', message: spanProblem.message });
 
   const freeHeight = H - 2 * t - N * t;
@@ -59,10 +55,10 @@ export function generateBookshelf(
   if (issues.length > 0) return { ok: false, issues };
 
   const panels: Panel[] = [
-    { id: 'side', label: 'Lateral', length: H, width: D, thickness: t, grain: 'length', qty: 2 },
-    { id: 'top', label: 'Tapa', length: span, width: D, thickness: t, grain: 'length', qty: 1 },
-    { id: 'bottom', label: 'Base', length: span, width: D, thickness: t, grain: 'length', qty: 1 },
-    { id: 'shelf', label: 'Entrepaño', length: span, width: D, thickness: t, grain: 'length', qty: N },
+    { id: 'side', label: 'Lateral', length: H, width: D, stock, grain: 'length', qty: 2 },
+    { id: 'top', label: 'Tapa', length: span, width: D, stock, grain: 'length', qty: 1 },
+    { id: 'bottom', label: 'Base', length: span, width: D, stock, grain: 'length', qty: 1 },
+    { id: 'shelf', label: 'Entrepaño', length: span, width: D, stock, grain: 'length', qty: N },
   ];
 
   const placements: Placement[] = [
