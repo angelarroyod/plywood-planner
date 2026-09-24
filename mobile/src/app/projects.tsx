@@ -6,7 +6,7 @@ import { useApp } from '@/lib/store';
 import { color, font, radius, space } from '@/theme';
 
 /**
- * Design fixtures, not stored data — saved projects need Phase 4 (Supabase).
+ * Design fixtures, not stored data — saved projects need Phase 6 (Supabase).
  * Opening one just seeds the template so the rest of the flow is real.
  */
 const PROJECTS = [
