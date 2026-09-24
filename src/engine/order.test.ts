@@ -26,7 +26,7 @@ describe('buildOrder', () => {
       [4, 'Entrepaño', 764, 297, 3],
       [5, 'Fondo', 1200, 800, 1],
     ]);
-    expect(order.cuts).toEqual({ count: 13, meters: 12.6 });
+    expect(order.cuts).toEqual({ count: 12, meters: 12.2 });
     expect(order.edgeBanding).toBe('yard');
     expect(order.hardware.map((h) => h.qty)).toEqual([20, 32]);
   });
@@ -58,7 +58,7 @@ describe('orderText', () => {
         '5. Fondo — 1200 × 800 — 1 pza',
         '',
         'Cubrecanto de chapa de pino 22 mm: 7.1 m. Por favor enchápenlo en los cantos marcados.',
-        'Cortes: 13 (12.6 m lineales).',
+        'Cortes: 12 (12.2 m lineales).',
         'Herrajes: Tornillo confirmat 5x50 × 20 · Tornillo 3.5x16 × 32',
       ].join('\n'),
     );

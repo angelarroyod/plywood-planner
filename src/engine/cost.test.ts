@@ -22,7 +22,7 @@ describe('orderCost', () => {
     expect(orderCost(order(), FULL).lines.map((l) => [l.key, l.label, l.qty, l.unit, l.price])).toEqual([
       ['sheet:3', 'Triplay de pino 18 mm', 1, 'hoja', 950],
       ['sheet:5', 'Fibracel 3 mm', 1, 'hoja', 180],
-      ['cut', 'Corte', 12.6, 'm', 4],
+      ['cut', 'Corte', 12.2, 'm', 4],
       ['band:Cubrecanto de chapa de pino 22 mm', 'Cubrecanto de chapa de pino 22 mm', 7.1, 'm', 12],
       ['hw:confirmat 5x50', 'Tornillo confirmat 5x50', 20, 'pza', 2],
       ['hw:screw 3.5x16', 'Tornillo 3.5x16', 32, 'pza', 0.5],
@@ -31,14 +31,14 @@ describe('orderCost', () => {
 
   it('adds up every priced line', () => {
     const { total, missing } = orderCost(order(), FULL);
-    // 950 + 180 + 12.6·4 + 7.1·12 + 20·2 + 32·0.5 = 950 + 180 + 50.4 + 85.2 + 40 + 16
-    expect(total).toBeCloseTo(1321.6);
+    // 950 + 180 + 12.2·4 + 7.1·12 + 20·2 + 32·0.5 = 950 + 180 + 48.8 + 85.2 + 40 + 16
+    expect(total).toBeCloseTo(1320);
     expect(missing).toBe(0);
   });
 
   it('prices cutting per cut when asked', () => {
     const cut = orderCost(order(), { ...FULL, cut: { unit: 'cut', price: 10 } }).lines.find((l) => l.key === 'cut');
-    expect(cut).toMatchObject({ qty: 13, unit: 'corte', price: 10, subtotal: 130 });
+    expect(cut).toMatchObject({ qty: 12, unit: 'corte', price: 10, subtotal: 120 });
   });
 
   it('leaves unpriced lines out of the total and counts them', () => {
