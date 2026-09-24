@@ -56,6 +56,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - 3D is `expo-gl` + plain `three` driven imperatively (`components/viewer-3d.tsx`), not react-three-fiber — same visual spec as the web viewer without coupling to a renderer's React version. Cut diagrams are `react-native-svg`, mirroring `SheetSvg`.
 - Screens live in `src/app` (routes only) and `src/screens` (bodies), per Expo's project-structure guidance.
 - Not real yet, by design: saved projects and the account footer are fixtures (needs Phase 6), and the camera screen's distance is simulated and labelled as such — LiDAR needs a custom ARKit native module.
+- `patch-package` (approved, dev-only) runs on `postinstall` and applies `mobile/patches/`. Its one patch makes `query-string@7` (pinned by expo-router 57) read `.default` from `decode-uri-component`, which `overrides` forces to the ESM-only 0.5.0 for GHSA-vcc3-ghjq-m6fr. Drop the patch, that override, and patch-package once expo-router stops depending on `query-string@7`; if `npm ci` reports the patch failed to apply, that is the signal to check.
 - Verify with `npx tsc --noEmit` and `npx expo export --platform ios`; a device build needs EAS, since there is no Mac here.
 
 ## Commands
