@@ -1,48 +1,51 @@
 import type {
   Design,
-  EngineConfig,
   GenerateResult,
   Panel,
   ParamSpec,
   Placement,
-  PlywoodThickness,
   Step,
   Template,
   TemplateParams,
   ValidationIssue,
 } from '../types.ts';
-import { DEFAULT_CONFIG } from '../types.ts';
+import { DEFAULT_MATERIAL, FIBRACEL_3, MATERIAL_OPTIONS, getStock } from '../stock.ts';
 import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
 
 const MIN_SHELF_GAP = 100; // mm of clear space between shelves
+const BACK_SCREW_SPACING = 200; // mm between back screws, around the edge and along each shelf
 
 const params: ParamSpec[] = [
   { kind: 'number', key: 'width', label: 'Ancho', unit: 'mm', min: 300, max: 1200, step: 10, default: 800 },
   { kind: 'number', key: 'height', label: 'Alto', unit: 'mm', min: 400, max: 2000, step: 10, default: 1200 },
   { kind: 'number', key: 'depth', label: 'Profundidad', unit: 'mm', min: 200, max: 400, step: 10, default: 300 },
   { kind: 'number', key: 'shelfCount', label: 'Número de entrepaños', unit: '', min: 1, max: 8, step: 1, default: 3 },
-  { kind: 'select', key: 'thickness', label: 'Grosor del triplay', unit: 'mm', options: [12, 15, 18], default: 18 },
+  { kind: 'select', key: 'material', label: 'Material', unit: '', options: MATERIAL_OPTIONS, default: DEFAULT_MATERIAL },
 ];
 
-/** Open bookshelf: two sides, top, bottom, N fixed shelves. Config injectable for tests. */
-export function generateBookshelf(
-  raw: TemplateParams,
-  config: EngineConfig = DEFAULT_CONFIG,
-): GenerateResult {
+/**
+ * Bookshelf: two sides, top, bottom, N fixed shelves, and a Fibracel back that
+ * keeps the case from racking. `depth` is the overall depth, back included.
+ */
+export function generateBookshelf(raw: TemplateParams): GenerateResult {
   const p = resolveParams(params, raw);
   const rangeIssues = paramIssues(params, p);
   if (rangeIssues.length > 0) return { ok: false, issues: rangeIssues };
 
-  // resolveParams guarantees every spec key exists
+  // resolveParams guarantees every spec key exists; paramIssues vetted the material id
   const W = p['width']!;
   const H = p['height']!;
   const D = p['depth']!;
   const N = p['shelfCount']!;
-  const t = p['thickness'] as PlywoodThickness;
+  const stock = getStock(p['material']!);
+  const t = stock.thickness;
+  const tb = FIBRACEL_3.thickness;
+  const Dc = D - tb; // case depth; the back makes up the rest
+  const zc = tb / 2; // case center, shifted forward (+z) so the back sits behind it
 
   const issues: ValidationIssue[] = [];
   const span = W - 2 * t; // shelves rest between the sides
-  const spanProblem = spanIssue(span, t, config);
+  const spanProblem = spanIssue(span, stock);
   if (spanProblem) issues.push({ paramKey: 'width', message: spanProblem.message });
 
   const freeHeight = H - 2 * t - N * t;
@@ -58,23 +61,29 @@ export function generateBookshelf(
   }
   if (issues.length > 0) return { ok: false, issues };
 
+  // W ≤ 1200 and H ≤ 2000 by param limits, so the back always fits a 1220 × 2440 Fibracel sheet.
   const panels: Panel[] = [
-    { id: 'side', label: 'Lateral', length: H, width: D, thickness: t, grain: 'length', qty: 2 },
-    { id: 'top', label: 'Tapa', length: span, width: D, thickness: t, grain: 'length', qty: 1 },
-    { id: 'bottom', label: 'Base', length: span, width: D, thickness: t, grain: 'length', qty: 1 },
-    { id: 'shelf', label: 'Entrepaño', length: span, width: D, thickness: t, grain: 'length', qty: N },
+    { id: 'side', label: 'Lateral', length: H, width: Dc, stock, grain: 'length', qty: 2 },
+    { id: 'top', label: 'Tapa', length: span, width: Dc, stock, grain: 'length', qty: 1 },
+    { id: 'bottom', label: 'Base', length: span, width: Dc, stock, grain: 'length', qty: 1 },
+    { id: 'shelf', label: 'Entrepaño', length: span, width: Dc, stock, grain: 'length', qty: N },
+    { id: 'back', label: 'Fondo', length: H, width: W, stock: FIBRACEL_3, grain: 'any', qty: 1 },
   ];
 
   const placements: Placement[] = [
-    { panelId: 'side', instance: 0, position: [-(W - t) / 2, H / 2, 0], size: [t, H, D] },
-    { panelId: 'side', instance: 1, position: [(W - t) / 2, H / 2, 0], size: [t, H, D] },
-    { panelId: 'bottom', instance: 0, position: [0, t / 2, 0], size: [span, t, D] },
-    { panelId: 'top', instance: 0, position: [0, H - t / 2, 0], size: [span, t, D] },
+    { panelId: 'side', instance: 0, position: [-(W - t) / 2, H / 2, zc], size: [t, H, Dc] },
+    { panelId: 'side', instance: 1, position: [(W - t) / 2, H / 2, zc], size: [t, H, Dc] },
+    { panelId: 'bottom', instance: 0, position: [0, t / 2, zc], size: [span, t, Dc] },
+    { panelId: 'top', instance: 0, position: [0, H - t / 2, zc], size: [span, t, Dc] },
+    { panelId: 'back', instance: 0, position: [0, H / 2, -D / 2 + tb / 2], size: [W, H, tb] },
   ];
   for (let i = 1; i <= N; i++) {
     const y = t + i * gap + (i - 1) * t + t / 2;
-    placements.push({ panelId: 'shelf', instance: i - 1, position: [0, y, 0], size: [span, t, D] });
+    placements.push({ panelId: 'shelf', instance: i - 1, position: [0, y, zc], size: [span, t, Dc] });
   }
+
+  const backScrews =
+    Math.ceil((2 * (W + H)) / BACK_SCREW_SPACING) + N * Math.ceil(span / BACK_SCREW_SPACING);
 
   const steps: Step[] = [
     {
@@ -103,6 +112,15 @@ export function generateBookshelf(
       description: 'Mide las dos diagonales del frente: deben ser iguales. Ajusta antes de apretar del todo.',
       panelRefs: [],
     },
+    {
+      order: 5,
+      title: 'Coloca el fondo',
+      description:
+        'Con el librero boca abajo y a escuadra, apoya el fondo de fibracel con la cara lisa hacia el frente ' +
+        'y atorníllalo cada 20 cm al contorno y a cada entrepaño. El fondo mantiene la escuadra.',
+      panelRefs: ['back'],
+      explodeOffsets: { back: [0, 0, -200] },
+    },
   ];
 
   const design: Design = {
@@ -110,7 +128,10 @@ export function generateBookshelf(
     params: p,
     panels,
     placements,
-    hardware: [{ type: 'confirmat', size: '5x50', qty: (N + 2) * 4 }],
+    hardware: [
+      { type: 'confirmat', size: '5x50', qty: (N + 2) * 4 },
+      { type: 'screw', size: '3.5x16', qty: backScrews },
+    ],
     steps,
   };
   return { ok: true, design };
@@ -119,7 +140,7 @@ export function generateBookshelf(
 export const bookshelf: Template = {
   id: 'bookshelf',
   name: 'Librero',
-  description: 'Librero abierto con entrepaños fijos, ideal como primer proyecto.',
+  description: 'Librero con entrepaños fijos y fondo de fibracel, ideal como primer proyecto.',
   params,
   generate: (raw) => generateBookshelf(raw),
 };

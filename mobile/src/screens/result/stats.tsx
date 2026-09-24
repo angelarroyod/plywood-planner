@@ -4,7 +4,7 @@ import { Display, Mono } from '@/components/ui';
 import { nest, type Design } from '@/lib/engine';
 import { color, radius } from '@/theme';
 
-/** Hojas / Piezas / Merma — the three numbers that decide a trip to the maderería. */
+/** Hojas / Piezas / Merma per material — the numbers that decide a trip to the maderería. */
 export function useStats(design: Design) {
   return useMemo(() => {
     const layout = nest(design.panels);
@@ -12,9 +12,17 @@ export function useStats(design: Design) {
     return {
       layout,
       cards: [
-        { label: 'Hojas', value: String(layout.sheets.length), sub: 'triplay' },
+        {
+          label: 'Hojas',
+          value: String(layout.sheets.length),
+          sub: layout.byStock.length > 1 ? `${layout.byStock.length} materiales` : 'en total',
+        },
         { label: 'Piezas', value: String(pieces), sub: 'cortes' },
-        { label: 'Merma', value: `${layout.wastePercent.toFixed(0)}%`, sub: 'del material' },
+        ...layout.byStock.map((g) => ({
+          label: 'Merma',
+          value: `${g.wastePercent.toFixed(0)}%`,
+          sub: g.stock.label,
+        })),
       ],
     };
   }, [design]);
@@ -23,8 +31,8 @@ export function useStats(design: Design) {
 export function StatCards({ cards }: { cards: { label: string; value: string; sub: string }[] }) {
   return (
     <View style={styles.row}>
-      {cards.map((c) => (
-        <View key={c.label} style={styles.card}>
+      {cards.map((c, i) => (
+        <View key={`${c.label}-${i}`} style={styles.card}>
           <Mono tone={color.textSoft} size={9} style={{ letterSpacing: 1.3, textTransform: 'uppercase' }}>
             {c.label}
           </Mono>

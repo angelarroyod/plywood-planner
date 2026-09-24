@@ -4,7 +4,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Body, Display, Kicker, Mono, SecondaryButton } from '@/components/ui';
-import { templates } from '@/lib/engine';
+import { getStock, templates } from '@/lib/engine';
 import { useApp, type ResultTab } from '@/lib/store';
 import { color, font, radius, space } from '@/theme';
 import { CutsPane } from './cuts';
@@ -33,7 +33,7 @@ export function Result() {
   const meta = useMemo(() => {
     if (!design) return '';
     const p = design.params;
-    return `${p.width} × ${p.height ?? p.depth} × ${p.depth} · ${p.thickness} mm`;
+    return `${p.width} × ${p.height ?? p.depth} × ${p.depth} · ${getStock(p.material!).label}`;
   }, [design]);
 
   const title = template.id === 'bookshelf' ? 'Librero sala' : 'Mesa auxiliar';

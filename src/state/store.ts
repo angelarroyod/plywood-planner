@@ -10,13 +10,13 @@ interface AppState {
   exploded: boolean;
   view: View;
   activeStep: number | null; // Step.order, null = no highlight
-  pricePerSheet: number; // MXN, 0 = not set
+  pricesByStock: Record<number, number>; // MXN per sheet, keyed by Stock.id; missing = not set
   setTemplate: (id: string) => void;
   setParam: (key: string, value: number) => void;
   toggleExploded: () => void;
   setView: (view: View) => void;
   setActiveStep: (order: number | null) => void;
-  setPricePerSheet: (price: number) => void;
+  setPrice: (stockId: number, price: number) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -25,7 +25,7 @@ export const useAppStore = create<AppState>((set) => ({
   exploded: false,
   view: 'design',
   activeStep: null,
-  pricePerSheet: 0,
+  pricesByStock: {},
   setTemplate: (id) => set({ templateId: id, activeStep: null }),
   setParam: (key, value) =>
     set((s) => ({
@@ -37,5 +37,6 @@ export const useAppStore = create<AppState>((set) => ({
   toggleExploded: () => set((s) => ({ exploded: !s.exploded })),
   setView: (view) => set({ view }),
   setActiveStep: (order) => set({ activeStep: order }),
-  setPricePerSheet: (price) => set({ pricePerSheet: Math.max(0, price) }),
+  setPrice: (stockId, price) =>
+    set((s) => ({ pricesByStock: { ...s.pricesByStock, [stockId]: Math.max(0, price) } })),
 }));

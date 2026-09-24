@@ -8,14 +8,22 @@ import { HARDWARE_LABELS } from './labels.ts';
 
 /** Full build report. Hidden on screen; becomes the document when printing (Exportar PDF). */
 export function PrintReport({ design }: { design: Design | null }) {
-  const price = useAppStore((s) => s.pricePerSheet);
+  const prices = useAppStore((s) => s.pricesByStock);
   const layout = useMemo(() => (design ? nest(design.panels) : null), [design]);
   if (!design || !layout) return null;
 
+  const cost = estimateCost(layout, prices);
   const template = templates.find((t) => t.id === design.templateId);
   const labels = Object.fromEntries(design.panels.map((p) => [p.id, p.label]));
   const paramLine = template?.params
-    .map((s) => `${s.label}: ${design.params[s.key] ?? s.default}${s.unit ? ` ${s.unit}` : ''}`)
+    .map((s) => {
+      const v = design.params[s.key] ?? s.default;
+      const shown =
+        s.kind === 'select'
+          ? (s.options.find((o) => o.value === v)?.label ?? String(v))
+          : `${v}${s.unit ? ` ${s.unit}` : ''}`;
+      return `${s.label}: ${shown}`;
+    })
     .join(' · ');
 
   return (
@@ -37,7 +45,7 @@ export function PrintReport({ design }: { design: Design | null }) {
             <tr key={p.id} className="border-b border-rule">
               <td className="py-1">{p.label}</td>
               <td className="font-mono text-xs tabular-nums">
-                {p.length} × {p.width} × {p.thickness}
+                {p.length} × {p.width} × {p.stock.thickness}
               </td>
               <td className="font-mono text-xs tabular-nums">{p.qty}</td>
             </tr>
@@ -55,9 +63,15 @@ export function PrintReport({ design }: { design: Design | null }) {
       </ul>
 
       <p className="mt-3 text-sm">
-        Hojas de triplay: {layout.sheets.length} (1220 × 2440 mm) · desperdicio{' '}
-        {layout.wastePercent.toFixed(1)}%
-        {price > 0 ? ` · costo estimado de triplay $${estimateCost(layout, price).toFixed(2)} MXN` : ''}
+        Hojas:{' '}
+        {layout.byStock
+          .map(
+            (g) =>
+              `${g.sheets} de ${g.stock.label.toLowerCase()} (${g.stock.sheet.width} × ${g.stock.sheet.length} mm, ` +
+              `desperdicio ${g.wastePercent.toFixed(1)}%)`,
+          )
+          .join(' · ')}
+        {cost !== null ? ` · costo estimado de material $${cost.toFixed(2)} MXN` : ''}
       </p>
 
       <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Plan de corte</h2>
@@ -66,7 +80,8 @@ export function PrintReport({ design }: { design: Design | null }) {
           <figure key={i} className="break-inside-avoid">
             <SheetSvg sheet={sheet} labels={labels} className="h-[26rem] border border-rule" />
             <figcaption className="mt-1 text-xs">
-              Hoja {i + 1} — triplay de {sheet.thickness} mm · veta a lo largo
+              Hoja {i + 1} — {sheet.stock.label}
+              {sheet.stock.hasGrain ? ' · veta a lo largo' : ''}
             </figcaption>
           </figure>
         ))}

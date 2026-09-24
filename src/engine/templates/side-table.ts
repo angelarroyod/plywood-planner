@@ -1,17 +1,15 @@
 import type {
   Design,
-  EngineConfig,
   GenerateResult,
   Panel,
   ParamSpec,
   Placement,
-  PlywoodThickness,
   Step,
   Template,
   TemplateParams,
   ValidationIssue,
 } from '../types.ts';
-import { DEFAULT_CONFIG } from '../types.ts';
+import { DEFAULT_MATERIAL, MATERIAL_OPTIONS, getStock } from '../stock.ts';
 import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
 
 const SHELF_CLEARANCE = 100; // lower shelf height off the floor, mm
@@ -20,36 +18,34 @@ const params: ParamSpec[] = [
   { kind: 'number', key: 'width', label: 'Ancho', unit: 'mm', min: 300, max: 800, step: 10, default: 500 },
   { kind: 'number', key: 'depth', label: 'Profundidad', unit: 'mm', min: 250, max: 500, step: 10, default: 350 },
   { kind: 'number', key: 'height', label: 'Alto', unit: 'mm', min: 300, max: 900, step: 10, default: 450 },
-  { kind: 'select', key: 'thickness', label: 'Grosor del triplay', unit: 'mm', options: [12, 15, 18], default: 18 },
+  { kind: 'select', key: 'material', label: 'Material', unit: '', options: MATERIAL_OPTIONS, default: DEFAULT_MATERIAL },
 ];
 
 /** Side table: full-width top over two side panels, plus a low shelf for rigidity. */
-export function generateSideTable(
-  raw: TemplateParams,
-  config: EngineConfig = DEFAULT_CONFIG,
-): GenerateResult {
+export function generateSideTable(raw: TemplateParams): GenerateResult {
   const p = resolveParams(params, raw);
   const rangeIssues = paramIssues(params, p);
   if (rangeIssues.length > 0) return { ok: false, issues: rangeIssues };
 
-  // resolveParams guarantees every spec key exists
+  // resolveParams guarantees every spec key exists; paramIssues vetted the material id
   const W = p['width']!;
   const D = p['depth']!;
   const H = p['height']!;
-  const t = p['thickness'] as PlywoodThickness;
+  const stock = getStock(p['material']!);
+  const t = stock.thickness;
 
   const issues: ValidationIssue[] = [];
   const span = W - 2 * t; // top's unsupported span between the sides
-  const spanProblem = spanIssue(span, t, config);
+  const spanProblem = spanIssue(span, stock);
   if (spanProblem) issues.push({ paramKey: 'width', message: spanProblem.message });
   if (issues.length > 0) return { ok: false, issues };
 
   const sideHeight = H - t; // top rests on the sides
 
   const panels: Panel[] = [
-    { id: 'top', label: 'Cubierta', length: W, width: D, thickness: t, grain: 'length', qty: 1 },
-    { id: 'side', label: 'Lateral', length: sideHeight, width: D, thickness: t, grain: 'length', qty: 2 },
-    { id: 'shelf', label: 'Entrepaño', length: span, width: D, thickness: t, grain: 'length', qty: 1 },
+    { id: 'top', label: 'Cubierta', length: W, width: D, stock, grain: 'length', qty: 1 },
+    { id: 'side', label: 'Lateral', length: sideHeight, width: D, stock, grain: 'length', qty: 2 },
+    { id: 'shelf', label: 'Entrepaño', length: span, width: D, stock, grain: 'length', qty: 1 },
   ];
 
   const placements: Placement[] = [

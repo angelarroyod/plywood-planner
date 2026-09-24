@@ -20,10 +20,10 @@ export function CutsPane() {
   const pct = allPieces.length ? (done / allPieces.length) * 100 : 0;
 
   const shopping = [
-    {
-      name: `Triplay ${design!.params.thickness} mm · 1220 × 2440`,
-      qty: `${layout.sheets.length} hoja${layout.sheets.length > 1 ? 's' : ''}`,
-    },
+    ...layout.byStock.map((g) => ({
+      name: `${g.stock.label} · ${g.stock.sheet.width} × ${g.stock.sheet.length}`,
+      qty: `${g.sheets} hoja${g.sheets > 1 ? 's' : ''}`,
+    })),
     ...design!.hardware.map((h) => ({
       name: `${HARDWARE_LABELS[h.type]} ${h.size}`,
       qty: `${h.qty} pzas`,
@@ -36,7 +36,7 @@ export function CutsPane() {
       <View style={styles.head}>
         <Display size={32}>Plan de corte</Display>
         <Mono tone={color.textSoft} size={10} style={styles.meta}>
-          {`${layout.sheets.length} hoja${layout.sheets.length > 1 ? 's' : ''} · 1220 × 2440 mm · sierra 3 mm`}
+          {`${layout.sheets.length} hoja${layout.sheets.length > 1 ? 's' : ''} · sierra 3 mm`}
         </Mono>
         <View style={{ marginTop: 16 }}>
           <StatCards cards={cards} />
@@ -56,7 +56,7 @@ export function CutsPane() {
               <SheetSvg sheet={sheet} labels={labels} checked={checked} />
             </View>
             <Mono tone={color.textSoft} size={10} style={styles.caption}>
-              {`Hoja ${i + 1} de ${layout.sheets.length} — ${sheet.thickness} mm`}
+              {`Hoja ${i + 1} de ${layout.sheets.length} — ${sheet.stock.label}`}
             </Mono>
           </View>
         ))}

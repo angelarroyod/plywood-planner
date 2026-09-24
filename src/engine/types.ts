@@ -2,13 +2,25 @@
 // This module (and everything under src/engine/) must stay pure TypeScript:
 // no React, DOM, or three.js imports — it ships to React Native unchanged.
 
-export type PlywoodThickness = 12 | 15 | 18;
+/**
+ * A board the planner can cut: one material at one thickness, sold in one sheet
+ * size. The catalog lives in stock.ts.
+ */
+export interface Stock {
+  id: number; // stable; a template's numeric "material" param stores it
+  label: string; // Spanish display name, e.g. 'Triplay de pino 18 mm'
+  thickness: number; // mm
+  hasGrain: boolean; // false → nesting may rotate any panel
+  sheet: { length: number; width: number }; // mm; grain runs along length
+  maxSpan: number | null; // max unsupported shelf span, mm; null = never a shelf
+}
 
 /**
- * Grain constraint. Sheet grain runs along the sheet's long (2440mm) axis.
+ * Grain constraint. Sheet grain runs along the sheet's length axis.
  * 'length' → panel's length dim must lie along sheet grain.
  * 'width'  → panel's width dim must lie along sheet grain.
  * 'any'    → nesting may rotate freely.
+ * A panel whose stock has no grain always nests as 'any'.
  */
 export type Grain = 'length' | 'width' | 'any';
 
@@ -17,7 +29,7 @@ export interface Panel {
   label: string; // display text, Spanish: 'Lateral izquierdo'
   length: number; // cut rectangle, long dim
   width: number;
-  thickness: PlywoodThickness;
+  stock: Stock; // material, thickness and sheet size
   grain: Grain;
   qty: number;
 }
@@ -78,7 +90,7 @@ export type ParamSpec =
       key: string;
       label: string;
       unit: 'mm' | '';
-      options: number[];
+      options: { value: number; label: string }[]; // label is shown, value is stored
       default: number;
     };
 
@@ -102,12 +114,10 @@ export interface Template {
 // ---- Nesting ----
 
 export interface NestingConfig {
-  sheetLength: number; // 2440, grain along this axis
-  sheetWidth: number; // 1220
   kerf: number; // 3, between adjacent pieces (not at sheet edges)
 }
 
-/** Sheet coords: origin top-left, x along width (0–1220), y along length (0–2440). */
+/** Sheet coords: origin top-left, x along the sheet's width, y along its length. */
 export interface PlacedPiece {
   panelId: string;
   instance: number;
@@ -119,23 +129,28 @@ export interface PlacedPiece {
 }
 
 export interface SheetLayout {
-  thickness: PlywoodThickness; // one thickness per physical sheet
+  stock: Stock; // one stock per physical sheet; its size comes from the stock
   pieces: PlacedPiece[];
 }
 
+export interface StockSummary {
+  stock: Stock;
+  sheets: number;
+  wastePercent: number; // 0–100 over this stock's sheets, kerf counts as waste
+}
+
 export interface NestingResult {
-  sheets: SheetLayout[]; // total sheets = sheets.length
-  wastePercent: number; // 0–100, kerf counts as waste
+  sheets: SheetLayout[]; // grouped by stock, thickest stock first
+  byStock: StockSummary[]; // one entry per group, same order
 }
 
 // ---- Config ----
 
 export interface EngineConfig {
-  spanLimits: Record<PlywoodThickness, number>; // max unsupported span
   nesting: NestingConfig;
 }
 
+// Span limits live on each Stock (stock.ts), not here.
 export const DEFAULT_CONFIG: EngineConfig = {
-  spanLimits: { 12: 500, 15: 650, 18: 800 },
-  nesting: { sheetLength: 2440, sheetWidth: 1220, kerf: 3 },
+  nesting: { kerf: 3 },
 };

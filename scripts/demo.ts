@@ -15,9 +15,14 @@ console.log(renderAscii(layout));
 console.log(
   JSON.stringify(
     {
-      panels: result.design.panels.map((p) => `${p.id} ${p.length}x${p.width}x${p.thickness} x${p.qty}`),
-      sheets: layout.sheets.length,
-      wastePercent: Number(layout.wastePercent.toFixed(1)),
+      panels: result.design.panels.map(
+        (p) => `${p.id} ${p.length}x${p.width}x${p.stock.thickness} ${p.stock.label} x${p.qty}`,
+      ),
+      byStock: layout.byStock.map((g) => ({
+        stock: g.stock.label,
+        sheets: g.sheets,
+        wastePercent: Number(g.wastePercent.toFixed(1)),
+      })),
     },
     null,
     2,

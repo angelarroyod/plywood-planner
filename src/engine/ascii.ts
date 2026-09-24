@@ -1,21 +1,17 @@
-import type { NestingConfig, NestingResult } from './types.ts';
-import { DEFAULT_CONFIG } from './types.ts';
+import type { NestingResult } from './types.ts';
 
 const SCALE = 40; // mm per character cell
 
 /** Debug/dev view of a nesting result. Pure string builder, safe anywhere. */
-export function renderAscii(
-  result: NestingResult,
-  config: NestingConfig = DEFAULT_CONFIG.nesting,
-): string {
+export function renderAscii(result: NestingResult): string {
   const lines: string[] = [];
-  const cols = Math.ceil(config.sheetWidth / SCALE);
-  const rows = Math.ceil(config.sheetLength / SCALE);
 
   result.sheets.forEach((sheet, s) => {
+    const { width, length } = sheet.stock.sheet;
+    const cols = Math.ceil(width / SCALE);
+    const rows = Math.ceil(length / SCALE);
     lines.push(
-      `Sheet ${s + 1} — ${sheet.thickness}mm plywood ` +
-        `(${config.sheetWidth}x${config.sheetLength}mm, 1 char = ${SCALE}mm)`,
+      `Sheet ${s + 1} — ${sheet.stock.label} (${width}x${length}mm, 1 char = ${SCALE}mm)`,
     );
     const grid: string[][] = Array.from({ length: rows }, () => Array<string>(cols).fill('.'));
     const legend: string[] = [];
@@ -37,6 +33,9 @@ export function renderAscii(
     lines.push(...grid.map((row) => row.join('')), ...legend, '');
   });
 
-  lines.push(`Total sheets: ${result.sheets.length}, waste: ${result.wastePercent.toFixed(1)}%`);
+  lines.push(`Total sheets: ${result.sheets.length}`);
+  for (const g of result.byStock) {
+    lines.push(`  ${g.stock.label}: ${g.sheets} sheet(s), waste ${g.wastePercent.toFixed(1)}%`);
+  }
   return lines.join('\n');
 }
