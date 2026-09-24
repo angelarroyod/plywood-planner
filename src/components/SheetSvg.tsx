@@ -1,22 +1,24 @@
-import type { NestingConfig, SheetLayout } from '../engine/types.ts';
-import { DEFAULT_CONFIG } from '../engine/types.ts';
+import { NO_EDGES, bandSegments } from '../engine/edge-banding.ts';
+import type { EdgeBands, SheetLayout } from '../engine/types.ts';
 
 interface Props {
   sheet: SheetLayout;
   labels: Record<string, string>; // panelId → Spanish label
+  edges: Record<string, EdgeBands>; // panelId → banded edges
   className?: string;
-  config?: NestingConfig;
 }
+
+const BAND_INSET = 7; // mm; banded edges are 14 mm lines that stay inside the piece
 
 const MONO = 'Roboto Mono, ui-monospace, monospace';
 
-/** One plywood sheet as SVG, 1 SVG unit = 1 mm. Shared by screen view and print report. */
-export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nesting }: Props) {
-  const { sheetWidth: w, sheetLength: h } = config;
+/** One sheet as SVG, 1 SVG unit = 1 mm, sized by its stock. Shared by screen view and print report. */
+export function SheetSvg({ sheet, labels, edges, className }: Props) {
+  const { width: w, length: h } = sheet.stock.sheet;
   const tick = 90; // corner registration mark length
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className={className} role="img" aria-label="Plan de corte">
+    <svg viewBox={`0 0 ${w} ${h}`} className={className} role="img" aria-label={`Plan de corte — ${sheet.stock.label}`}>
       <defs>
         {/* ponytail: fixed id — several sheets render per page but the pattern is identical */}
         <pattern id="ply-grain" width="26" height="26" patternUnits="userSpaceOnUse">
@@ -45,6 +47,9 @@ export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nes
             stroke="var(--color-piece-edge)"
             strokeWidth={5}
           />
+          {bandSegments(p, edges[p.panelId] ?? NO_EDGES, BAND_INSET).map((s, i) => (
+            <line key={i} {...s} stroke="var(--color-piece-label)" strokeWidth={BAND_INSET * 2} />
+          ))}
           <text
             x={p.x + p.width / 2}
             y={p.y + p.length / 2 - 10}
@@ -69,8 +74,10 @@ export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nes
         </g>
       ))}
 
-      {/* Grain runs the full 2440 mm length and does not stop at cut lines. */}
-      <rect x={0} y={0} width={w} height={h} fill="url(#ply-grain)" opacity={0.14} />
+      {/* Grain runs the full sheet length and does not stop at cut lines. Grain-free boards get none. */}
+      {sheet.stock.hasGrain && (
+        <rect x={0} y={0} width={w} height={h} fill="url(#ply-grain)" opacity={0.14} />
+      )}
 
       {[
         [0, 0, 1, 1],
@@ -87,18 +94,20 @@ export function SheetSvg({ sheet, labels, className, config = DEFAULT_CONFIG.nes
         />
       ))}
 
-      <text
-        x={26}
-        y={h / 2}
-        fontSize={40}
-        fontFamily={MONO}
-        fill="var(--color-ink-faint)"
-        letterSpacing={10}
-        textAnchor="middle"
-        transform={`rotate(-90 26 ${h / 2})`}
-      >
-        ↑ VETA
-      </text>
+      {sheet.stock.hasGrain && (
+        <text
+          x={26}
+          y={h / 2}
+          fontSize={40}
+          fontFamily={MONO}
+          fill="var(--color-ink-faint)"
+          letterSpacing={10}
+          textAnchor="middle"
+          transform={`rotate(-90 26 ${h / 2})`}
+        >
+          ↑ VETA
+        </text>
+      )}
     </svg>
   );
 }

@@ -29,8 +29,10 @@ export default function Measure() {
     if (!design) return null;
     const layout = nest(design.panels);
     const pieces = design.panels.reduce((n, p) => n + p.qty, 0);
-    const s = layout.sheets.length;
-    return `Con estas medidas salen ${pieces} piezas en ${s} hoja${s > 1 ? 's' : ''} de triplay, con ${layout.wastePercent.toFixed(0)}% de desperdicio.`;
+    const sheets = layout.byStock
+      .map((g) => `${g.sheets} hoja${g.sheets > 1 ? 's' : ''} de ${g.stock.label.toLowerCase()}`)
+      .join(' y ');
+    return `Con estas medidas salen ${pieces} piezas en ${sheets}.`;
   }, [design]);
 
   return (
@@ -70,12 +72,14 @@ export default function Measure() {
             <View key={spec.key}>
               <View style={styles.fieldTop}>
                 <Text style={styles.fieldLabel}>{spec.label}</Text>
-                <View style={[styles.chip, bad && styles.chipBad]}>
-                  <Text style={[styles.chipValue, bad && { color: color.errChip }]}>
-                    {value}
-                    <Text style={styles.chipUnit}>{spec.unit ? ` ${spec.unit}` : ''}</Text>
-                  </Text>
-                </View>
+                {spec.kind === 'number' && (
+                  <View style={[styles.chip, bad && styles.chipBad]}>
+                    <Text style={[styles.chipValue, bad && { color: color.errChip }]}>
+                      {value}
+                      <Text style={styles.chipUnit}>{spec.unit ? ` ${spec.unit}` : ''}</Text>
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {spec.kind === 'number' ? (
@@ -101,11 +105,11 @@ export default function Measure() {
               ) : (
                 <View style={styles.options}>
                   {spec.options.map((opt) => {
-                    const on = opt === value;
+                    const on = opt.value === value;
                     return (
                       <Pressable
-                        key={opt}
-                        onPress={() => setParam(spec.key, opt)}
+                        key={opt.value}
+                        onPress={() => setParam(spec.key, opt.value)}
                         style={({ pressed }) => [
                           styles.option,
                           on && { borderColor: color.red, backgroundColor: color.red },
@@ -114,8 +118,8 @@ export default function Measure() {
                         accessibilityRole="button"
                         accessibilityState={{ selected: on }}
                       >
-                        <Mono tone={on ? color.white : color.textMuted} size={15}>
-                          {opt}
+                        <Mono tone={on ? color.white : color.textMuted} size={13}>
+                          {opt.label}
                         </Mono>
                       </Pressable>
                     );
@@ -195,12 +199,12 @@ const styles = StyleSheet.create({
   chipValue: { fontFamily: font.monoMed, fontSize: 18, color: color.text },
   chipUnit: { fontFamily: font.mono, fontSize: 11, color: color.textSoft },
   minmax: { flexDirection: 'row', justifyContent: 'space-between', marginTop: -6 },
-  options: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  options: { gap: 8, marginTop: 10 },
   option: {
-    flex: 1,
     minHeight: 48,
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
+    paddingHorizontal: 14,
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: color.borderStrong,

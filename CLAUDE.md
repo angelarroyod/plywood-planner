@@ -19,23 +19,27 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Conventional commits.
 - Ask before adding any dependency not already approved (approved: Vite, React 18, TypeScript, Tailwind, @react-three/fiber, @react-three/drei, Zustand, Vitest, pnpm).
 - All internal units are millimeters. Display will support cm and mm.
-- Supabase only in Phase 4 — no auth/backend scaffolding before then.
+- Supabase only in Phase 6 — no auth/backend scaffolding before then.
 
 ## Engine conventions
 
 - `generate()` returns a `GenerateResult` envelope (`ok`/`issues`), never throws for validation. Issue messages are Spanish, human-readable, with `paramKey` when tied to one input.
-- Sheet: 1220 × 2440 mm; grain runs along the 2440 axis. Sheet coords: origin top-left, x along width, y along length.
-- Grain: `'length'` → panel length ∥ sheet grain; `'width'` → panel width ∥ sheet grain; `'any'` → free rotation.
+- Stock: every `Panel` carries a `Stock` (material + thickness + sheet size + grain + max span) from the catalog in `src/engine/stock.ts`. Stock ids are stored in the numeric `material` param, so never renumber them — append new stocks. Every current stock is a 1220 × 2440 sheet; grain runs along the sheet's length. Sheet coords: origin top-left, x along width, y along length.
+- Grain: `'length'` → panel length ∥ sheet grain; `'width'` → panel width ∥ sheet grain; `'any'` → free rotation. A panel whose stock has `hasGrain: false` always nests as `'any'`.
+- Select params carry `{ value, label }` options; the label is shown, the numeric value is stored.
 - Kerf (default 3 mm) applies between adjacent pieces, not at sheet edges. Kerf counts as waste.
-- Panels of different thickness never share a sheet.
+- Panels of different stock never share a sheet. `NestingResult.byStock` reports sheets and waste per stock, thickest first — there is no single overall waste figure.
 - Nesting is FFDH shelf packing — guillotine-cuttable by construction. Upgrade to a free-rectangle guillotine packer only if waste % becomes a problem.
-- Assembly space: x = width, y = height (up), z = depth; floor at y = 0. `Placement` = axis-aligned box (center + size), maps directly to `<boxGeometry>` in Phase 2.
-- Span limits (max unsupported shelf span): 12 mm → 500, 15 mm → 650, 18 mm → 800 (configurable in `DEFAULT_CONFIG`).
+- Assembly space: x = width, y = height (up), z = depth; floor at y = 0. +z is the front (camera side), so rear-mounted parts such as the bookshelf's back sit at −z. `Placement` = axis-aligned box (center + size), maps directly to `<boxGeometry>` in Phase 2.
+- Span limits (max unsupported shelf span) live on each stock as `maxSpan`: plywood 12 → 500, 15 → 650, 18 → 800, white melamine 16 → 550; `null` (Fibracel) means never a shelf.
+- `orderCost` prices an `Order` line by line — sheets, cutting (per meter or per cut), bands per meter, hardware per piece; `total` sums the priced lines and `missing` counts unpriced ones. Prices come only from the user; the web saves them (and nothing else) to `localStorage` under `planificador.prices`. `spanIssue` throws for a stock with `maxSpan: null` (templates only offer shelf-capable stocks, so it is unreachable from valid params).
+- Cut totals come from `sheetCuts`: one crosscut under each row that stops short of the sheet bottom, one rip after each piece that stops short of the right edge, one trim per piece shorter than its row — an upper bound, since a sawyer can trim equal pieces in one pass; meters round up to 0.1. `orderText` is the order sent to the lumber yard and never contains prices.
+- Edge banding: `Panel.edges` flags `L1/L2` (along the length) and `A1/A2` (along the width), the columns of a Mexican parts list. Templates set them for visible edges via `bandEdges(mode, …)`, with L1 the most visible long edge. Banding is 0.45 mm and never changes cut size or nesting. `edgeBandTotals` adds `EDGE_TRIM` (30 mm) per banded edge and rounds up to 0.1 m; stocks with `edgeBand: null` are never banded. Drawing banded edges goes through `bandSegments`, so both clients map rotation the same way.
 - Templates must produce panels that always fit a sheet within their param limits; `nest()` throws otherwise.
 
 ## UI conventions
 
-- Zustand stores raw state only (template id, user-touched params, exploded flag). Designs are derived per render via `template.generate()` — never stored.
+- Zustand stores raw state only (template id, user-touched params, exploded flag, view, active step, prices). Designs, orders and costs are derived per render — never stored. Only `prices` persists (Zustand `persist`, `localStorage` key `planificador.prices`); everything else resets per session.
 - While params are invalid, the viewer keeps the last valid design dimmed with an overlay message; issues render under their field via `paramKey`.
 - Sliders are clamped to param ranges, so only cross-param issues (span, shelf fit) surface in the UI — that is intended.
 - Visual language is "taller nocturno" (dark industrial shop drawing): graphite grounds, plywood amber, one signal-red `cut` accent that marks every selected/active/invalid state. All tokens live in `@theme` in `src/index.css` (Tailwind v4 — there is no config file), so use `bg-paper`/`bg-panel`/`bg-raised`/`text-ink-soft`/`text-ink-faint`/`border-rule`/`text-ply`, never raw `neutral-*` or `amber-*`.
@@ -51,7 +55,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Anything user-facing that both clients need (validation copy, `HARDWARE_LABELS`, template names) belongs in the engine, not in a client's components. The engine stays free of React/DOM/three, but it does own Spanish copy.
 - 3D is `expo-gl` + plain `three` driven imperatively (`components/viewer-3d.tsx`), not react-three-fiber — same visual spec as the web viewer without coupling to a renderer's React version. Cut diagrams are `react-native-svg`, mirroring `SheetSvg`.
 - Screens live in `src/app` (routes only) and `src/screens` (bodies), per Expo's project-structure guidance.
-- Not real yet, by design: saved projects and the account footer are fixtures (needs Phase 4), and the camera screen's distance is simulated and labelled as such — LiDAR needs a custom ARKit native module.
+- Not real yet, by design: saved projects and the account footer are fixtures (needs Phase 6), and the camera screen's distance is simulated and labelled as such — LiDAR needs a custom ARKit native module.
 - `patch-package` (approved, dev-only) runs on `postinstall` and applies `mobile/patches/`. Its one patch makes `query-string@7` (pinned by expo-router 57) read `.default` from `decode-uri-component`, which `overrides` forces to the ESM-only 0.5.0 for GHSA-vcc3-ghjq-m6fr. Drop the patch, that override, and patch-package once expo-router stops depending on `query-string@7`; if `npm ci` reports the patch failed to apply, that is the signal to check.
 - Verify with `npx tsc --noEmit` and `npx expo export --platform ios`; a device build needs EAS, since there is no Mac here.
 
@@ -66,8 +70,29 @@ A furniture template is NOT a static 3D model. It is a pure function:
 
 - [x] **Phase 1 — Engine + tests (no UI)**: types, validation, nesting, bookshelf + side table templates, ASCII demo. *Approved.*
 - [x] **Phase 2 — Core UI**: template picker, param form with live validation, 3D view (box geometry per placement, exploded toggle, orbit controls). *Approved.*
-- [x] **Phase 3 — Outputs**: SVG cut diagram (`SheetSvg`, 1 unit = 1 mm), steps view with 3D highlighting (step explode offsets + dimmed non-referenced panels), PDF export via print stylesheet (`PrintReport` is `hidden print:block`; app shell is `print:hidden`; "Exportar PDF" = `window.print()`). *Implemented; awaiting user approval. Vercel deploy pending: the connected Vercel integration returns 403 "You don't have permission to create a project" — create the project on vercel.com or re-connect the integration with project-create access, then retry.*
-- [ ] **Phase 3 — Outputs**: SVG cut diagram, instructions view with 3D highlighting, PDF export, deploy to Vercel.
-- [ ] **Phase 4 — Community (do not start)**: Supabase auth, save/share/remix designs.
+- [x] **Phase 3 — Outputs**: SVG cut diagram (`SheetSvg`, 1 unit = 1 mm), steps view with 3D highlighting (step explode offsets + dimmed non-referenced panels), PDF export via print stylesheet (`PrintReport` is `hidden print:block`; app shell is `print:hidden`; "Exportar PDF" = `window.print()`). *Approved. Vercel deploy pending: the connected Vercel integration returns 403 "You don't have permission to create a project" — create the project on vercel.com or re-connect the integration with project-create access, then retry.*
+- [ ] **Phase 4 — Materials + lumber-yard order** (in progress; no backend). Goal: an output a beginner hands over the counter of a maderería, which cuts and edge-bands to order. Split into sub-projects 4.1–4.4, each spec → plan → PR.
+  - **4.1 Materials** — spec: `docs/superpowers/specs/2026-09-24-materials-design.md`. Stock catalog (pine plywood 12/15/18, white melamine 16, Fibracel 3 back) replaces `PlywoodThickness`; stock per panel; one "Material" select; bookshelf gets an always-on Fibracel back; one price per material. MDF, wood-look melamine and Arauco Vesto 1830×2500 / 1830×2440 sheets come later as catalog entries only. *Implemented; awaiting user approval.*
+  - **4.2 Edge banding** — spec: `docs/superpowers/specs/2026-09-24-edge-banding-design.md`. Per-edge flags on `Panel` (L1/L2/A1/A2, the notation Mexican optimizers use) set by each template for visible edges; one "Cubrecanto" select (none / lumber yard / iron-on); band type per stock; meters per band; material-aware first step (no sanding advice on melamine). Thin 0.45 mm band only — cut size never changes. *Implemented; awaiting user approval.*
+  - **4.3 Order + cost** — spec: `docs/superpowers/specs/2026-09-24-order-cost-design.md`. Engine `Order` (numbered pieces L × A × qty, grain, banded edges, sheets per material, guillotine cut count + meters, band meters, hardware) shared as plain text with no prices — web "Pedido" tab via Web Share / clipboard, iOS via React Native's built-in `Share` (no `expo-sharing` needed). Full cost on web only: sheets + cutting (per meter or per cut) + bands per meter + hardware per piece, from user-entered prices saved in `localStorage`; the total sums priced lines and counts missing ones. *Implemented; awaiting user approval.*
+  - **4.4 Cut sequence**: numbered cut sequence for circular-saw DIY. FFDH is already guillotine; only the order is new.
+- [ ] **Phase 5 — Templates for small homes** (no backend).
+  - Door (35 mm cup hinge) and drawer (slides) as reusable engine building blocks that templates compose; new `Hardware` types (hinge, slide, handle).
+  - Templates, in priority order: modular closet, kitchen pantry cabinet, home-office desk, TV stand, bed base with drawers, shoe rack, floating shelves.
+  - "Fit this space": enter a niche W × H × D (the mobile measure screen feeds it) and the template sizes itself with clearance.
+  - Tool-aware steps: ask what tools the user owns; with only a screwdriver, every cut goes to the lumber yard, holes are pre-drilled, joinery switches to confirmat.
+  - Offcut suggestions: small projects that fit a layout's leftover rectangles.
+- [ ] **Phase 6 — Community (do not start)**: Supabase auth, save/share/remix designs.
+- [ ] **Phase 7 — Pro + partners** (needs Phase 6 backend).
+  - Carpenter mode (paid tier): quote with labor + margin, branded client PDF, shareable 3D link.
+  - Lumber-yard partners: send the order straight to a local yard for cutting; yards pay per lead.
+  - AR room preview and real LiDAR measuring — both need a custom ARKit native module.
 
-Out of scope for MVP: free-form CAD, curved/angled cuts, edge banding, native app, price databases.
+Market context behind Phases 4–7 (researched 2026-09-24):
+
+- Melamine dominates Mexican furniture; pine plywood is the DIY/budget option. Sheets: Arauco 1220×2440; Arauco Vesto 1830×2500 (particleboard) and 1830×2440 (MDF). Masisa's 1830×2600 is the Chilean format, not Mexico's.
+- Most users own no table saw. Lumber yards cut (~$3.9 MXN/m) and edge-band ($8–25 MXN/m + ~$10/piece) to order.
+- Competitors are cut optimizers (CutList Optimizer, Opticorte, Arauco TABLERED — which already takes cut orders online) or pro suites for carpenters (Corte Cloud, MuebleMIO, Polyboard). None goes furniture → pieces → yard order → build steps for a beginner; that is our position. Threat: board makers and distributors fund free tools.
+- ~48k carpentry workshops in Mexico (DENUE) — the Phase 7 paid segment.
+
+Out of scope for MVP: free-form CAD, curved/angled cuts, price databases (costs come from user-entered prices).

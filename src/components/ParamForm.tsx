@@ -75,16 +75,18 @@ function Field({
         <label className="text-sm leading-tight" htmlFor={spec.key}>
           {spec.label}
         </label>
-        <span
-          className={`shrink-0 rounded border px-1.5 py-0.5 font-mono text-xs tabular-nums ${
-            hasError
-              ? 'border-cut/40 bg-cut-tint text-cut'
-              : 'border-rule bg-raised text-ply'
-          }`}
-        >
-          {value}
-          {spec.unit && <span className="text-ink-faint"> {spec.unit}</span>}
-        </span>
+        {spec.kind === 'number' && (
+          <span
+            className={`shrink-0 rounded border px-1.5 py-0.5 font-mono text-xs tabular-nums ${
+              hasError
+                ? 'border-cut/40 bg-cut-tint text-cut'
+                : 'border-rule bg-raised text-ply'
+            }`}
+          >
+            {value}
+            {spec.unit && <span className="text-ink-faint"> {spec.unit}</span>}
+          </span>
+        )}
       </div>
 
       {spec.kind === 'number' ? (
@@ -107,19 +109,19 @@ function Field({
           </div>
         </>
       ) : (
-        <div className="mt-2 flex gap-1.5">
+        <div className="mt-2 flex flex-col gap-1.5" role="group" aria-label={spec.label}>
           {spec.options.map((opt) => (
             <button
-              key={opt}
-              onClick={() => onChange(opt)}
-              aria-pressed={opt === value}
-              className={`flex-1 rounded border py-1.5 font-mono text-xs tabular-nums transition-colors ${
-                opt === value
+              key={opt.value}
+              onClick={() => onChange(opt.value)}
+              aria-pressed={opt.value === value}
+              className={`rounded border px-3 py-1.5 text-left text-xs transition-colors ${
+                opt.value === value
                   ? 'border-cut bg-cut text-white'
                   : 'border-rule bg-panel text-ink-soft hover:border-ink-soft hover:text-ink'
               }`}
             >
-              {opt}
+              {opt.label}
             </button>
           ))}
         </div>

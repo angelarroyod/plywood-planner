@@ -11,12 +11,12 @@ describe('renderAscii', () => {
 
     console.log(output); // visual check in test output
 
-    expect(output).toContain('Sheet 1 — 18mm plywood');
+    expect(output).toContain('Sheet 1 — Triplay de pino 18 mm (1220x2440mm');
     expect(output).toContain('A = side#0');
-    expect(output).toMatch(/Total sheets: \d+, waste: \d+\.\d%/);
+    expect(output).toMatch(/Triplay de pino 18 mm: \d+ sheet\(s\), waste \d+\.\d%/);
   });
 
   it('renders an empty result', () => {
-    expect(renderAscii(nest([]))).toBe('Total sheets: 0, waste: 0.0%');
+    expect(renderAscii(nest([]))).toBe('Total sheets: 0');
   });
 });

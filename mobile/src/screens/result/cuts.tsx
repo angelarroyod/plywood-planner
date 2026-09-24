@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Body, Display, Mono } from '@/components/ui';
 import { SheetSvg } from '@/components/sheet-svg';
-import { HARDWARE_LABELS } from '@/lib/engine';
+import { EDGE_BANDING_NOTE, HARDWARE_LABELS, edgeBandTotals, edgeCodes } from '@/lib/engine';
 import { useApp } from '@/lib/store';
 import { color, font, radius, space } from '@/theme';
 import { StatCards, useStats } from './stats';
@@ -15,20 +15,32 @@ export function CutsPane() {
     () => Object.fromEntries(design!.panels.map((p) => [p.id, p.label])),
     [design],
   );
+  const edges = useMemo(
+    () => Object.fromEntries(design!.panels.map((p) => [p.id, p.edges])),
+    [design],
+  );
+  const panelsById = useMemo(
+    () => Object.fromEntries(design!.panels.map((p) => [p.id, p])),
+    [design],
+  );
   const allPieces = useMemo(() => layout.sheets.flatMap((s) => s.pieces), [layout]);
   const done = allPieces.filter((p) => checked.includes(`${p.panelId}#${p.instance}`)).length;
   const pct = allPieces.length ? (done / allPieces.length) * 100 : 0;
 
   const shopping = [
-    {
-      name: `Triplay ${design!.params.thickness} mm · 1220 × 2440`,
-      qty: `${layout.sheets.length} hoja${layout.sheets.length > 1 ? 's' : ''}`,
-    },
+    ...layout.byStock.map((g) => ({
+      name: `${g.stock.label} · ${g.stock.sheet.width} × ${g.stock.sheet.length}`,
+      qty: `${g.sheets} hoja${g.sheets > 1 ? 's' : ''}`,
+    })),
+    ...edgeBandTotals(design!.panels).map((t) => ({ name: t.label, qty: `${t.meters.toFixed(1)} m` })),
     ...design!.hardware.map((h) => ({
       name: `${HARDWARE_LABELS[h.type]} ${h.size}`,
       qty: `${h.qty} pzas`,
     })),
-    { name: 'Lija grano 180', qty: '2 pliegos' },
+    // melamine is wiped, not sanded
+    ...(design!.panels.some((p) => p.stock.material === 'triplay')
+      ? [{ name: 'Lija grano 180', qty: '2 pliegos' }]
+      : []),
   ];
 
   return (
@@ -36,7 +48,7 @@ export function CutsPane() {
       <View style={styles.head}>
         <Display size={32}>Plan de corte</Display>
         <Mono tone={color.textSoft} size={10} style={styles.meta}>
-          {`${layout.sheets.length} hoja${layout.sheets.length > 1 ? 's' : ''} · 1220 × 2440 mm · sierra 3 mm`}
+          {`${layout.sheets.length} hoja${layout.sheets.length > 1 ? 's' : ''} · sierra 3 mm`}
         </Mono>
         <View style={{ marginTop: 16 }}>
           <StatCards cards={cards} />
@@ -53,10 +65,10 @@ export function CutsPane() {
         {layout.sheets.map((sheet, i) => (
           <View key={i}>
             <View style={styles.sheetFrame}>
-              <SheetSvg sheet={sheet} labels={labels} checked={checked} />
+              <SheetSvg sheet={sheet} labels={labels} edges={edges} checked={checked} />
             </View>
             <Mono tone={color.textSoft} size={10} style={styles.caption}>
-              {`Hoja ${i + 1} de ${layout.sheets.length} — ${sheet.thickness} mm`}
+              {`Hoja ${i + 1} de ${layout.sheets.length} — ${sheet.stock.label}`}
             </Mono>
           </View>
         ))}
@@ -79,6 +91,9 @@ export function CutsPane() {
           {allPieces.map((p) => {
             const id = `${p.panelId}#${p.instance}`;
             const isDone = checked.includes(id);
+            const band = edges[p.panelId];
+            const codes = band ? edgeCodes(band) : '—';
+            const panel = panelsById[p.panelId];
             return (
               <Pressable
                 key={id}
@@ -105,7 +120,9 @@ export function CutsPane() {
                     {`${labels[p.panelId] ?? p.panelId} ${p.instance + 1}`}
                   </Text>
                   <Mono tone={color.textSoft} size={11}>
-                    {`${p.width} × ${p.length} mm`}
+                    {`${panel?.length ?? p.length} × ${panel?.width ?? p.width} mm${
+                      codes === '—' ? '' : ` · ${codes}`
+                    }`}
                   </Mono>
                 </View>
               </Pressable>
@@ -130,6 +147,11 @@ export function CutsPane() {
             </View>
           ))}
         </View>
+        {design!.edgeBanding !== 'none' && (
+          <Mono tone={color.textSoft} size={11} style={{ marginTop: 8 }}>
+            {EDGE_BANDING_NOTE[design!.edgeBanding]}
+          </Mono>
+        )}
         <Mono tone={color.textFaint} size={10} style={styles.footnote}>
           Precio de referencia · maderería local
         </Mono>

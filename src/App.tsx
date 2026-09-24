@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { templates } from './engine/index.ts';
+import { DEFAULT_CONFIG } from './engine/types.ts';
 import type { Design } from './engine/types.ts';
 import { useAppStore, type View } from './state/store.ts';
 import { TemplatePicker } from './components/TemplatePicker.tsx';
@@ -8,11 +9,13 @@ import { Viewer3D } from './components/Viewer3D.tsx';
 import { CutDiagram } from './components/CutDiagram.tsx';
 import { StepsPanel } from './components/StepsPanel.tsx';
 import { PrintReport } from './components/PrintReport.tsx';
+import { OrderPanel } from './components/OrderPanel.tsx';
 
 const TABS: { id: View; label: string; hint: string }[] = [
   { id: 'design', label: 'Diseño', hint: '3D' },
   { id: 'cuts', label: 'Cortes', hint: 'Hojas' },
   { id: 'steps', label: 'Pasos', hint: 'Armado' },
+  { id: 'order', label: 'Pedido', hint: 'Maderería' },
 ];
 
 export default function App() {
@@ -39,7 +42,7 @@ export default function App() {
             <div className="leading-tight">
               <h1 className="display text-[17px] font-extrabold">Planificador</h1>
               <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
-                Muebles de triplay
+                Muebles de triplay y melamina
               </p>
             </div>
           </header>
@@ -53,7 +56,7 @@ export default function App() {
             />
           </div>
           <footer className="border-t border-rule px-5 py-3 font-mono text-[10px] leading-relaxed text-ink-soft">
-            Hoja 1220 × 2440 mm · sierra 3 mm
+            Sierra {DEFAULT_CONFIG.nesting.kerf} mm
             <br />
             Todas las medidas en milímetros
           </footer>
@@ -98,6 +101,9 @@ export default function App() {
             {design && view === 'design' && <Viewer3D design={design} stale={!result.ok} />}
             {design && view === 'cuts' && <CutDiagram design={design} />}
             {design && view === 'steps' && <StepsPanel design={design} stale={!result.ok} />}
+            {design && view === 'order' && (
+              <OrderPanel design={design} title={template.name} stale={!result.ok} />
+            )}
           </div>
         </main>
       </div>

@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Body, Display, Kicker, Mono, SecondaryButton } from '@/components/ui';
-import { templates } from '@/lib/engine';
+import { buildOrder, getStock, nest, orderText, templates } from '@/lib/engine';
 import { useApp, type ResultTab } from '@/lib/store';
 import { color, font, radius, space } from '@/theme';
 import { CutsPane } from './cuts';
@@ -19,7 +19,7 @@ const TABS: { id: ResultTab; label: string }[] = [
 
 const EXPORTS = [
   { tag: 'PDF', label: 'Plan de corte', sub: 'Hojas, lista de piezas y pasos' },
-  { tag: 'TXT', label: 'Lista de compras', sub: 'Para el mostrador de la maderería' },
+  { tag: 'TXT', label: 'Pedido para maderería', sub: 'Compártelo por WhatsApp o correo' },
   { tag: '↗', label: 'Compartir enlace', sub: 'Vista 3D en el navegador' },
   { tag: 'AD', label: 'AirDrop al carpintero', sub: 'Dispositivos cerca' },
 ];
@@ -33,12 +33,18 @@ export function Result() {
   const meta = useMemo(() => {
     if (!design) return '';
     const p = design.params;
-    return `${p.width} × ${p.height ?? p.depth} × ${p.depth} · ${p.thickness} mm`;
+    return `${p.width} × ${p.height ?? p.depth} × ${p.depth} · ${getStock(p.material!).label}`;
   }, [design]);
 
   const title = template.id === 'bookshelf' ? 'Librero sala' : 'Mesa auxiliar';
 
   if (!design) return <View style={styles.root} />;
+
+  const shareOrder = () => {
+    return Share.share({ message: orderText(buildOrder(design, nest(design.panels), template.name)) }).catch(() =>
+      flash('No se pudo compartir'),
+    );
+  };
 
   return (
     <View style={styles.root}>
@@ -136,8 +142,13 @@ export function Result() {
               <Pressable
                 key={e.label}
                 onPress={() => {
-                  setSheetOpen(false);
-                  flash(`${e.label} listo`);
+                  if (e.tag === 'TXT') {
+                    // present the share sheet before the modal finishes dismissing (iOS drops it otherwise)
+                    shareOrder().finally(() => setSheetOpen(false));
+                  } else {
+                    setSheetOpen(false);
+                    flash(`${e.label} listo`); // the other exports are still fixtures
+                  }
                 }}
                 style={({ pressed }) => [styles.exportRow, pressed && { borderColor: color.borderStrong }]}
                 accessibilityRole="button"
