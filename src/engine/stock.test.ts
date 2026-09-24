@@ -32,4 +32,14 @@ describe('stock catalog', () => {
     expect(getStock(DEFAULT_MATERIAL).thickness).toBe(18);
     expect(FIBRACEL_3).toMatchObject({ id: 5, label: 'Fibracel 3 mm', thickness: 3, hasGrain: false, maxSpan: null });
   });
+
+  it("knows each board's material and band", () => {
+    expect(STOCKS.map((s) => [s.id, s.material, s.edgeBand?.label ?? null])).toEqual([
+      [1, 'triplay', 'Cubrecanto de chapa de pino 16 mm'],
+      [2, 'triplay', 'Cubrecanto de chapa de pino 19 mm'],
+      [3, 'triplay', 'Cubrecanto de chapa de pino 22 mm'],
+      [4, 'melamina', 'Cubrecanto PVC blanco 19 × 0.45 mm'],
+      [5, 'fibracel', null],
+    ]);
+  });
 });

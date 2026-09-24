@@ -10,6 +10,7 @@ import type {
   ValidationIssue,
 } from '../types.ts';
 import { DEFAULT_MATERIAL, FIBRACEL_3, MATERIAL_OPTIONS, getStock } from '../stock.ts';
+import { NO_EDGES } from '../edge-banding.ts';
 import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
 
 const MIN_SHELF_GAP = 100; // mm of clear space between shelves
@@ -63,11 +64,11 @@ export function generateBookshelf(raw: TemplateParams): GenerateResult {
 
   // W ≤ 1200 and H ≤ 2000 by param limits, so the back always fits a 1220 × 2440 Fibracel sheet.
   const panels: Panel[] = [
-    { id: 'side', label: 'Lateral', length: H, width: Dc, stock, grain: 'length', qty: 2 },
-    { id: 'top', label: 'Tapa', length: span, width: Dc, stock, grain: 'length', qty: 1 },
-    { id: 'bottom', label: 'Base', length: span, width: Dc, stock, grain: 'length', qty: 1 },
-    { id: 'shelf', label: 'Entrepaño', length: span, width: Dc, stock, grain: 'length', qty: N },
-    { id: 'back', label: 'Fondo', length: H, width: W, stock: FIBRACEL_3, grain: 'any', qty: 1 },
+    { id: 'side', label: 'Lateral', length: H, width: Dc, stock, grain: 'length', edges: NO_EDGES, qty: 2 },
+    { id: 'top', label: 'Tapa', length: span, width: Dc, stock, grain: 'length', edges: NO_EDGES, qty: 1 },
+    { id: 'bottom', label: 'Base', length: span, width: Dc, stock, grain: 'length', edges: NO_EDGES, qty: 1 },
+    { id: 'shelf', label: 'Entrepaño', length: span, width: Dc, stock, grain: 'length', edges: NO_EDGES, qty: N },
+    { id: 'back', label: 'Fondo', length: H, width: W, stock: FIBRACEL_3, grain: 'any', edges: NO_EDGES, qty: 1 },
   ];
 
   const placements: Placement[] = [
@@ -133,6 +134,7 @@ export function generateBookshelf(raw: TemplateParams): GenerateResult {
       { type: 'screw', size: '3.5x16', qty: backScrews },
     ],
     steps,
+    edgeBanding: 'none',
   };
   return { ok: true, design };
 }

@@ -9,10 +9,12 @@
 export interface Stock {
   id: number; // stable; a template's numeric "material" param stores it
   label: string; // Spanish display name, e.g. 'Triplay de pino 18 mm'
+  material: 'triplay' | 'melamina' | 'fibracel'; // drives finishing copy (sand vs wipe)
   thickness: number; // mm
   hasGrain: boolean; // false → nesting may rotate any panel
   sheet: { length: number; width: number }; // mm; grain runs along length
   maxSpan: number | null; // max unsupported shelf span, mm; null = never a shelf
+  edgeBand: { label: string } | null; // the band sold for this board; null = never banded
 }
 
 /**
@@ -24,6 +26,23 @@ export interface Stock {
  */
 export type Grain = 'length' | 'width' | 'any';
 
+/**
+ * Which edges get edge banding (cubrecanto). L1/L2 run along the panel's
+ * length, A1/A2 along its width — the columns of a Mexican parts list.
+ * Templates put the most visible long edge in L1 (the front).
+ */
+export interface EdgeBands {
+  L1: boolean;
+  L2: boolean;
+  A1: boolean;
+  A2: boolean;
+}
+
+export type EdgeCode = keyof EdgeBands;
+
+/** Who applies the banding: nobody, the lumber yard's edge bander, or the user with an iron. */
+export type EdgeBandingMode = 'none' | 'yard' | 'diy';
+
 export interface Panel {
   id: string; // stable slug, e.g. 'side-left'
   label: string; // display text, Spanish: 'Lateral izquierdo'
@@ -31,6 +50,7 @@ export interface Panel {
   width: number;
   stock: Stock; // material, thickness and sheet size
   grain: Grain;
+  edges: EdgeBands; // banded edges; all false = none
   qty: number;
 }
 
@@ -68,6 +88,7 @@ export interface Design {
   placements: Placement[]; // Σ qty entries
   hardware: Hardware[];
   steps: Step[];
+  edgeBanding: EdgeBandingMode; // decoded from the template's edgeBanding param
 }
 
 // ---- Templates ----

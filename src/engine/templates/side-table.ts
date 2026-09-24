@@ -10,6 +10,7 @@ import type {
   ValidationIssue,
 } from '../types.ts';
 import { DEFAULT_MATERIAL, MATERIAL_OPTIONS, getStock } from '../stock.ts';
+import { NO_EDGES } from '../edge-banding.ts';
 import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
 
 const SHELF_CLEARANCE = 100; // lower shelf height off the floor, mm
@@ -43,9 +44,9 @@ export function generateSideTable(raw: TemplateParams): GenerateResult {
   const sideHeight = H - t; // top rests on the sides
 
   const panels: Panel[] = [
-    { id: 'top', label: 'Cubierta', length: W, width: D, stock, grain: 'length', qty: 1 },
-    { id: 'side', label: 'Lateral', length: sideHeight, width: D, stock, grain: 'length', qty: 2 },
-    { id: 'shelf', label: 'Entrepaño', length: span, width: D, stock, grain: 'length', qty: 1 },
+    { id: 'top', label: 'Cubierta', length: W, width: D, stock, grain: 'length', edges: NO_EDGES, qty: 1 },
+    { id: 'side', label: 'Lateral', length: sideHeight, width: D, stock, grain: 'length', edges: NO_EDGES, qty: 2 },
+    { id: 'shelf', label: 'Entrepaño', length: span, width: D, stock, grain: 'length', edges: NO_EDGES, qty: 1 },
   ];
 
   const placements: Placement[] = [
@@ -91,6 +92,7 @@ export function generateSideTable(raw: TemplateParams): GenerateResult {
     placements,
     hardware: [{ type: 'confirmat', size: '5x50', qty: 8 }],
     steps,
+    edgeBanding: 'none',
   };
   return { ok: true, design };
 }
