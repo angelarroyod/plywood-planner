@@ -3,6 +3,7 @@ import { bookshelf } from './bookshelf.ts';
 import { sideTable } from './side-table.ts';
 import { nest } from '../nesting.ts';
 import type { Design, Template } from '../types.ts';
+import { FIBRACEL_3 } from '../stock.ts';
 
 function designOrThrow(template: Template, params = {}): Design {
   const result = template.generate(params);
@@ -68,11 +69,46 @@ describe('bookshelf', () => {
   it('builds the expected panel set', () => {
     const design = designOrThrow(bookshelf, { width: 800, height: 1200, depth: 300, shelfCount: 3, material: 3 });
     const byId = new Map(design.panels.map((p) => [p.id, p]));
-    expect(byId.get('side')).toMatchObject({ length: 1200, width: 300, qty: 2 });
-    expect(byId.get('top')).toMatchObject({ length: 764, width: 300, qty: 1 }); // 800 - 2*18
-    expect(byId.get('bottom')).toMatchObject({ length: 764, qty: 1 });
-    expect(byId.get('shelf')).toMatchObject({ length: 764, qty: 3 });
-    expect(design.hardware[0]).toMatchObject({ type: 'confirmat', qty: 20 }); // (3+2)*4
+    expect(byId.get('side')).toMatchObject({ length: 1200, width: 297, qty: 2 }); // 300 - 3 mm back
+    expect(byId.get('top')).toMatchObject({ length: 764, width: 297, qty: 1 }); // 800 - 2*18
+    expect(byId.get('bottom')).toMatchObject({ length: 764, width: 297, qty: 1 });
+    expect(byId.get('shelf')).toMatchObject({ length: 764, width: 297, qty: 3 });
+    expect(byId.get('back')).toMatchObject({ label: 'Fondo', length: 1200, width: 800, grain: 'any', qty: 1 });
+    expect(byId.get('back')!.stock).toBe(FIBRACEL_3);
+    for (const id of ['side', 'top', 'bottom', 'shelf']) expect(byId.get(id)!.stock.id).toBe(3);
+    expect(design.hardware).toEqual([
+      { type: 'confirmat', size: '5x50', qty: 20 }, // (3+2)*4
+      { type: 'screw', size: '3.5x16', qty: 32 }, // ⌈2·(800+1200)/200⌉ + 3·⌈764/200⌉ = 20 + 12
+    ]);
+  });
+
+  it('keeps the overall depth, with the back behind a shallower case', () => {
+    const D = 300;
+    const design = designOrThrow(bookshelf, { depth: D });
+    const zMin = Math.min(...design.placements.map((p) => p.position[2] - p.size[2] / 2));
+    const zMax = Math.max(...design.placements.map((p) => p.position[2] + p.size[2] / 2));
+    expect(zMin).toBeCloseTo(-D / 2);
+    expect(zMax).toBeCloseTo(D / 2);
+
+    const back = design.placements.find((p) => p.panelId === 'back')!;
+    expect(back.size).toEqual([800, 1200, 3]);
+    expect(back.position[2] - back.size[2] / 2).toBeCloseTo(-D / 2); // rear is −z; camera looks from +z
+  });
+
+  it('ends with a step that screws on the back', () => {
+    const design = designOrThrow(bookshelf);
+    expect(design.steps.at(-1)).toMatchObject({
+      order: 5,
+      title: 'Coloca el fondo',
+      panelRefs: ['back'],
+      explodeOffsets: { back: [0, 0, -200] },
+    });
+  });
+
+  it('nests the back on its own Fibracel sheet', () => {
+    const layout = nest(designOrThrow(bookshelf).panels);
+    expect(layout.byStock.map((g) => g.stock.id)).toEqual([3, 5]);
+    expect(layout.byStock[1]!.sheets).toBe(1);
   });
 
   it('rejects unsafe shelf spans in Spanish', () => {
@@ -130,6 +166,11 @@ describe('side table', () => {
     expect(byId.get('top')).toMatchObject({ length: 500, width: 350, qty: 1 });
     expect(byId.get('side')).toMatchObject({ length: 432, width: 350, qty: 2 }); // 450 - 18
     expect(byId.get('shelf')).toMatchObject({ length: 464, qty: 1 }); // 500 - 2*18
+  });
+
+  it('has no back panel', () => {
+    const design = designOrThrow(sideTable);
+    expect(design.panels.some((p) => p.id === 'back')).toBe(false);
   });
 
   it('rejects unsafe top spans', () => {
