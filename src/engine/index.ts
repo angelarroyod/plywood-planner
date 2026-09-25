@@ -8,11 +8,14 @@ export * from './edge-banding.ts';
 export * from './cuts.ts';
 export * from './order.ts';
 export * from './cost.ts';
+export * from './parts/door.ts';
 export { bookshelf, generateBookshelf } from './templates/bookshelf.ts';
 export { sideTable, generateSideTable } from './templates/side-table.ts';
+export { closet, generateCloset } from './templates/closet.ts';
 
 import type { Template } from './types.ts';
 import { bookshelf } from './templates/bookshelf.ts';
 import { sideTable } from './templates/side-table.ts';
+import { closet } from './templates/closet.ts';
 
-export const templates: Template[] = [bookshelf, sideTable];
+export const templates: Template[] = [bookshelf, sideTable, closet];

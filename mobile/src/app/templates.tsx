@@ -6,7 +6,7 @@ import { templates } from '@/lib/engine';
 import { useApp } from '@/lib/store';
 import { color, radius, space } from '@/theme';
 
-const KIND: Record<string, string> = { bookshelf: 'estantería', 'side-table': 'mesa' };
+const KIND: Record<string, string> = { bookshelf: 'estantería', 'side-table': 'mesa', closet: 'clóset' };
 
 export default function Templates() {
   const insets = useSafeAreaInsets();

@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { missingPricesText, orderCost } from '../engine/cost.ts';
 import { edgeCodes } from '../engine/edge-banding.ts';
 import { nest } from '../engine/nesting.ts';
-import { ORDER_BAND_NOTE, buildOrder, orderText } from '../engine/order.ts';
+import { BORING_NOTE, ORDER_BAND_NOTE, buildOrder, orderText } from '../engine/order.ts';
 import type { Design } from '../engine/types.ts';
 import { useAppStore } from '../state/store.ts';
-import { HARDWARE_LABELS } from './labels.ts';
+import { hardwareText } from '../engine/labels.ts';
 
 const GRAIN_LABEL = { length: 'largo', width: 'ancho' } as const;
 
@@ -19,6 +19,7 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
   const setCutUnit = useAppStore((s) => s.setCutUnit);
   const setBandPrice = useAppStore((s) => s.setBandPrice);
   const setHardwarePrice = useAppStore((s) => s.setHardwarePrice);
+  const setBoringPrice = useAppStore((s) => s.setBoringPrice);
   const cost = orderCost(order, prices);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -44,6 +45,7 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
   function setPriceByKey(key: string, value: number) {
     if (key.startsWith('sheet:')) setSheetPrice(Number(key.slice('sheet:'.length)), value);
     else if (key === 'cut') setCutPrice(value);
+    else if (key === 'boring') setBoringPrice(value);
     else if (key.startsWith('band:')) setBandPrice(key.slice('band:'.length), value);
     else if (key.startsWith('hw:')) setHardwarePrice(key.slice('hw:'.length), value);
   }
@@ -125,6 +127,39 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
               </div>
             ))}
 
+            {order.boring.length > 0 && (
+              <div>
+                <h3 className="rule-label">Barrenado para bisagra</h3>
+                <table className="mt-3 w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-rule-strong text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                      <th className="pb-1.5 font-medium">#</th>
+                      <th className="pb-1.5 font-medium">Pieza</th>
+                      <th className="pb-1.5 text-right font-medium">Cant.</th>
+                      <th className="pb-1.5 text-right font-medium">Perforaciones</th>
+                      <th className="pb-1.5 pl-4 font-medium">Desde arriba (mm)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.boring.map((b) => (
+                      <tr key={b.n} className="border-b border-rule/70">
+                        <td className="py-1.5 pr-2 font-mono text-xs tabular-nums text-ink-soft">{b.n}</td>
+                        <td className="py-1.5 pr-2">{b.label}</td>
+                        <td className="py-1.5 text-right font-mono text-xs tabular-nums">{b.qty}</td>
+                        <td className="py-1.5 text-right font-mono text-xs tabular-nums">{b.along.length}</td>
+                        <td className="py-1.5 pl-4 font-mono text-xs tabular-nums">{b.along.join(' · ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="mt-2 font-mono text-[11px] text-ink-soft">
+                  Cazoleta Ø{order.boring[0]!.diameter} mm, {order.boring[0]!.depth} mm de profundidad, centro a{' '}
+                  {order.boring[0]!.fromEdge} mm del canto.{' '}
+                  {BORING_NOTE}
+                </p>
+              </div>
+            )}
+
             <div>
               <h3 className="rule-label">Totales</h3>
               <ul className="mt-3 space-y-1.5 text-sm">
@@ -144,7 +179,7 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
                 </li>
                 {order.hardware.map((h, i) => (
                   <li key={i}>
-                    {HARDWARE_LABELS[h.type]} {h.size}: <span className="font-mono tabular-nums">× {h.qty}</span>
+                    {hardwareText(h)}: <span className="font-mono tabular-nums">× {h.qty}</span>
                   </li>
                 ))}
               </ul>

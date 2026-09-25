@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 import { missingPricesText, orderCost } from '../engine/cost.ts';
+import { CUT_TIP, cutText, sheetCuts } from '../engine/cuts.ts';
 import { nest } from '../engine/nesting.ts';
-import { ORDER_BAND_NOTE, buildOrder } from '../engine/order.ts';
+import { BORING_NOTE, ORDER_BAND_NOTE, buildOrder } from '../engine/order.ts';
 import { EDGE_BANDING_NOTE, edgeBandTotals, edgeCodes } from '../engine/edge-banding.ts';
 import { templates } from '../engine/index.ts';
 import type { Design } from '../engine/types.ts';
 import { useAppStore } from '../state/store.ts';
 import { SheetSvg } from './SheetSvg.tsx';
-import { HARDWARE_LABELS } from './labels.ts';
+import { hardwareText } from '../engine/labels.ts';
 
 /** Full build report. Hidden on screen; becomes the document when printing (Exportar PDF). */
 export function PrintReport({ design }: { design: Design | null }) {
@@ -74,6 +75,38 @@ export function PrintReport({ design }: { design: Design | null }) {
             </table>
           </div>
         ))}
+        {order.boring.length > 0 && (
+          <div className="break-inside-avoid">
+            <h2 className="mt-6 border-b border-ink pb-1 display text-lg font-bold">Barrenado para bisagra</h2>
+            <table className="mt-2 w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-ink/40 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                  <th className="py-1">#</th>
+                  <th>Pieza</th>
+                  <th>Cant.</th>
+                  <th>Perforaciones</th>
+                  <th>Desde arriba (mm)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {order.boring.map((b) => (
+                  <tr key={b.n} className="border-b border-rule">
+                    <td className="py-1 font-mono text-xs tabular-nums">{b.n}</td>
+                    <td>{b.label}</td>
+                    <td className="font-mono text-xs tabular-nums">{b.qty}</td>
+                    <td className="font-mono text-xs tabular-nums">{b.along.length}</td>
+                    <td className="font-mono text-xs tabular-nums">{b.along.join(' · ')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-1 font-mono text-[11px] text-ink-soft">
+              Cazoleta Ø{order.boring[0]!.diameter} mm, {order.boring[0]!.depth} mm de profundidad, centro a{' '}
+              {order.boring[0]!.fromEdge} mm del canto.{' '}
+              {BORING_NOTE}
+            </p>
+          </div>
+        )}
         <ul className="mt-4 space-y-1 text-sm">
           {order.bands.map((b) => (
             <li key={b.label}>
@@ -86,7 +119,7 @@ export function PrintReport({ design }: { design: Design | null }) {
           </li>
           {order.hardware.map((h, i) => (
             <li key={i}>
-              {HARDWARE_LABELS[h.type]} {h.size} × {h.qty}
+              {hardwareText(h)} × {h.qty}
             </li>
           ))}
         </ul>
@@ -100,7 +133,7 @@ export function PrintReport({ design }: { design: Design | null }) {
       <h1 className="display text-3xl font-extrabold">{template?.name ?? design.templateId}</h1>
       <p className="mt-1 font-mono text-[11px] text-ink-soft">{paramLine}</p>
 
-      <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Lista de cortes</h2>
+      <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Piezas</h2>
       <table className="mt-2 w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-ink/40 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
@@ -124,11 +157,11 @@ export function PrintReport({ design }: { design: Design | null }) {
         </tbody>
       </table>
 
-      <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Tornillería</h2>
+      <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Herrajes</h2>
       <ul className="mt-2 list-disc pl-5 text-sm">
         {design.hardware.map((h, i) => (
           <li key={i}>
-            {HARDWARE_LABELS[h.type]} {h.size} — {h.qty} piezas
+            {hardwareText(h)} — {h.qty} piezas
           </li>
         ))}
       </ul>
@@ -159,6 +192,7 @@ export function PrintReport({ design }: { design: Design | null }) {
       )}
 
       <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Plan de corte</h2>
+      <p className="mt-1 text-xs text-ink-soft">{CUT_TIP}</p>
       <div className="mt-2 flex flex-wrap gap-4">
         {layout.sheets.map((sheet, i) => (
           <figure key={i} className="break-inside-avoid">
@@ -167,6 +201,13 @@ export function PrintReport({ design }: { design: Design | null }) {
               Hoja {i + 1} — {sheet.stock.label}
               {sheet.stock.hasGrain ? ' · veta a lo largo' : ''}
             </figcaption>
+            <ol className="mt-1 space-y-0.5 font-mono text-[10px] tabular-nums">
+              {sheetCuts(sheet).map((c) => (
+                <li key={c.n}>
+                  {c.n}. {cutText(c)}
+                </li>
+              ))}
+            </ol>
           </figure>
         ))}
       </div>

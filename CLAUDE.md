@@ -32,9 +32,19 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Nesting is FFDH shelf packing — guillotine-cuttable by construction. Upgrade to a free-rectangle guillotine packer only if waste % becomes a problem.
 - Assembly space: x = width, y = height (up), z = depth; floor at y = 0. +z is the front (camera side), so rear-mounted parts such as the bookshelf's back sit at −z. `Placement` = axis-aligned box (center + size), maps directly to `<boxGeometry>` in Phase 2.
 - Span limits (max unsupported shelf span) live on each stock as `maxSpan`: plywood 12 → 500, 15 → 650, 18 → 800, white melamine 16 → 550; `null` (Fibracel) means never a shelf.
-- `orderCost` prices an `Order` line by line — sheets, cutting (per meter or per cut), bands per meter, hardware per piece; `total` sums the priced lines and `missing` counts unpriced ones. Prices come only from the user; the web saves them (and nothing else) to `localStorage` under `planificador.prices`. `spanIssue` throws for a stock with `maxSpan: null` (templates only offer shelf-capable stocks, so it is unreachable from valid params).
-- Cut totals come from `sheetCuts`: one crosscut under each row that stops short of the sheet bottom, one rip after each piece that stops short of the right edge, one trim per piece shorter than its row — an upper bound, since a sawyer can trim equal pieces in one pass; meters round up to 0.1. `orderText` is the order sent to the lumber yard and never contains prices.
+- `orderCost` prices an `Order` line by line — sheets, cutting (per meter or per cut), hinge drilling per hole, bands per meter, hardware per piece; `total` sums the priced lines and `missing` counts unpriced ones. Prices come only from the user; the web saves them (and nothing else) to `localStorage` under `planificador.prices`. `spanIssue` throws for a stock with `maxSpan: null` (templates only offer shelf-capable stocks, so it is unreachable from valid params).
+- Cuts come from `sheetCuts`, in saw order and numbered per sheet: row by row from the top, a crosscut under the row (measured from the top) unless the row reaches the sheet bottom, then per run of equal-length pieces either rips piece by piece (full-height runs) or one rip at the run's end, one shared trim and short rips between its pieces (short runs) — rips are only made where a piece or run stops short of the sheet's right edge — each measured from the left or top edge of the board at that moment. `cutTotals` sums that sequence (meters round up to 0.1), so the order, the cost and the saw steps always agree. `cutText`, `CUT_TIP` and `cutBadge` give both clients the same copy and badge placement. A cut that leaves less than the kerf past its line carries `sliver`, which `cutText` spells out ("solo rebaja 2 mm"); `cutBadge` keeps each badge inside the sheet for the radius the client draws (web `BADGE_RADIUS` 34 mm, iOS 9 pt on screen). `orderText` is the order sent to the lumber yard and never contains prices.
 - Edge banding: `Panel.edges` flags `L1/L2` (along the length) and `A1/A2` (along the width), the columns of a Mexican parts list. Templates set them for visible edges via `bandEdges(mode, …)`, with L1 the most visible long edge. Banding is 0.45 mm and never changes cut size or nesting. `edgeBandTotals` adds `EDGE_TRIM` (30 mm) per banded edge and rounds up to 0.1 m; stocks with `edgeBand: null` are never banded. Drawing banded edges goes through `bandSegments`, so both clients map rotation the same way.
+- Building blocks live in `src/engine/parts/`. A block such as `doorSet` returns a fragment `{ panels, placements, hardware, fittings, boring, steps }` that a template merges with its own parts. Blocks never validate; templates do, using the block's helpers (e.g. `doorWidth`). Doors are full overlay:
+  - 2 mm gaps, 3 mm between a pair;
+  - 35 mm cup hinges counted by door height (≤900: 2, ≤1600: 3, ≤2000: 4, else 5), cups 100 mm from each end and evenly spaced;
+  - drawn swung open 90° so the interior stays visible.
+  - hinge cups move off fixed shelves: `doorSet` takes the floor ranges of the case's horizontal panels (`avoid`) and moves a cup whose plate (±25 mm) would hit one to the nearest clear height, so a pattern may be asymmetric — `BORING_NOTE` tells the yard to drill a pair in mirror and mark ARRIBA;
+  - doors need a board of at least `MIN_DOOR_THICKNESS` (15 mm) behind the 12 mm cup; templates validate it.
+- Fittings, boring and hardware text:
+  - `Design.fittings` are non-cut parts drawn in steel in 3D (rod, handles), and `Step.panelRefs` may name a fitting id.
+  - `Design.boring` lists the holes the lumber yard drills (hinge cups). `Order.boring` points at the drilled piece's order line, and `Prices.boring` prices each hole.
+  - `hardwareText` is the only hardware-line format, including `cutTo` for items cut to size (the closet rod). Hardware headings read "Herrajes".
 - Templates must produce panels that always fit a sheet within their param limits; `nest()` throws otherwise.
 
 ## UI conventions
@@ -75,13 +85,19 @@ A furniture template is NOT a static 3D model. It is a pure function:
   - **4.1 Materials** — spec: `docs/superpowers/specs/2026-09-24-materials-design.md`. Stock catalog (pine plywood 12/15/18, white melamine 16, Fibracel 3 back) replaces `PlywoodThickness`; stock per panel; one "Material" select; bookshelf gets an always-on Fibracel back; one price per material. MDF, wood-look melamine and Arauco Vesto 1830×2500 / 1830×2440 sheets come later as catalog entries only. *Implemented; awaiting user approval.*
   - **4.2 Edge banding** — spec: `docs/superpowers/specs/2026-09-24-edge-banding-design.md`. Per-edge flags on `Panel` (L1/L2/A1/A2, the notation Mexican optimizers use) set by each template for visible edges; one "Cubrecanto" select (none / lumber yard / iron-on); band type per stock; meters per band; material-aware first step (no sanding advice on melamine). Thin 0.45 mm band only — cut size never changes. *Implemented; awaiting user approval.*
   - **4.3 Order + cost** — spec: `docs/superpowers/specs/2026-09-24-order-cost-design.md`. Engine `Order` (numbered pieces L × A × qty, grain, banded edges, sheets per material, guillotine cut count + meters, band meters, hardware) shared as plain text with no prices — web "Pedido" tab via Web Share / clipboard, iOS via React Native's built-in `Share` (no `expo-sharing` needed). Full cost on web only: sheets + cutting (per meter or per cut) + bands per meter + hardware per piece, from user-entered prices saved in `localStorage`; the total sums priced lines and counts missing ones. *Implemented; awaiting user approval.*
-  - **4.4 Cut sequence**: numbered cut sequence for circular-saw DIY. FFDH is already guillotine; only the order is new.
-- [ ] **Phase 5 — Templates for small homes** (no backend).
-  - Door (35 mm cup hinge) and drawer (slides) as reusable engine building blocks that templates compose; new `Hardware` types (hinge, slide, handle).
-  - Templates, in priority order: modular closet, kitchen pantry cabinet, home-office desk, TV stand, bed base with drawers, shoe rack, floating shelves.
-  - "Fit this space": enter a niche W × H × D (the mobile measure screen feeds it) and the template sizes itself with clearance.
-  - Tool-aware steps: ask what tools the user owns; with only a screwdriver, every cut goes to the lumber yard, holes are pre-drilled, joinery switches to confirmat.
-  - Offcut suggestions: small projects that fit a layout's leftover rectangles.
+  - **4.4 Cut sequence** — spec: `docs/superpowers/specs/2026-09-24-cut-sequence-design.md`. `sheetCuts` becomes the numbered saw sequence per sheet (row by row; equal-length short pieces trimmed in one pass; each cut measured from the top or left edge of the board at that moment), and `cutTotals` sums it, so order, cost and saw steps agree. Numbered badges on the sheet diagrams and a numbered list per sheet (web Cortes + PDF); the iOS checklist ticks saw cuts, with piece sizes moved to a read-only "Piezas" list. *Implemented; awaiting user approval.*
+- [ ] **Phase 5 — Templates for small homes** (in progress; no backend). Split into sub-projects 5.1–5.6, each spec → plan → PR.
+  - **5.1 Doors + modular closet** — spec: `docs/superpowers/specs/2026-09-24-closet-doors-design.md`.
+    - `doorSet` building block: full overlay, 35 mm cup hinges drilled by the lumber yard, handles, doors drawn open 90°.
+    - "Clóset modular" template: one module with Colgar / Entrepaños / Mixto interiors, a zoclo, a Fibracel back and 0–2 doors.
+    - `Design.fittings` draws the rod and handles in 3D; `Design.boring` becomes Barrenado in the order and cost.
+    - "Herrajes" replaces "Tornillería".
+    - *Implemented; awaiting user approval.*
+  - **5.2 Drawers**: a drawer-box block and slides (new `Hardware` type), a drawer option on the closet, and a TV stand.
+  - **5.3 More templates**, in priority order: kitchen pantry cabinet, home-office desk, bed base with drawers, shoe rack, floating shelves.
+  - **5.4 Fit this space**: enter a niche W × H × D (the mobile measure screen feeds it) and the template sizes itself with clearance.
+  - **5.5 Tool-aware steps**: ask what tools the user owns. With only a screwdriver, every cut goes to the lumber yard, holes are pre-drilled (the yard/me drilling choice lives here), and joinery switches to confirmat.
+  - **5.6 Offcut suggestions**: small projects that fit a layout's leftover rectangles.
 - [ ] **Phase 6 — Community (do not start)**: Supabase auth, save/share/remix designs.
 - [ ] **Phase 7 — Pro + partners** (needs Phase 6 backend).
   - Carpenter mode (paid tier): quote with labor + margin, branded client PDF, shareable 3D link.

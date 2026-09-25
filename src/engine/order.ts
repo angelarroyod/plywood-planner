@@ -1,6 +1,6 @@
 import { cutTotals } from './cuts.ts';
 import { edgeBandTotals, edgeCodes, type EdgeBandTotal } from './edge-banding.ts';
-import { HARDWARE_LABELS } from './labels.ts';
+import { hardwareText } from './labels.ts';
 import type { Design, EdgeBandingMode, EdgeBands, Hardware, NestingResult, Stock } from './types.ts';
 
 export interface OrderLine {
@@ -19,7 +19,18 @@ export interface OrderGroup {
   lines: OrderLine[];
 }
 
-/** Everything a lumber yard needs to cut and band a design. Derived, never stored. */
+/** Holes the yard drills in one order line's pieces — every piece of that line alike. */
+export interface OrderBoring {
+  n: number; // the drilled panel's order line
+  label: string;
+  qty: number; // pieces drilled alike
+  diameter: number; // mm
+  depth: number; // mm
+  fromEdge: number; // mm, cup center from the hinge-side long edge
+  along: number[]; // mm from the piece's top end
+}
+
+/** Everything a lumber yard needs to cut, band and drill a design. Derived, never stored. */
 export interface Order {
   title: string; // template name
   groups: OrderGroup[]; // one per stock, in layout.byStock order
@@ -27,6 +38,7 @@ export interface Order {
   bands: EdgeBandTotal[];
   edgeBanding: EdgeBandingMode;
   hardware: Hardware[];
+  boring: OrderBoring[]; // one per drilled panel; empty for most designs
 }
 
 /** First-person note to the lumber yard about the band — the order is written by the customer. */
@@ -35,23 +47,38 @@ export const ORDER_BAND_NOTE: Record<'yard' | 'diy', string> = {
   diy: 'Solo el material (pre-engomado); yo lo aplico.',
 };
 
+/** Said after the drilling lines: the yard drills blank panels, so it needs the face, the pairing and which end is up. */
+export const BORING_NOTE =
+  'Cazoletas en la cara interior. Si son dos puertas, van en espejo: una con las perforaciones en el canto izquierdo ' +
+  'y la otra en el derecho. Marquen ARRIBA en cada puerta: las medidas son desde arriba.';
+
+/** Every hole to drill, counting each piece of a line. */
+export function boringHoles(boring: OrderBoring[]): number {
+  return boring.reduce((sum, b) => sum + b.qty * b.along.length, 0);
+}
+
 export function buildOrder(design: Design, layout: NestingResult, title: string): Order {
   let n = 0;
+  const lineOf = new Map<string, number>(); // panel id → its order line
   const groups = layout.byStock.map(({ stock, sheets }) => ({
     stock,
     sheets,
     lines: design.panels
       .filter((p) => p.stock.id === stock.id)
-      .map((p) => ({
-        n: ++n,
-        label: p.label,
-        length: p.length,
-        width: p.width,
-        qty: p.qty,
-        grain: stock.hasGrain && p.grain !== 'any' ? p.grain : null,
-        edges: p.edges,
-      })),
+      .map((p) => {
+        lineOf.set(p.id, ++n);
+        return {
+          n,
+          label: p.label,
+          length: p.length,
+          width: p.width,
+          qty: p.qty,
+          grain: stock.hasGrain && p.grain !== 'any' ? p.grain : null,
+          edges: p.edges,
+        };
+      }),
   }));
+  const panelsById = new Map(design.panels.map((p) => [p.id, p]));
   return {
     title,
     groups,
@@ -59,6 +86,18 @@ export function buildOrder(design: Design, layout: NestingResult, title: string)
     bands: edgeBandTotals(design.panels),
     edgeBanding: design.edgeBanding,
     hardware: design.hardware,
+    boring: design.boring.map((b) => {
+      const panel = panelsById.get(b.panelId)!; // templates only bore their own panels
+      return {
+        n: lineOf.get(b.panelId)!,
+        label: panel.label,
+        qty: panel.qty,
+        diameter: b.diameter,
+        depth: b.depth,
+        fromEdge: b.fromEdge,
+        along: b.along,
+      };
+    }),
   };
 }
 
@@ -79,12 +118,25 @@ export function orderText(order: Order): string {
       out.push(`${l.n}. ${l.label} — ${l.length} × ${l.width} — ${count(l.qty, 'pza', 'pzas')}${grain}${band}`);
     }
   }
+  if (order.boring.length > 0) {
+    out.push('');
+    for (const b of order.boring) {
+      const each = b.qty > 1 ? ' cada una' : '';
+      out.push(
+        `Barrenado para bisagra de ${b.diameter} mm: pieza ${b.n} (×${b.qty}), ` +
+          `${count(b.along.length, 'perforación', 'perforaciones')}${each} a ${b.along.join(' · ')} mm desde arriba, ` +
+          `centro a ${b.fromEdge} mm del canto, ${b.depth} mm de profundidad.`,
+      );
+    }
+    out.push(`Total de perforaciones: ${boringHoles(order.boring)}.`);
+    out.push(BORING_NOTE);
+  }
   out.push('');
   const note = order.edgeBanding === 'none' ? '' : ` ${ORDER_BAND_NOTE[order.edgeBanding]}`;
   for (const b of order.bands) out.push(`${b.label}: ${b.meters.toFixed(1)} m.${note}`);
   out.push(`Cortes: ${order.cuts.count} (${order.cuts.meters.toFixed(1)} m lineales).`);
   if (order.hardware.length > 0) {
-    const items = order.hardware.map((h) => `${HARDWARE_LABELS[h.type]} ${h.size} × ${h.qty}`);
+    const items = order.hardware.map((h) => `${hardwareText(h)} × ${h.qty}`);
     out.push(`Herrajes: ${items.join(' · ')}`);
   }
   return out.join('\n');

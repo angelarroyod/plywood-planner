@@ -1,4 +1,5 @@
 import { NO_EDGES, bandSegments } from '../engine/edge-banding.ts';
+import { BADGE_RADIUS, cutBadge, sheetCuts } from '../engine/cuts.ts';
 import type { EdgeBands, SheetLayout } from '../engine/types.ts';
 
 interface Props {
@@ -108,6 +109,28 @@ export function SheetSvg({ sheet, labels, edges, className }: Props) {
           ↑ VETA
         </text>
       )}
+
+      {/* Numbered cuts, drawn last so they sit on top; placed where the saw enters. */}
+      {sheetCuts(sheet).map((c) => {
+        const b = cutBadge(c, sheet.stock.sheet);
+        return (
+          <g key={c.n}>
+            <circle cx={b.x} cy={b.y} r={BADGE_RADIUS} fill="var(--color-mark)" />
+            <text
+              x={b.x}
+              y={b.y}
+              fontSize={40}
+              fontFamily={MONO}
+              fontWeight={700}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill="white"
+            >
+              {c.n}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }

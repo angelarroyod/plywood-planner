@@ -8,6 +8,7 @@ const EXPLODE_FACTOR = 1.6;
 const BASE = 0xc08a4e;
 const HIGHLIGHT = 0xdb011c;
 const DIMMED = 0x4a5057;
+const STEEL = 0x9aa3ad; // brushed steel — rod and handles
 
 interface Props {
   design: Design;
@@ -120,22 +121,28 @@ export function Viewer3D({ design, exploded, highlightStep = null, style }: Prop
     const highlight = step ? new Set(step.panelRefs) : null;
     const offsets = step?.explodeOffsets ?? {};
 
-    for (const p of d.placements) {
+    // Panels and fittings render alike; fittings are steel and never cut. The centroid stays the panels'.
+    const boxes = [
+      ...d.placements.map((p) => ({ id: p.panelId, position: p.position, size: p.size, steel: false })),
+      ...d.fittings.map((f) => ({ id: f.id, position: f.position, size: f.size, steel: true })),
+    ];
+    for (const b of boxes) {
       let pos: Vec3 = ex
         ? [
-            centroid[0] + (p.position[0] - centroid[0]) * EXPLODE_FACTOR,
-            centroid[1] + (p.position[1] - centroid[1]) * EXPLODE_FACTOR,
-            centroid[2] + (p.position[2] - centroid[2]) * EXPLODE_FACTOR,
+            centroid[0] + (b.position[0] - centroid[0]) * EXPLODE_FACTOR,
+            centroid[1] + (b.position[1] - centroid[1]) * EXPLODE_FACTOR,
+            centroid[2] + (b.position[2] - centroid[2]) * EXPLODE_FACTOR,
           ]
-        : [p.position[0], p.position[1], p.position[2]];
-      const off = highlight ? offsets[p.panelId] : undefined;
+        : [b.position[0], b.position[1], b.position[2]];
+      const off = highlight ? offsets[b.id] : undefined;
       if (off) pos = [pos[0] + off[0], pos[1] + off[1], pos[2] + off[2]];
 
-      const on = highlight?.has(p.panelId);
-      const geo = new THREE.BoxGeometry(p.size[0], p.size[1], p.size[2]);
+      const on = highlight?.has(b.id);
+      const geo = new THREE.BoxGeometry(b.size[0], b.size[1], b.size[2]);
       const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-        color: !highlight ? BASE : on ? HIGHLIGHT : DIMMED,
-        roughness: 0.62,
+        color: !highlight ? (b.steel ? STEEL : BASE) : on ? HIGHLIGHT : DIMMED,
+        roughness: b.steel ? 0.35 : 0.62,
+        metalness: b.steel ? 0.6 : 0,
       }));
       mesh.position.set(pos[0], pos[1], pos[2]);
       mesh.castShadow = true;

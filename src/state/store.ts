@@ -23,6 +23,7 @@ interface AppState {
   setCutUnit: (unit: Prices['cut']['unit']) => void;
   setBandPrice: (label: string, price: number) => void;
   setHardwarePrice: (key: string, price: number) => void;
+  setBoringPrice: (price: number) => void;
 }
 
 const clamp = (price: number) => Math.max(0, price);
@@ -57,6 +58,7 @@ export const useAppStore = create<AppState>()(
         set((s) => ({ prices: { ...s.prices, bands: { ...s.prices.bands, [label]: clamp(price) } } })),
       setHardwarePrice: (key, price) =>
         set((s) => ({ prices: { ...s.prices, hardware: { ...s.prices.hardware, [key]: clamp(price) } } })),
+      setBoringPrice: (price) => set((s) => ({ prices: { ...s.prices, boring: clamp(price) } })),
     }),
     {
       // ponytail: only prices persist; designs stay derived and params stay per-session

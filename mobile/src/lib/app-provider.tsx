@@ -48,15 +48,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setTemplate: (id: string) =>
         setS((p) => ({ ...p, templateId: id, activeStep: 1, checked: [], doneSteps: [] })),
       setParam: (key: string, value: number) =>
-        setS((p) => ({
-          ...p,
-          paramsByTemplate: {
-            ...p.paramsByTemplate,
-            [p.templateId]: { ...p.paramsByTemplate[p.templateId], [key]: value },
-          },
-          // the Cubrecanto choice adds/removes a step, so step numbers shift
-          ...(key === 'edgeBanding' ? { activeStep: INITIAL.activeStep, doneSteps: [] } : null),
-        })),
+        setS((p) => {
+          if (p.paramsByTemplate[p.templateId]?.[key] === value) return p;
+          return {
+            ...p,
+            paramsByTemplate: {
+              ...p.paramsByTemplate,
+              [p.templateId]: { ...p.paramsByTemplate[p.templateId], [key]: value },
+            },
+            // cut ids ("{sheet}:{n}") follow the layout, which any param can change
+            checked: [],
+            // the Cubrecanto choice adds/removes a step, so step numbers shift
+            ...(key === 'edgeBanding' ? { activeStep: INITIAL.activeStep, doneSteps: [] } : null),
+          };
+        }),
       setTab: (tab: ResultTab) => setS((p) => ({ ...p, tab })),
       setActiveStep: (order: number) => setS((p) => ({ ...p, activeStep: order })),
       toggleExploded: () => setS((p) => ({ ...p, exploded: !p.exploded })),
