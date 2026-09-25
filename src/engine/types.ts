@@ -55,9 +55,10 @@ export interface Panel {
 }
 
 export interface Hardware {
-  type: 'screw' | 'dowel' | 'confirmat';
-  size: string; // '4x40', '5x50'
+  type: 'screw' | 'dowel' | 'confirmat' | 'hinge' | 'handle' | 'rod' | 'rod-support';
+  size: string; // '4x40', '5x50', '35 mm recta'
   qty: number;
+  cutTo?: number; // mm, for items bought by length and cut to size (the closet rod)
 }
 
 export type Vec3 = [number, number, number]; // mm, x/y/z
@@ -73,11 +74,30 @@ export interface Placement {
   size: Vec3; // world-oriented dims (permutation of length/width/thickness)
 }
 
+/** A non-cut part drawn in 3D (rod, handle): an axis-aligned box like a Placement, never in cut lists. */
+export interface Fitting {
+  id: string; // 'rod', 'handle'; a step may name it in panelRefs
+  instance: number;
+  label: string; // Spanish
+  position: Vec3; // box center
+  size: Vec3;
+}
+
+/** Holes a panel needs before assembly — today only 35 mm hinge cups, drilled by the lumber yard. */
+export interface Boring {
+  panelId: string;
+  kind: 'hinge-cup';
+  diameter: number; // mm
+  depth: number; // mm
+  fromEdge: number; // mm, cup center from the hinge-side long edge
+  along: number[]; // mm from the panel's top end, one per cup
+}
+
 export interface Step {
   order: number;
   title: string; // Spanish
   description: string; // Spanish
-  panelRefs: string[]; // Panel.id[]
+  panelRefs: string[]; // Panel.id[] — or a Fitting.id, which viewers highlight the same way
   explodeOffsets?: Record<string, Vec3>; // panelId → offset for exploded highlight
 }
 
@@ -87,6 +107,8 @@ export interface Design {
   panels: Panel[];
   placements: Placement[]; // Σ qty entries
   hardware: Hardware[];
+  fittings: Fitting[]; // non-cut parts drawn in 3D (rod, handles)
+  boring: Boring[]; // holes the lumber yard drills (hinge cups)
   steps: Step[];
   edgeBanding: EdgeBandingMode; // decoded from the template's edgeBanding param
 }

@@ -149,6 +149,8 @@ export function generateBookshelf(raw: TemplateParams): GenerateResult {
       { type: 'confirmat', size: '5x50', qty: (N + 2) * 4 },
       { type: 'screw', size: '3.5x16', qty: backScrews },
     ],
+    fittings: [],
+    boring: [],
     steps: steps.map((s, i) => ({ ...s, order: i + 1 })),
     edgeBanding: mode,
   };

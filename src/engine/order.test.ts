@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildOrder, orderText } from './order.ts';
+import { hardwareText } from './labels.ts';
 import { nest } from './nesting.ts';
 import { bookshelf } from './templates/bookshelf.ts';
 import { sideTable } from './templates/side-table.ts';
-import type { Template } from './types.ts';
+import type { Boring, Template } from './types.ts';
 
 function orderFor(template: Template, params = {}, title = 'Librero') {
   const result = template.generate(params);
@@ -79,5 +80,48 @@ describe('orderText', () => {
 
   it('never contains prices', () => {
     expect(orderText(orderFor(bookshelf))).not.toMatch(/\$|MXN/);
+  });
+});
+
+describe('hardwareText', () => {
+  it('names the hardware and its size', () => {
+    expect(hardwareText({ type: 'confirmat', size: '5x50', qty: 20 })).toBe('Tornillo confirmat 5x50');
+  });
+
+  it('adds the cut length of items cut to size', () => {
+    expect(hardwareText({ type: 'rod', size: '15×30 mm', qty: 1, cutTo: 762 })).toBe(
+      'Tubo oval para clóset 15×30 mm, cortado a 762 mm',
+    );
+  });
+});
+
+const SIDE_CUPS: Boring = { panelId: 'side', kind: 'hinge-cup', diameter: 35, depth: 12, fromEdge: 22, along: [100, 600, 1100] };
+
+function drilledBookshelf() {
+  const result = bookshelf.generate({});
+  if (!result.ok) throw new Error('bookshelf must validate');
+  const design = { ...result.design, boring: [SIDE_CUPS] };
+  return buildOrder(design, nest(design.panels), 'Librero');
+}
+
+describe('boring in the order', () => {
+  it('lists none for designs without holes', () => {
+    expect(orderFor(bookshelf).boring).toEqual([]);
+    expect(orderText(orderFor(bookshelf))).not.toContain('Barrenado');
+  });
+
+  it('points the yard at the drilled piece by its order line', () => {
+    expect(drilledBookshelf().boring).toEqual([
+      { n: 1, label: 'Lateral', qty: 2, diameter: 35, depth: 12, fromEdge: 22, along: [100, 600, 1100] },
+    ]);
+  });
+
+  it('writes each drilled piece and the total holes into the text', () => {
+    const text = orderText(drilledBookshelf());
+    expect(text).toContain(
+      'Barrenado para bisagra de 35 mm: pieza 1 (×2), 3 perforaciones cada una a 100 · 600 · 1100 mm desde arriba, ' +
+        'centro a 22 mm del canto, 12 mm de profundidad.',
+    );
+    expect(text).toContain('Total de perforaciones: 6.');
   });
 });

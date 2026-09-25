@@ -10,4 +10,14 @@ export const HARDWARE_LABELS: Record<Hardware['type'], string> = {
   confirmat: 'Tornillo confirmat',
   screw: 'Tornillo',
   dowel: 'Taquete',
+  hinge: 'Bisagra de cazoleta',
+  handle: 'Jaladera',
+  rod: 'Tubo oval para clóset',
+  'rod-support': 'Soporte de tubo',
 };
+
+/** One hardware line without its quantity, e.g. 'Tubo oval para clóset 15×30 mm, cortado a 762 mm'. */
+export function hardwareText(h: Hardware): string {
+  const text = `${HARDWARE_LABELS[h.type]} ${h.size}`;
+  return h.cutTo === undefined ? text : `${text}, cortado a ${h.cutTo} mm`;
+}
