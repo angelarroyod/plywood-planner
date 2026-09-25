@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { missingPricesText, orderCost } from '../engine/cost.ts';
 import { edgeCodes } from '../engine/edge-banding.ts';
 import { nest } from '../engine/nesting.ts';
-import { ORDER_BAND_NOTE, buildOrder, orderText } from '../engine/order.ts';
+import { BORING_NOTE, ORDER_BAND_NOTE, buildOrder, orderText } from '../engine/order.ts';
 import type { Design } from '../engine/types.ts';
 import { useAppStore } from '../state/store.ts';
 import { hardwareText } from '../engine/labels.ts';
@@ -154,7 +154,8 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
                 </table>
                 <p className="mt-2 font-mono text-[11px] text-ink-soft">
                   Cazoleta Ø{order.boring[0]!.diameter} mm, {order.boring[0]!.depth} mm de profundidad, centro a{' '}
-                  {order.boring[0]!.fromEdge} mm del canto.
+                  {order.boring[0]!.fromEdge} mm del canto.{' '}
+                  {BORING_NOTE}
                 </p>
               </div>
             )}

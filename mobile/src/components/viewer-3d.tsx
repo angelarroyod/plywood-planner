@@ -121,39 +121,39 @@ export function Viewer3D({ design, exploded, highlightStep = null, style }: Prop
     const highlight = step ? new Set(step.panelRefs) : null;
     const offsets = step?.explodeOffsets ?? {};
 
-      // Panels and fittings render alike; fittings are steel and never cut. The centroid stays the panels'.
-      const boxes = [
-        ...d.placements.map((p) => ({ id: p.panelId, position: p.position, size: p.size, steel: false })),
-        ...d.fittings.map((f) => ({ id: f.id, position: f.position, size: f.size, steel: true })),
-      ];
-      for (const b of boxes) {
-        let pos: Vec3 = ex
-          ? [
-              centroid[0] + (b.position[0] - centroid[0]) * EXPLODE_FACTOR,
-              centroid[1] + (b.position[1] - centroid[1]) * EXPLODE_FACTOR,
-              centroid[2] + (b.position[2] - centroid[2]) * EXPLODE_FACTOR,
-            ]
-          : [b.position[0], b.position[1], b.position[2]];
-        const off = highlight ? offsets[b.id] : undefined;
-        if (off) pos = [pos[0] + off[0], pos[1] + off[1], pos[2] + off[2]];
+    // Panels and fittings render alike; fittings are steel and never cut. The centroid stays the panels'.
+    const boxes = [
+      ...d.placements.map((p) => ({ id: p.panelId, position: p.position, size: p.size, steel: false })),
+      ...d.fittings.map((f) => ({ id: f.id, position: f.position, size: f.size, steel: true })),
+    ];
+    for (const b of boxes) {
+      let pos: Vec3 = ex
+        ? [
+            centroid[0] + (b.position[0] - centroid[0]) * EXPLODE_FACTOR,
+            centroid[1] + (b.position[1] - centroid[1]) * EXPLODE_FACTOR,
+            centroid[2] + (b.position[2] - centroid[2]) * EXPLODE_FACTOR,
+          ]
+        : [b.position[0], b.position[1], b.position[2]];
+      const off = highlight ? offsets[b.id] : undefined;
+      if (off) pos = [pos[0] + off[0], pos[1] + off[1], pos[2] + off[2]];
 
-        const on = highlight?.has(b.id);
-        const geo = new THREE.BoxGeometry(b.size[0], b.size[1], b.size[2]);
-        const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-          color: !highlight ? (b.steel ? STEEL : BASE) : on ? HIGHLIGHT : DIMMED,
-          roughness: b.steel ? 0.35 : 0.62,
-          metalness: b.steel ? 0.6 : 0,
-        }));
-        mesh.position.set(pos[0], pos[1], pos[2]);
-        mesh.castShadow = true;
-        mesh.add(
-          new THREE.LineSegments(
-            new THREE.EdgesGeometry(geo),
-            new THREE.LineBasicMaterial({ color: on ? 0xffffff : 0x1a1c20 }),
-          ),
-        );
-        g.group.add(mesh);
-      }
+      const on = highlight?.has(b.id);
+      const geo = new THREE.BoxGeometry(b.size[0], b.size[1], b.size[2]);
+      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+        color: !highlight ? (b.steel ? STEEL : BASE) : on ? HIGHLIGHT : DIMMED,
+        roughness: b.steel ? 0.35 : 0.62,
+        metalness: b.steel ? 0.6 : 0,
+      }));
+      mesh.position.set(pos[0], pos[1], pos[2]);
+      mesh.castShadow = true;
+      mesh.add(
+        new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: on ? 0xffffff : 0x1a1c20 }),
+        ),
+      );
+      g.group.add(mesh);
+    }
 
     if (!g.orbit) {
       const off: Vec3 = [2000 - centroid[0], 1900 - centroid[1], 3000 - centroid[2]];

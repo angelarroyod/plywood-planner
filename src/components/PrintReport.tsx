@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { missingPricesText, orderCost } from '../engine/cost.ts';
 import { CUT_TIP, cutText, sheetCuts } from '../engine/cuts.ts';
 import { nest } from '../engine/nesting.ts';
-import { ORDER_BAND_NOTE, buildOrder } from '../engine/order.ts';
+import { BORING_NOTE, ORDER_BAND_NOTE, buildOrder } from '../engine/order.ts';
 import { EDGE_BANDING_NOTE, edgeBandTotals, edgeCodes } from '../engine/edge-banding.ts';
 import { templates } from '../engine/index.ts';
 import type { Design } from '../engine/types.ts';
@@ -102,7 +102,8 @@ export function PrintReport({ design }: { design: Design | null }) {
             </table>
             <p className="mt-1 font-mono text-[11px] text-ink-soft">
               Cazoleta Ø{order.boring[0]!.diameter} mm, {order.boring[0]!.depth} mm de profundidad, centro a{' '}
-              {order.boring[0]!.fromEdge} mm del canto.
+              {order.boring[0]!.fromEdge} mm del canto.{' '}
+              {BORING_NOTE}
             </p>
           </div>
         )}

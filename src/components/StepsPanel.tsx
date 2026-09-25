@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { refLabels } from '../engine/labels.ts';
 import type { Design } from '../engine/types.ts';
 import { useAppStore } from '../state/store.ts';
 import { Viewer3D } from './Viewer3D.tsx';
@@ -6,11 +7,7 @@ import { Viewer3D } from './Viewer3D.tsx';
 export function StepsPanel({ design, stale }: { design: Design; stale: boolean }) {
   const activeStep = useAppStore((s) => s.activeStep);
   const setActiveStep = useAppStore((s) => s.setActiveStep);
-  // A step may reference a fitting (the rod); panel labels win on a shared id.
-  const labels = useMemo(
-    () => Object.fromEntries([...design.fittings, ...design.panels].map((p) => [p.id, p.label])),
-    [design],
-  );
+  const labels = useMemo(() => refLabels(design), [design]);
   const step = design.steps.find((s) => s.order === activeStep) ?? null;
 
   return (

@@ -45,7 +45,7 @@ export function CutsPane() {
     ...edgeBandTotals(design!.panels).map((t) => ({ name: t.label, qty: `${t.meters.toFixed(1)} m` })),
     ...design!.hardware.map((h) => ({
       name: hardwareText(h),
-      qty: `${h.qty} pzas`,
+      qty: `${h.qty} ${h.qty === 1 ? 'pza' : 'pzas'}`,
     })),
     // melamine is wiped, not sanded
     ...(design!.panels.some((p) => p.stock.material === 'triplay')
