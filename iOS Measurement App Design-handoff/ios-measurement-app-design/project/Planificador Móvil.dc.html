@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Archivo:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="./engine.js"></script>
+<script src="./image-slot.js"></script>
+<script type="module">
+import * as THREE from "https://esm.sh/three@0.170.0";
+window.THREE = THREE;
+window.dispatchEvent(new Event("three-ready"));
+</script>
+<style>
+html { color-scheme: dark; }
+body { margin:0; background:#DCDEE1; color:#101113; font-family:"Archivo",ui-sans-serif,system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+a { color:#DB011C; text-decoration:none; } a:hover { color:#F0182F; }
+::selection { background:#DB011C; color:#fff; }
+button { font:inherit; color:inherit; }
+input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; height:44px; background:transparent; margin:0; }
+input[type="range"]::-webkit-slider-runnable-track { height:4px; background:#2E3238; border-radius:2px; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:30px; height:30px; margin-top:-13px; border-radius:50%; background:#F5F6F7; border:4px solid #DB011C; box-shadow:0 2px 8px rgb(0 0 0 / .5); }
+input[type="range"]::-moz-range-track { height:4px; background:#2E3238; }
+input[type="range"]::-moz-range-thumb { width:26px; height:26px; border:4px solid #DB011C; border-radius:50%; background:#F5F6F7; }
+input[type="range"][data-invalid="true"]::-webkit-slider-thumb { background:#DB011C; border-color:#F5F6F7; }
+@keyframes push { from { opacity:0; transform:translateX(18px); } }
+@keyframes sheetUp { from { transform:translateY(100%); } }
+@keyframes fadeIn { from { opacity:0; } }
+@keyframes pop { 0% { transform:scale(.6); } 60% { transform:scale(1.12); } 100% { transform:scale(1); } }
+@keyframes toastIn { from { opacity:0; transform:translateY(12px) scale(.96); } }
+@keyframes scan { 0%,100% { transform:translateY(-38px); opacity:.2 } 50% { transform:translateY(38px); opacity:.85 } }
+@keyframes pulseRing { 0% { box-shadow:0 0 0 0 rgb(219 1 28 / .5); } 100% { box-shadow:0 0 0 16px rgb(219 1 28 / 0); } }
+</style>
+</helmet>
+
+<div style="min-height:100vh; box-sizing:border-box; padding:36px 28px 64px; background:linear-gradient(160deg,#F1F2F4 0%,#DCDEE1 55%,#C9CDD2 100%)">
+
+  <header style="display:flex; flex-wrap:wrap; align-items:flex-end; gap:24px; max-width:1180px; margin:0 auto 26px">
+    <div style="min-width:280px">
+      <p style="margin:0 0 10px; display:inline-block; background:#DB011C; padding:5px 10px; font-family:'Roboto Mono',monospace; font-size:10px; font-weight:500; white-space:nowrap; text-transform:uppercase; letter-spacing:.16em; color:#fff">Planificador iOS</p>
+      <h1 style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:46px; font-weight:700; text-transform:uppercase; letter-spacing:.005em; line-height:.94; color:#101113">Muebles de triplay,<br>en el bolsillo</h1>
+      <p style="margin:10px 0 0; max-width:46ch; font-size:14px; line-height:1.55; color:#4A5057; text-wrap:pretty">Mismo motor de cálculo que el escritorio: plantillas, validación de claros, nesting en hoja de 1220 × 2440 mm y pasos de armado. Hecho para la maderería y el taller.</p>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:18px; margin-left:auto">
+      <div>
+        <p style="margin:0 0 6px; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.2em; color:#5A6068">Navegación / nav</p>
+        <div style="display:flex; gap:6px">
+          <sc-for list="{{ navSwitch }}" as="n" hint-placeholder-count="2">
+            <button onClick="{{ n.onSelect }}" style="min-height:38px; border-radius:3px; padding:0 15px; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; transition:all .18s ease; border:1px solid #B9BEC4; background:#fff; color:#5A6068; {{ n.selStyle }}">{{ n.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div>
+        <p style="margin:0 0 6px; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.2em; color:#5A6068">Vista 3D / 3D view</p>
+        <div style="display:flex; gap:6px">
+          <sc-for list="{{ view3dSwitch }}" as="v" hint-placeholder-count="2">
+            <button onClick="{{ v.onSelect }}" style="min-height:38px; border-radius:3px; padding:0 15px; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; transition:all .18s ease; border:1px solid #B9BEC4; background:#fff; color:#5A6068; {{ v.selStyle }}">{{ v.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:center; gap:40px; max-width:1180px; margin:0 auto">
+
+    <nav style="width:196px; flex-shrink:0; padding-top:8px">
+      <p style="margin:0 0 10px; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.2em; color:#5A6068">Pantallas / screens</p>
+      <div style="display:flex; flex-direction:column; gap:4px">
+        <sc-for list="{{ screenIndex }}" as="s" hint-placeholder-count="6">
+          <button onClick="{{ s.onSelect }}" style="display:flex; align-items:baseline; gap:10px; min-height:40px; width:100%; border-radius:3px; padding:8px 10px; text-align:left; cursor:pointer; transition:all .18s ease; border:1px solid transparent; border-left:2px solid transparent; background:none; color:#4A5057; {{ s.selStyle }}">
+            <span style="font-family:'Roboto Mono',monospace; font-size:10px; font-variant-numeric:tabular-nums; color:#8B9198; {{ s.numStyle }}">{{ s.num }}</span>
+            <span style="min-width:0">
+              <span style="display:block; font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:600; text-transform:uppercase; letter-spacing:.02em; line-height:1.15">{{ s.label }}</span>
+              <span style="display:block; margin-top:2px; font-family:'Roboto Mono',monospace; font-size:9px; line-height:1.4; text-transform:uppercase; letter-spacing:.14em; color:#8B9198">{{ s.en }}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+      <p style="margin:18px 0 0; padding-top:14px; border-top:1px solid #B9BEC4; font-size:11px; line-height:1.6; color:#5A6068; text-wrap:pretty">Toca el teléfono: los sliders, el 3D, la lista de cortes y los pasos son reales y comparten el motor del repo.</p>
+    </nav>
+
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="{{ 402 }}" height="{{ 874 }}" dark="{{ true }}" hint-size="402px,874px">
+
+      <sc-if value="{{ isOnboarding }}" hint-placeholder-val="{{ true }}">
+        <div style="height:100%; box-sizing:border-box; display:flex; flex-direction:column; padding:0 26px 40px; background:#14161A; color:#F5F6F7; animation:fadeIn .4s ease both">
+          <div style="height:112px; flex-shrink:0"></div>
+          <div style="display:flex; gap:5px; align-items:flex-end; height:64px">
+            <span style="width:13px; height:52px; background:#DB011C"></span>
+            <span style="width:13px; height:64px; background:#F5F6F7"></span>
+            <span style="width:13px; height:38px; background:#DB011C"></span>
+            <span style="width:13px; height:58px; background:#3A3F45"></span>
+          </div>
+          <h1 style="margin:24px 0 0; font-family:'Barlow Condensed',sans-serif; font-size:56px; font-weight:700; text-transform:uppercase; letter-spacing:.005em; line-height:.9">Diseña,<br>corta,<br>arma.</h1>
+          <p style="margin:14px 0 0; font-size:15px; line-height:1.6; color:#9BA0A6; text-wrap:pretty">Un mueble de triplay bien planeado, sin cuentas a mano ni desperdicio de más.</p>
+          <div style="margin-top:auto; display:flex; flex-direction:column; gap:14px">
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="font-family:'Roboto Mono',monospace; font-size:10px; padding-top:3px; color:#DB011C">01</span>
+              <p style="margin:0; font-size:14px; line-height:1.5"><strong style="font-weight:600">Elige plantilla y medidas.</strong> <span style="color:#9BA0A6">Te avisamos si el claro se va a pandear.</span></p>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="font-family:'Roboto Mono',monospace; font-size:10px; padding-top:3px; color:#DB011C">02</span>
+              <p style="margin:0; font-size:14px; line-height:1.5"><strong style="font-weight:600">Llévate el plan de corte.</strong> <span style="color:#9BA0A6">Cuántas hojas, cuánto desperdicio, cuánto cuesta.</span></p>
+            </div>
+            <div style="display:flex; gap:12px; align-items:flex-start">
+              <span style="font-family:'Roboto Mono',monospace; font-size:10px; padding-top:3px; color:#DB011C">03</span>
+              <p style="margin:0; font-size:14px; line-height:1.5"><strong style="font-weight:600">Arma paso por paso.</strong> <span style="color:#9BA0A6">Con el 3D resaltando la pieza de cada paso.</span></p>
+            </div>
+          </div>
+          <button onClick="{{ goProjects }}" style="margin-top:26px; min-height:56px; border:0; border-radius:4px; background:#DB011C; color:#fff; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; transition:all .14s ease" style-active="transform:scale(.975); background:#B30017">Empezar</button>
+          <button onClick="{{ goProjects }}" style="margin-top:10px; min-height:44px; border:0; background:none; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.16em; color:#9BA0A6">Ya tengo proyectos · Sign in</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isProjects }}" hint-placeholder-val="{{ false }}">
+        <div style="min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; background:#14161A; color:#F5F6F7; animation:push .32s cubic-bezier(.2,.8,.2,1) both">
+          <div style="position:sticky; top:0; z-index:20; padding:58px 22px 14px; background:rgba(20,22,26,.94); backdrop-filter:blur(14px); border-bottom:1px solid #2E3238">
+            <p style="margin:0; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.2em; color:#DB011C">Mis proyectos / projects</p>
+            <h1 style="margin:3px 0 0; font-family:'Barlow Condensed',sans-serif; font-size:34px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; line-height:1">Taller</h1>
+          </div>
+          <div style="padding:18px 22px 0; display:flex; flex-direction:column; gap:10px">
+            <sc-for list="{{ projects }}" as="p" hint-placeholder-count="3">
+              <button onClick="{{ p.onOpen }}" style="display:flex; gap:14px; align-items:center; width:100%; min-height:74px; border-radius:4px; border:1px solid #2E3238; border-left:3px solid #DB011C; background:#1E2126; padding:12px 14px; text-align:left; cursor:pointer; transition:all .14s ease" style-active="transform:scale(.985)" style-hover="border-color:#3A3F45">
+                <span style="display:flex; align-items:flex-end; gap:3px; height:44px; width:44px; flex-shrink:0; border-radius:3px; background:#23262B; padding:6px; box-sizing:border-box">
+                  <span style="flex:1; background:#C08A4E; height:{{ p.b1 }}"></span>
+                  <span style="flex:1; background:#8B9198; height:{{ p.b2 }}"></span>
+                  <span style="flex:1; background:#DB011C; height:{{ p.b3 }}"></span>
+                </span>
+                <span style="min-width:0; flex:1">
+                  <span style="display:block; font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:600; text-transform:uppercase; letter-spacing:.02em; line-height:1.1">{{ p.name }}</span>
+                  <span style="display:block; margin-top:2px; font-family:'Roboto Mono',monospace; font-size:11px; font-variant-numeric:tabular-nums; color:#9BA0A6">{{ p.meta }}</span>
+                </span>
+                <span style="font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; color:#6E747C">{{ p.when }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="padding:16px 22px 0">
+            <button onClick="{{ goTemplates }}" style="display:flex; align-items:center; justify-content:center; gap:10px; width:100%; min-height:56px; border:1px dashed #4A5057; border-radius:4px; background:#191B1F; cursor:pointer; transition:all .16s ease" style-active="transform:scale(.985)" style-hover="border-color:#DB011C">
+              <span style="font-size:20px; line-height:1; color:#DB011C">+</span>
+              <span style="font-family:'Barlow Condensed',sans-serif; font-size:19px; font-weight:600; text-transform:uppercase; letter-spacing:.04em">Nuevo proyecto</span>
+            </button>
+          </div>
+          <div style="margin-top:auto; padding:22px; display:flex; align-items:center; gap:12px">
+            <span style="display:flex; height:38px; width:38px; align-items:center; justify-content:center; border-radius:3px; background:#DB011C; color:#fff; font-family:'Barlow Condensed',sans-serif; font-size:19px; font-weight:700">A</span>
+            <span>
+              <span style="display:block; font-size:13px; font-weight:500">Ángel Arroyo</span>
+              <span style="display:block; font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:#6E747C">iCloud · sincronizado</span>
+            </span>
+          </div>
+          <div style="height:26px"></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isTemplates }}" hint-placeholder-val="{{ false }}">
+        <div style="min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; background:#14161A; color:#F5F6F7; animation:push .32s cubic-bezier(.2,.8,.2,1) both">
+          <div style="position:sticky; top:0; z-index:20; padding:58px 22px 14px; background:rgba(20,22,26,.94); backdrop-filter:blur(14px); border-bottom:1px solid #2E3238">
+            <button onClick="{{ goProjects }}" style="display:flex; align-items:center; gap:6px; min-height:34px; border:0; background:none; padding:0; cursor:pointer; font-size:15px; color:#DB011C">
+              <span style="font-size:19px; line-height:1">‹</span> Proyectos
+            </button>
+            <sc-if value="{{ isWizard }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:10px">
+                <div style="display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.18em; color:#9BA0A6">
+                  <span>{{ wizLabel }}</span>
+                  <span>{{ wizStepName }}</span>
+                </div>
+                <span style="margin-top:6px; display:block; height:4px; background:#2E3238"><span style="display:block; height:100%; background:#DB011C; transition:width .3s cubic-bezier(.2,.8,.2,1); width:{{ wizPct }}"></span></span>
+              </div>
+            </sc-if>
+            <h1 style="margin:8px 0 0; font-family:'Barlow Condensed',sans-serif; font-size:32px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; line-height:1">¿Qué vas a hacer?</h1>
+            <p style="margin:2px 0 0; font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.14em; color:#6E747C">Pick a template</p>
+          </div>
+          <div style="padding:18px 22px; display:flex; flex-direction:column; gap:12px">
+            <sc-for list="{{ templateCards }}" as="t" hint-placeholder-count="2">
+              <button onClick="{{ t.onSelect }}" style="width:100%; border-radius:4px; padding:16px; text-align:left; cursor:pointer; transition:all .18s ease; border:1px solid #2E3238; background:#1E2126; {{ t.selStyle }}" style-active="transform:scale(.985)">
+                <span style="display:flex; align-items:center; justify-content:space-between; gap:12px">
+                  <span style="font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.14em; color:#DB011C">{{ t.num }}</span>
+                  <span style="display:flex; height:26px; width:26px; align-items:center; justify-content:center; border-radius:3px; font-size:14px; transition:all .18s ease; border:1px solid #3A3F45; background:#14161A; color:transparent; {{ t.checkStyle }}">✓</span>
+                </span>
+                <span style="display:block; margin-top:10px; font-family:'Barlow Condensed',sans-serif; font-size:30px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; line-height:1">{{ t.name }}</span>
+                <span style="display:block; margin-top:6px; font-size:13px; line-height:1.5; color:#9BA0A6">{{ t.description }}</span>
+                <span style="display:flex; margin-top:12px; gap:6px; flex-wrap:wrap">
+                  <sc-for list="{{ t.chips }}" as="c" hint-placeholder-count="3">
+                    <span style="border-radius:3px; border:1px solid #2E3238; background:#23262B; padding:4px 8px; font-family:'Roboto Mono',monospace; font-size:10px; font-variant-numeric:tabular-nums; color:#9BA0A6">{{ c.label }}</span>
+                  </sc-for>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="margin-top:auto; position:sticky; bottom:0; padding:14px 22px 34px; background:linear-gradient(to top,#14161A 60%,rgba(20,22,26,0))">
+            <button onClick="{{ goMeasure }}" style="width:100%; min-height:56px; border:0; border-radius:4px; background:#DB011C; color:#fff; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:21px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; transition:all .14s ease" style-active="transform:scale(.985); background:#B30017">{{ templatesCta }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isMeasure }}" hint-placeholder-val="{{ false }}">
+        <div style="min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; background:#14161A; color:#F5F6F7; animation:push .32s cubic-bezier(.2,.8,.2,1) both">
+          <div style="position:sticky; top:0; z-index:20; padding:58px 22px 12px; background:rgba(20,22,26,.94); backdrop-filter:blur(14px); border-bottom:1px solid #2E3238">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+              <button onClick="{{ goTemplates }}" style="display:flex; align-items:center; gap:6px; min-height:34px; border:0; background:none; padding:0; cursor:pointer; font-size:15px; color:#DB011C">
+                <span style="font-size:19px; line-height:1">‹</span> Plantilla
+              </button>
+              <button onClick="{{ goCamera }}" style="display:flex; align-items:center; gap:7px; min-height:38px; border:1px solid #3A3F45; border-radius:3px; background:#1E2126; padding:0 12px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:#F5F6F7" style-active="transform:scale(.97)">
+                <svg viewBox="0 0 20 20" style="width:15px; height:15px" aria-hidden="true">
+                  <rect x="1.5" y="4.5" width="17" height="12" rx="2" fill="none" stroke="#DB011C" stroke-width="1.6"></rect>
+                  <circle cx="10" cy="10.5" r="3.4" fill="none" stroke="#F5F6F7" stroke-width="1.6"></circle>
+                  <rect x="7" y="2.5" width="6" height="2.4" rx="1" fill="#DB011C"></rect>
+                </svg>
+                Medir
+              </button>
+            </div>
+            <sc-if value="{{ isWizard }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:10px">
+                <div style="display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.18em; color:#9BA0A6">
+                  <span>{{ wizLabel }}</span>
+                  <span>{{ wizStepName }}</span>
+                </div>
+                <span style="margin-top:6px; display:block; height:4px; background:#2E3238"><span style="display:block; height:100%; background:#DB011C; transition:width .3s cubic-bezier(.2,.8,.2,1); width:{{ wizPct }}"></span></span>
+              </div>
+            </sc-if>
+            <h1 style="margin:8px 0 0; font-family:'Barlow Condensed',sans-serif; font-size:32px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; line-height:1">{{ measureTitle }}</h1>
+            <p style="margin:2px 0 0; font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.14em; color:#6E747C">Measurements · mm</p>
+          </div>
+
+          <div style="padding:20px 22px 0; display:flex; flex-direction:column; gap:22px">
+            <sc-for list="{{ fields }}" as="f" hint-placeholder-count="5">
+              <div>
+                <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px">
+                  <label for="{{ f.key }}" style="font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:600; text-transform:uppercase; letter-spacing:.03em">{{ f.label }}</label>
+                  <span style="flex-shrink:0; border-radius:3px; padding:5px 10px; font-family:'Roboto Mono',monospace; font-size:18px; font-weight:500; font-variant-numeric:tabular-nums; transition:all .2s ease; border:1px solid #3A3F45; background:#23262B; color:#F5F6F7; {{ f.chipStyle }}">{{ f.value }}<span style="font-size:11px; color:#8B9198">{{ f.unitText }}</span></span>
+                </div>
+                <sc-if value="{{ f.isNumber }}" hint-placeholder-val="{{ true }}">
+                  <div>
+                    <input id="{{ f.key }}" type="range" min="{{ f.min }}" max="{{ f.max }}" step="{{ f.step }}" value="{{ f.value }}" aria-label="{{ f.label }}" data-invalid="{{ f.invalidAttr }}" onChange="{{ f.onChange }}">
+                    <div style="margin-top:-6px; display:flex; justify-content:space-between; font-family:'Roboto Mono',monospace; font-size:10px; font-variant-numeric:tabular-nums; color:#6E747C">
+                      <span>{{ f.min }}</span>
+                      <span>{{ f.max }}</span>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ f.isSelect }}">
+                  <div style="margin-top:10px; display:flex; gap:8px">
+                    <sc-for list="{{ f.options }}" as="opt" hint-placeholder-count="3">
+                      <button onClick="{{ opt.onSelect }}" style="flex:1; min-height:48px; border-radius:3px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:15px; font-variant-numeric:tabular-nums; transition:all .18s ease; border:1px solid #3A3F45; background:#1E2126; color:#9BA0A6; {{ opt.selStyle }}" style-active="transform:scale(.97)">{{ opt.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-for list="{{ f.issues }}" as="issue" hint-placeholder-count="0">
+                  <div style="margin-top:10px; display:flex; gap:10px; border-radius:3px; border-left:3px solid #DB011C; background:#2A0F14; padding:12px; animation:fadeIn .25s ease both">
+                    <span style="flex-shrink:0; font-family:'Roboto Mono',monospace; font-size:12px; font-weight:700; color:#FF4B5C">!</span>
+                    <p style="margin:0; font-size:13px; line-height:1.5; color:#FFD3D8; text-wrap:pretty">{{ issue.message }}</p>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+
+            <sc-if value="{{ hasGeneralIssues }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:8px">
+                <sc-for list="{{ generalIssues }}" as="issue" hint-placeholder-count="1">
+                  <div style="display:flex; gap:10px; border-radius:3px; border-left:3px solid #DB011C; background:#2A0F14; padding:12px">
+                    <span style="flex-shrink:0; font-family:'Roboto Mono',monospace; font-size:12px; font-weight:700; color:#FF4B5C">!</span>
+                    <p style="margin:0; font-size:13px; line-height:1.5; color:#FFD3D8">{{ issue.message }}</p>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <div style="display:flex; gap:10px; border-radius:3px; border:1px solid #2E3238; background:#1E2126; padding:14px">
+              <span style="font-family:'Roboto Mono',monospace; font-size:10px; color:#DB011C">≈</span>
+              <p style="margin:0; font-size:13px; line-height:1.55; color:#9BA0A6; text-wrap:pretty">{{ measureSummary }}</p>
+            </div>
+          </div>
+
+          <div style="margin-top:auto; position:sticky; bottom:0; padding:14px 22px 34px; background:linear-gradient(to top,#14161A 60%,rgba(20,22,26,0))">
+            <button onClick="{{ goResult }}" style="width:100%; min-height:56px; border:0; border-radius:4px; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:21px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; transition:all .14s ease; background:#DB011C; color:#fff; {{ resultCtaStyle }}" style-active="transform:scale(.985)">{{ measureCta }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isCamera }}" hint-placeholder-val="{{ false }}">
+        <div style="position:relative; height:100%; background:#08090B; overflow:hidden; animation:fadeIn .3s ease both">
+          <div style="position:absolute; inset:0; background:linear-gradient(155deg,#2A2D31 0%,#16181B 45%,#0B0C0E 100%)"></div>
+          <div style="position:absolute; left:0; right:0; top:38%; height:120px; background:linear-gradient(180deg,rgba(219,1,28,0) 0%,rgba(219,1,28,.28) 50%,rgba(219,1,28,0) 100%); animation:scan 2.6s ease-in-out infinite"></div>
+          <div style="position:absolute; left:56px; right:56px; top:34%; height:150px; border:1px dashed rgba(245,246,247,.45)"></div>
+          <div style="position:absolute; left:56px; right:56px; top:34%; display:flex; align-items:center; justify-content:center; height:150px">
+            <span style="display:flex; align-items:center; gap:8px; border-radius:3px; border-left:3px solid #DB011C; background:rgba(8,9,11,.8); backdrop-filter:blur(8px); padding:8px 12px; font-family:'Roboto Mono',monospace; font-size:24px; font-weight:500; font-variant-numeric:tabular-nums; color:#F5F6F7">{{ camValue }}<span style="font-size:11px; color:#8B9198">mm</span></span>
+          </div>
+          <div style="position:absolute; top:58px; left:22px; right:22px; display:flex; align-items:center; justify-content:space-between">
+            <button onClick="{{ goMeasure }}" style="min-height:40px; min-width:40px; border:0; border-radius:3px; background:rgba(8,9,11,.65); color:#F5F6F7; cursor:pointer; font-size:16px">✕</button>
+            <span style="border-radius:3px; background:#DB011C; padding:8px 12px; font-family:'Roboto Mono',monospace; font-size:10px; font-weight:500; white-space:nowrap; text-transform:uppercase; letter-spacing:.12em; color:#fff">Medir muro · LiDAR</span>
+          </div>
+          <div style="position:absolute; left:22px; right:22px; bottom:52px">
+            <p style="margin:0 0 14px; text-align:center; font-size:14px; line-height:1.5; color:#9BA0A6; text-wrap:pretty">Apunta a los dos extremos del hueco. Mantén el teléfono paralelo al muro.</p>
+            <div style="display:flex; gap:10px">
+              <button onClick="{{ goMeasure }}" style="flex:1; min-height:52px; border:1px solid #3A3F45; border-radius:3px; background:rgba(245,246,247,.06); color:#F5F6F7; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.14em">Cancelar</button>
+              <button onClick="{{ useMeasure }}" style="flex:2; min-height:52px; border:0; border-radius:4px; background:#DB011C; color:#fff; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; animation:pulseRing 2.2s ease-out infinite" style-active="transform:scale(.98)">{{ camCta }}</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isResult }}" hint-placeholder-val="{{ false }}">
+        <div style="position:relative; height:100%; display:flex; flex-direction:column; background:#14161A; color:#F5F6F7; overflow:hidden">
+
+          <div style="position:absolute; top:0; left:0; right:0; z-index:30; padding:56px 18px 10px; background:linear-gradient(to bottom,rgba(20,22,26,.97) 55%,rgba(20,22,26,0)); backdrop-filter:blur(6px)">
+            <div style="display:flex; align-items:center; gap:10px">
+              <button onClick="{{ backFromResult }}" style="min-height:36px; min-width:36px; border:0; background:none; padding:0; cursor:pointer; font-size:22px; line-height:1; color:#DB011C">‹</button>
+              <span style="min-width:0; flex:1">
+                <span style="display:block; font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:600; text-transform:uppercase; letter-spacing:.02em; line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ projectTitle }}</span>
+                <span style="display:block; font-family:'Roboto Mono',monospace; font-size:10px; font-variant-numeric:tabular-nums; color:#8B9198">{{ projectMeta }}</span>
+              </span>
+              <button onClick="{{ toggleTaller }}" style="display:flex; align-items:center; justify-content:center; min-height:40px; min-width:40px; border-radius:3px; cursor:pointer; transition:all .18s ease; border:1px solid #3A3F45; background:#1E2126; color:#9BA0A6; {{ tallerBtnStyle }}" style-active="transform:scale(.95)" aria-label="Modo taller">
+                <svg viewBox="0 0 20 20" style="width:17px; height:17px" aria-hidden="true">
+                  <circle cx="10" cy="10" r="3.6" fill="none" stroke="currentColor" stroke-width="1.7"></circle>
+                  <path d="M10 1.6v2.2M10 16.2v2.2M1.6 10h2.2M16.2 10h2.2M4.1 4.1l1.6 1.6M14.3 14.3l1.6 1.6M15.9 4.1l-1.6 1.6M5.7 14.3l-1.6 1.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+                </svg>
+              </button>
+              <button onClick="{{ openExport }}" style="display:flex; align-items:center; justify-content:center; min-height:40px; min-width:40px; border:1px solid #3A3F45; border-radius:3px; background:#1E2126; cursor:pointer" style-active="transform:scale(.95)" aria-label="Compartir">
+                <svg viewBox="0 0 20 20" style="width:16px; height:16px" aria-hidden="true">
+                  <path d="M10 13V3m0 0L6.5 6.5M10 3l3.5 3.5" fill="none" stroke="#F5F6F7" stroke-width="1.7" stroke-linecap="round"></path>
+                  <path d="M4 12v4.5h12V12" fill="none" stroke="#F5F6F7" stroke-width="1.7" stroke-linecap="round"></path>
+                </svg>
+              </button>
+            </div>
+            <sc-if value="{{ isWizard }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:12px; display:flex; gap:2px; border-radius:3px; background:#1E2126; padding:3px">
+                <sc-for list="{{ segItems }}" as="s" hint-placeholder-count="3">
+                  <button onClick="{{ s.onSelect }}" style="flex:1; min-height:38px; border:0; border-radius:2px; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; transition:all .18s ease; background:transparent; color:#9BA0A6; {{ s.selStyle }}">{{ s.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ taller }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:10px; display:flex; align-items:center; gap:8px; border-radius:3px; background:#DB011C; padding:7px 10px; animation:fadeIn .25s ease both">
+                <span style="display:block; height:7px; width:7px; border-radius:50%; background:#fff"></span>
+                <span style="font-family:'Roboto Mono',monospace; font-size:9px; font-weight:500; white-space:nowrap; text-transform:uppercase; letter-spacing:.1em; color:#fff">Modo taller · pantalla encendida</span>
+                <button onClick="{{ toggleTaller }}" style="margin-left:auto; min-height:26px; border:0; background:none; padding:0 2px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.14em; color:#fff">Salir</button>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="flex:1; min-height:0; position:relative">
+
+            <sc-if value="{{ show3d }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute; inset:0; display:flex; flex-direction:column; background:radial-gradient(circle at 50% 32%,#23262B 0%,#0E0F11 100%); animation:fadeIn .3s ease both; transition:opacity .3s ease; opacity:{{ staleOpacity }}">
+                <div style="position:relative; flex:1; min-height:0; {{ canvasWrapStyle }}">
+                  <canvas ref="{{ canvasRef }}" style="display:block; width:100%; height:100%; touch-action:none"></canvas>
+                  <div style="pointer-events:none; position:absolute; left:0; right:0; top:{{ hintTop }}; display:flex; justify-content:center">
+                    <span style="border-radius:3px; background:rgba(30,33,38,.85); padding:5px 11px; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.16em; color:#9BA0A6">Arrastra para girar · pinza para acercar</span>
+                  </div>
+                </div>
+
+                <div style="{{ infoCardStyle }}">
+                  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px">
+                    <div>
+                      <p style="margin:0; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.18em; color:#DB011C">Vista 3D / model</p>
+                      <p style="margin:3px 0 0; font-family:'Roboto Mono',monospace; font-size:19px; font-weight:500; font-variant-numeric:tabular-nums">{{ dimsHeadline }}</p>
+                    </div>
+                    <button onClick="{{ toggleExploded }}" style="flex-shrink:0; min-height:44px; border-radius:3px; padding:0 14px; cursor:pointer; font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.12em; transition:all .18s ease; border:1px solid #3A3F45; background:#1E2126; color:#9BA0A6; {{ explodeStyle }}" style-active="transform:scale(.96)">{{ explodeLabel }}</button>
+                  </div>
+                  <div style="margin-top:14px; display:grid; grid-template-columns:repeat(3,1fr); gap:8px">
+                    <sc-for list="{{ statCards }}" as="s" hint-placeholder-count="3">
+                      <div style="border-radius:3px; border:1px solid #2E3238; border-top:2px solid #DB011C; background:#1E2126; padding:10px">
+                        <div style="font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.14em; color:#8B9198">{{ s.label }}</div>
+                        <div style="margin-top:3px; font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums">{{ s.value }}</div>
+                        <div style="font-family:'Roboto Mono',monospace; font-size:9px; color:#6E747C">{{ s.sub }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="margin-top:12px; display:flex; gap:8px">
+                    <button onClick="{{ goMeasure }}" style="flex:1; min-height:48px; border:1px solid #3A3F45; border-radius:3px; background:#1E2126; color:#F5F6F7; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:600; text-transform:uppercase; letter-spacing:.04em" style-active="transform:scale(.98)">Ajustar medidas</button>
+                    <button onClick="{{ goCuts }}" style="flex:1; min-height:48px; border:0; border-radius:3px; background:#DB011C; color:#fff; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:700; text-transform:uppercase; letter-spacing:.04em" style-active="transform:scale(.98)">Ver cortes</button>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ showCuts }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute; inset:0; overflow-y:auto; background:#14161A; animation:fadeIn .3s ease both">
+                <div style="height:{{ contentTop }}"></div>
+                <div style="padding:0 22px 20px">
+                  <h2 style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:32px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; line-height:1">Plan de corte</h2>
+                  <p style="margin:3px 0 0; font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.14em; color:#8B9198">{{ cutsMeta }}</p>
+
+                  <div style="margin-top:16px; display:grid; grid-template-columns:repeat(3,1fr); gap:8px">
+                    <sc-for list="{{ statCards }}" as="s" hint-placeholder-count="3">
+                      <div style="border-radius:3px; border:1px solid #2E3238; border-top:2px solid #DB011C; background:#1E2126; padding:10px">
+                        <div style="font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.14em; color:#8B9198">{{ s.label }}</div>
+                        <div style="margin-top:3px; font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums">{{ s.value }}</div>
+                        <div style="font-family:'Roboto Mono',monospace; font-size:9px; color:#6E747C">{{ s.sub }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:14px; overflow-x:auto; padding:0 22px 6px; scroll-snap-type:x mandatory">
+                  <sc-for list="{{ sheets }}" as="sheet" hint-placeholder-count="1">
+                    <figure style="margin:0; flex-shrink:0; scroll-snap-align:center">
+                      <svg viewBox="0 0 1220 2440" role="img" aria-label="Hoja de triplay con acomodo de piezas" style="height:330px; border-radius:3px; border:1px solid #2E3238; background:#1A1C20">
+                        <defs>
+                          <pattern id="m-grain" width="26" height="26" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="26" stroke="#6B4B22" stroke-width="2.5"></line>
+                          </pattern>
+                        </defs>
+                        <rect x="0" y="0" width="1220" height="2440" fill="#1A1C20" stroke="#3A3F45" stroke-width="6"></rect>
+                        <sc-for list="{{ sheet.pieces }}" as="p" hint-placeholder-count="7">
+                          <g>
+                            <rect x="{{ p.x }}" y="{{ p.y }}" width="{{ p.w }}" height="{{ p.h }}" stroke-width="5" fill="{{ p.fill }}" stroke="{{ p.stroke }}"></rect>
+                            <text x="{{ p.cx }}" y="{{ p.ty1 }}" font-size="46" font-family="Roboto Mono, monospace" font-weight="700" text-anchor="middle" fill="{{ p.textFill }}">{{ p.label }}</text>
+                            <text x="{{ p.cx }}" y="{{ p.ty2 }}" font-size="38" font-family="Roboto Mono, monospace" text-anchor="middle" fill="{{ p.subFill }}">{{ p.dims }}</text>
+                          </g>
+                        </sc-for>
+                        <rect x="0" y="0" width="1220" height="2440" fill="url(#m-grain)" opacity="0.1"></rect>
+                        <text x="30" y="1220" font-size="44" font-family="Roboto Mono, monospace" fill="#6E747C" letter-spacing="10" text-anchor="middle" transform="rotate(-90 30 1220)">↑ VETA</text>
+                      </svg>
+                      <figcaption style="margin-top:8px; text-align:center; font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.14em; color:#8B9198">{{ sheet.caption }}</figcaption>
+                    </figure>
+                  </sc-for>
+                </div>
+
+                <div style="padding:18px 22px 0">
+                  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px">
+                    <h3 style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:600; text-transform:uppercase; letter-spacing:.03em">Checklist de cortes</h3>
+                    <span style="font-family:'Roboto Mono',monospace; font-size:11px; font-variant-numeric:tabular-nums; color:#DB011C">{{ cutProgressText }}</span>
+                  </div>
+                  <span style="margin-top:8px; display:block; height:5px; background:#2E3238"><span style="display:block; height:100%; background:#DB011C; transition:width .35s cubic-bezier(.2,.8,.2,1); width:{{ cutProgressPct }}"></span></span>
+                  <div style="margin-top:12px; display:flex; flex-direction:column; gap:6px">
+                    <sc-for list="{{ checklist }}" as="c" hint-placeholder-count="7">
+                      <button onClick="{{ c.onToggle }}" style="display:flex; align-items:center; gap:12px; width:100%; min-height:56px; border-radius:3px; padding:8px 12px; text-align:left; cursor:pointer; transition:all .18s ease; border:1px solid #2E3238; background:#1E2126; {{ c.rowStyle }}" style-active="transform:scale(.99)">
+                        <span style="display:flex; height:28px; width:28px; flex-shrink:0; align-items:center; justify-content:center; border-radius:3px; font-size:15px; transition:all .18s ease; border:1.5px solid #4A5057; background:#14161A; color:transparent; {{ c.boxStyle }}">✓</span>
+                        <span style="min-width:0; flex:1">
+                          <span style="display:block; font-family:'Barlow Condensed',sans-serif; font-size:19px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; {{ c.labelStyle }}">{{ c.label }}</span>
+                          <span style="display:block; font-family:'Roboto Mono',monospace; font-size:11px; font-variant-numeric:tabular-nums; color:#8B9198">{{ c.dims }}</span>
+                        </span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="padding:20px 22px 0">
+                  <h3 style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:600; text-transform:uppercase; letter-spacing:.03em">Lista de compras</h3>
+                  <div style="margin-top:10px; border-radius:3px; border:1px solid #2E3238; background:#1E2126; overflow:hidden">
+                    <sc-for list="{{ shoppingRows }}" as="s" hint-placeholder-count="3">
+                      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; min-height:48px; padding:12px 14px; border-top:1px solid #2E3238; {{ s.firstStyle }}">
+                        <span style="font-size:14px">{{ s.name }}</span>
+                        <span style="font-family:'Roboto Mono',monospace; font-size:13px; font-variant-numeric:tabular-nums; color:#DB011C">{{ s.qty }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <p style="margin:10px 0 0; font-family:'Roboto Mono',monospace; font-size:10px; line-height:1.7; text-transform:uppercase; letter-spacing:.1em; color:#6E747C">Precio de referencia · maderería local</p>
+                </div>
+
+                <div style="height:{{ contentBottom }}"></div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ showSteps }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute; inset:0; display:flex; flex-direction:column; background:#14161A; animation:fadeIn .3s ease both">
+                <div style="position:relative; flex-shrink:0; background:radial-gradient(circle at 50% 40%,#23262B 0%,#0E0F11 100%); transition:opacity .3s ease; opacity:{{ staleOpacity }}; height:{{ stepsPaneHeight }}; padding-top:{{ contentTop }}; box-sizing:border-box">
+                  <canvas ref="{{ canvasRef }}" style="display:block; width:100%; height:100%; touch-action:none"></canvas>
+                  <div style="pointer-events:none; position:absolute; bottom:8px; left:0; right:0; display:flex; justify-content:center">
+                    <span style="border-radius:3px; background:rgba(30,33,38,.85); padding:5px 11px; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.14em; color:#9BA0A6">{{ stepHint }}</span>
+                  </div>
+                </div>
+
+                <div style="flex:1; min-height:0; overflow-y:auto; padding:16px 22px 0">
+                  <div style="display:flex; align-items:center; gap:14px">
+                    <span style="position:relative; display:flex; height:52px; width:52px; flex-shrink:0; align-items:center; justify-content:center; border-radius:50%; background:{{ ringGradient }}">
+                      <span style="display:flex; height:42px; width:42px; align-items:center; justify-content:center; border-radius:50%; background:#14161A; font-family:'Roboto Mono',monospace; font-size:12px; font-weight:500; font-variant-numeric:tabular-nums; color:#F5F6F7">{{ stepsDoneText }}</span>
+                    </span>
+                    <div style="min-width:0">
+                      <h2 style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; line-height:1">Armado</h2>
+                      <p style="margin:2px 0 0; font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.14em; color:#8B9198">{{ stepsSubtitle }}</p>
+                    </div>
+                  </div>
+
+                  <ol style="margin:16px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px">
+                    <sc-for list="{{ stepCards }}" as="st" hint-placeholder-count="4">
+                      <li>
+                        <div style="border-radius:3px; padding:12px; transition:all .2s ease; border:1px solid #2E3238; background:#1E2126; {{ st.cardStyle }}">
+                        <div style="display:flex; gap:10px; align-items:stretch">
+                          <button onClick="{{ st.onToggleDone }}" style="flex-shrink:0; display:flex; height:44px; width:44px; align-items:center; justify-content:center; border-radius:3px; cursor:pointer; font-size:17px; transition:all .18s ease; border:1.5px solid #4A5057; background:#14161A; color:transparent; {{ st.checkStyle }}" aria-label="Marcar paso">✓</button>
+                          <button onClick="{{ st.onSelect }}" style="min-width:0; flex:1; border:0; background:none; padding:0; text-align:left; cursor:pointer">
+                            <span style="display:flex; align-items:baseline; gap:8px">
+                              <span style="font-family:'Roboto Mono',monospace; font-size:10px; color:#DB011C">{{ st.num }}</span>
+                              <span style="font-family:'Barlow Condensed',sans-serif; font-size:21px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; color:#F5F6F7; {{ st.titleStyle }}">{{ st.title }}</span>
+                            </span>
+                            <span style="display:block; margin-top:4px; font-size:13px; line-height:1.5; color:#9BA0A6; text-wrap:pretty">{{ st.description }}</span>
+                            <sc-if value="{{ st.hasRefs }}" hint-placeholder-val="{{ true }}">
+                              <span style="display:flex; margin-top:8px; gap:5px; flex-wrap:wrap">
+                                <sc-for list="{{ st.refs }}" as="r" hint-placeholder-count="2">
+                                  <span style="border-radius:3px; padding:3px 7px; font-family:'Roboto Mono',monospace; font-size:10px; border:1px solid #2E3238; background:#23262B; color:#9BA0A6; {{ r.chipStyle }}">{{ r.label }}</span>
+                                </sc-for>
+                              </span>
+                            </sc-if>
+                          </button>
+                        </div>
+                        <sc-if value="{{ st.showPhoto }}" hint-placeholder-val="{{ false }}">
+                          <div style="margin-top:12px; display:flex; gap:10px; align-items:center; border-top:1px solid #2E3238; padding-top:12px; animation:fadeIn .25s ease both">
+                            <image-slot id="{{ st.photoId }}" shape="rounded" radius="3" placeholder="Foto" style="width:76px; height:60px; flex-shrink:0; color:#8B9198"></image-slot>
+                            <div style="min-width:0">
+                              <p style="margin:0; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.16em; color:#DB011C">Avance / progress</p>
+                              <p style="margin:3px 0 0; font-size:12px; line-height:1.5; color:#9BA0A6; text-wrap:pretty">Toma una foto de este paso para tu registro.</p>
+                            </div>
+                          </div>
+                        </sc-if>
+                        </div>
+                      </li>
+                    </sc-for>
+                  </ol>
+                  <div style="height:{{ contentBottom }}"></div>
+                </div>
+              </div>
+            </sc-if>
+
+          </div>
+
+          <sc-if value="{{ isTabs }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute; bottom:0; left:0; right:0; z-index:40; display:flex; gap:2px; padding:8px 12px 26px; background:rgba(14,15,17,.94); backdrop-filter:blur(16px); border-top:1px solid #2E3238">
+              <sc-for list="{{ tabItems }}" as="t" hint-placeholder-count="3">
+                <button onClick="{{ t.onSelect }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:52px; border:0; border-radius:3px; background:none; padding:6px 0; cursor:pointer; transition:all .18s ease; color:#6E747C; {{ t.selStyle }}">
+                  <svg viewBox="0 0 24 24" style="width:22px; height:22px" aria-hidden="true">
+                    <sc-if value="{{ t.isModel }}" hint-placeholder-val="{{ true }}">
+                      <g>
+                        <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+                        <path d="M4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="1.4"></path>
+                      </g>
+                    </sc-if>
+                    <sc-if value="{{ t.isCuts }}" hint-placeholder-val="{{ false }}">
+                      <g>
+                        <rect x="4" y="3" width="16" height="18" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"></rect>
+                        <path d="M4 10h16M12 10v11" fill="none" stroke="currentColor" stroke-width="1.4"></path>
+                      </g>
+                    </sc-if>
+                    <sc-if value="{{ t.isSteps }}" hint-placeholder-val="{{ false }}">
+                      <g>
+                        <path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+                      </g>
+                    </sc-if>
+                  </svg>
+                  <span style="font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.06em">{{ t.label }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute; inset:0; z-index:70; display:flex; flex-direction:column; justify-content:flex-end; background:rgba(8,9,11,.6); animation:fadeIn .2s ease both">
+              <button onClick="{{ closeExport }}" style="position:absolute; inset:0; border:0; background:none; cursor:pointer" aria-label="Cerrar"></button>
+              <div style="position:relative; border-radius:6px 6px 0 0; border-top:3px solid #DB011C; background:#14161A; padding:10px 18px 30px; animation:sheetUp .34s cubic-bezier(.2,.9,.2,1) both">
+                <span style="display:block; width:38px; height:4px; margin:0 auto 14px; border-radius:2px; background:#3A3F45"></span>
+                <p style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; text-transform:uppercase; letter-spacing:.01em; line-height:1; color:#F5F6F7">Compartir</p>
+                <p style="margin:4px 0 14px; font-family:'Roboto Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:.14em; color:#8B9198">{{ projectTitle }}</p>
+                <div style="display:flex; flex-direction:column; gap:8px">
+                  <sc-for list="{{ exportRows }}" as="e" hint-placeholder-count="4">
+                    <button onClick="{{ e.onSelect }}" style="display:flex; align-items:center; gap:12px; width:100%; min-height:56px; border:1px solid #2E3238; border-radius:3px; background:#1E2126; padding:10px 14px; text-align:left; cursor:pointer; color:#F5F6F7" style-active="transform:scale(.99)" style-hover="border-color:#3A3F45">
+                      <span style="display:flex; height:34px; width:34px; flex-shrink:0; align-items:center; justify-content:center; border-radius:3px; background:#DB011C; font-family:'Roboto Mono',monospace; font-size:12px; font-weight:700; color:#fff">{{ e.tag }}</span>
+                      <span style="min-width:0; flex:1">
+                        <span style="display:block; font-family:'Barlow Condensed',sans-serif; font-size:19px; font-weight:600; text-transform:uppercase; letter-spacing:.03em">{{ e.label }}</span>
+                        <span style="display:block; font-size:12px; color:#8B9198">{{ e.sub }}</span>
+                      </span>
+                      <span style="color:#6E747C">›</span>
+                    </button>
+                  </sc-for>
+                </div>
+                <button onClick="{{ closeExport }}" style="margin-top:12px; width:100%; min-height:52px; border:1px solid #2E3238; border-radius:3px; background:#191B1F; color:#9BA0A6; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:600; text-transform:uppercase; letter-spacing:.05em">Cancelar</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute; left:0; right:0; bottom:104px; z-index:65; display:flex; justify-content:center; pointer-events:none">
+              <span style="border-radius:3px; border-left:3px solid #DB011C; background:#23262B; padding:11px 16px; font-size:13px; color:#F5F6F7; animation:toastIn .28s cubic-bezier(.2,.9,.2,1) both">{{ toast }}</span>
+            </div>
+          </sc-if>
+
+        </div>
+      </sc-if>
+
+    </x-import>
+
+    <div style="width:236px; flex-shrink:0; padding-top:8px">
+      <p style="margin:0 0 10px; font-family:'Roboto Mono',monospace; font-size:9px; text-transform:uppercase; letter-spacing:.2em; color:#5A6068">Decisiones / notes</p>
+      <div style="display:flex; flex-direction:column; gap:14px">
+        <div style="border-left:3px solid #DB011C; padding-left:12px">
+          <p style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:600; text-transform:uppercase; letter-spacing:.03em">Rojo sólo para actuar</p>
+          <p style="margin:3px 0 0; font-size:12px; line-height:1.6; color:#4A5057; text-wrap:pretty">Un acento, negro y acero: el rojo marca acción, pieza activa y error. Nada más compite con él.</p>
+        </div>
+        <div style="border-left:3px solid #101113; padding-left:12px">
+          <p style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:600; text-transform:uppercase; letter-spacing:.03em">Oscuro para el taller</p>
+          <p style="margin:3px 0 0; font-size:12px; line-height:1.6; color:#4A5057; text-wrap:pretty">Superficies negras y tipografía condensada: se lee de lejos, en el banco de trabajo y con poca luz.</p>
+        </div>
+        <div style="border-left:3px solid #8B9198; padding-left:12px">
+          <p style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:600; text-transform:uppercase; letter-spacing:.03em">Números en mono</p>
+          <p style="margin:3px 0 0; font-size:12px; line-height:1.6; color:#4A5057; text-wrap:pretty">Cada medida en cifras tabulares para comparar de un vistazo, como en la etiqueta de una herramienta.</p>
+        </div>
+        <div style="border-left:3px solid #C08A4E; padding-left:12px">
+          <p style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:600; text-transform:uppercase; letter-spacing:.03em">Modo taller</p>
+          <p style="margin:3px 0 0; font-size:12px; line-height:1.6; color:#4A5057; text-wrap:pretty">El botón ☀ del encabezado mantiene la pantalla encendida, engrosa bordes y agranda los objetivos táctiles; además abre la foto de avance en el paso activo.</p>
+        </div>
+        <div style="border-left:3px solid #8B9198; padding-left:12px">
+          <p style="margin:0; font-family:'Barlow Condensed',sans-serif; font-size:17px; font-weight:600; text-transform:uppercase; letter-spacing:.03em">La madera es el color</p>
+          <p style="margin:3px 0 0; font-size:12px; line-height:1.6; color:#4A5057; text-wrap:pretty">El único tono cálido es el triplay: en el 3D y en la hoja de corte, para que la pieza sea el protagonista.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;navModel&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;tabs&quot;,&quot;wizard&quot;],&quot;default&quot;:&quot;tabs&quot;,&quot;tsType&quot;:&quot;'tabs' | 'wizard'&quot;,&quot;section&quot;:&quot;Navegación&quot;},&quot;view3d&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;immersive&quot;,&quot;card&quot;],&quot;default&quot;:&quot;immersive&quot;,&quot;tsType&quot;:&quot;'immersive' | 'card'&quot;,&quot;section&quot;:&quot;Vista 3D&quot;},&quot;gridFloor&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Vista 3D&quot;},&quot;explodeFactor&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.6,&quot;min&quot;:1,&quot;max&quot;:2.6,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Vista 3D&quot;},&quot;tallerDefault&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Taller&quot;},&quot;projectName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Librero sala&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contenido&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'onboarding',
+    tab: 'model',
+    templateId: 'bookshelf',
+    paramsByTemplate: {},
+    exploded: false,
+    activeStep: 1,
+    doneSteps: [],
+    checked: [],
+    sheetOpen: false,
+    taller: null,
+    toast: null,
+    engineReady: !!window.PlyEngine,
+    navModel: null,
+    view3d: null,
+  };
+
+  constructor(props) {
+    super(props);
+    this.canvasRef = React.createRef();
+    this.g = null;
+    this.lastGood = null;
+  }
+
+  componentDidMount() {
+    if (!window.PlyEngine) {
+      this.poll = setInterval(() => {
+        if (window.PlyEngine) { clearInterval(this.poll); this.setState({ engineReady: true }); }
+      }, 40);
+    }
+    this.onThree = () => this.syncGL();
+    window.addEventListener('three-ready', this.onThree);
+    this.raf = requestAnimationFrame(this.tick);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.poll);
+    clearTimeout(this.toastTimer);
+    window.removeEventListener('three-ready', this.onThree);
+    cancelAnimationFrame(this.raf);
+  }
+
+  componentDidUpdate() { this.syncGL(); }
+
+  get nav() { return this.state.navModel ?? this.props.navModel ?? 'tabs'; }
+  get view3d() { return this.state.view3d ?? this.props.view3d ?? 'immersive'; }
+  get explodeFactor() { return this.props.explodeFactor ?? 1.6; }
+  get showGrid() { return this.props.gridFloor ?? true; }
+  get taller() { return this.state.taller ?? this.props.tallerDefault ?? false; }
+
+  get template() {
+    const E = window.PlyEngine;
+    if (!E) return null;
+    return E.templates.find((t) => t.id === this.state.templateId) ?? E.templates[0];
+  }
+
+  get params() { return this.state.paramsByTemplate[this.state.templateId] ?? {}; }
+
+  setParam(key, value) {
+    this.setState((s) => ({
+      paramsByTemplate: {
+        ...s.paramsByTemplate,
+        [s.templateId]: { ...(s.paramsByTemplate[s.templateId] || {}), [key]: value },
+      },
+    }));
+  }
+
+  async toggleTaller() {
+    const next = !this.taller;
+    this.setState({ taller: next });
+    try {
+      if (next && 'wakeLock' in navigator) {
+        this.wakeLock = await navigator.wakeLock.request('screen');
+      } else if (this.wakeLock) {
+        await this.wakeLock.release();
+        this.wakeLock = null;
+      }
+    } catch (e) { /* wake lock unavailable — visual mode still applies */ }
+    this.flash(next ? 'Modo taller activado' : 'Modo taller desactivado');
+  }
+
+  flash(msg) {
+    clearTimeout(this.toastTimer);
+    this.setState({ toast: msg });
+    this.toastTimer = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+
+  // ---------- three.js ----------
+  syncGL() {
+    if (!window.THREE || !this.designNow) return;
+    const canvas = this.canvasRef.current;
+    if (!canvas) { if (this.g) this.g.live = false; return; }
+    if (!this.g || this.g.canvas !== canvas) this.g = this.initGL(canvas);
+    this.g.live = true;
+    this.buildScene(this.designNow);
+  }
+
+  initGL(canvas) {
+    const THREE = window.THREE;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, 1, 10, 30000);
+    scene.add(new THREE.HemisphereLight(0xdfe4ea, 0x14161a, 0.65));
+    const key = new THREE.DirectionalLight(0xffffff, 1.25);
+    key.position.set(1400, 2800, 1900);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    const sc = key.shadow.camera;
+    sc.left = -2200; sc.right = 2200; sc.top = 2200; sc.bottom = -2200; sc.near = 100; sc.far = 9000;
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xff5a68, 0.22);
+    fill.position.set(-1800, 1100, -1400);
+    scene.add(fill);
+
+    const grid = new THREE.Group();
+    const cells = new THREE.GridHelper(8000, 80, 0x2e3238, 0x2e3238);
+    cells.material.transparent = true; cells.material.opacity = 0.9;
+    const sections = new THREE.GridHelper(8000, 16, 0x4a5057, 0x4a5057);
+    sections.material.transparent = true; sections.material.opacity = 0.9;
+    grid.add(cells, sections);
+    scene.add(grid);
+
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(9000, 9000),
+      new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.55 }),
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 1;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const group = new THREE.Group();
+    scene.add(group);
+
+    const g = { canvas, renderer, scene, camera, group, grid, live: true, orbit: null, signature: '' };
+    this.attachGestures(g);
+    return g;
+  }
+
+  attachGestures(g) {
+    const canvas = g.canvas;
+    const pointers = new Map();
+    let pinchStart = 0, radiusStart = 0;
+    canvas.addEventListener('pointerdown', (e) => {
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      canvas.setPointerCapture(e.pointerId);
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        pinchStart = Math.hypot(a.x - b.x, a.y - b.y);
+        radiusStart = g.orbit ? g.orbit.radius : 0;
+      }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      const prev = pointers.get(e.pointerId);
+      if (!prev || !g.orbit) return;
+      if (pointers.size === 2) {
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        const [a, b] = [...pointers.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinchStart > 0) {
+          g.orbit.radius = Math.max(700, Math.min(12000, radiusStart * (pinchStart / Math.max(1, d))));
+          this.placeCamera(g);
+        }
+        return;
+      }
+      g.orbit.theta -= (e.clientX - prev.x) * 0.008;
+      g.orbit.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.03, g.orbit.phi - (e.clientY - prev.y) * 0.007));
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      this.placeCamera(g);
+    });
+    const end = (e) => { pointers.delete(e.pointerId); pinchStart = 0; };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    canvas.addEventListener('wheel', (e) => {
+      if (!g.orbit) return;
+      e.preventDefault();
+      g.orbit.radius = Math.max(700, Math.min(12000, g.orbit.radius * (1 + Math.sign(e.deltaY) * 0.08)));
+      this.placeCamera(g);
+    }, { passive: false });
+  }
+
+  placeCamera(g) {
+    const o = g.orbit;
+    if (!o) return;
+    const s = Math.sin(o.phi) * o.radius;
+    g.camera.position.set(
+      o.target[0] + s * Math.sin(o.theta),
+      o.target[1] + Math.cos(o.phi) * o.radius,
+      o.target[2] + s * Math.cos(o.theta),
+    );
+    g.camera.lookAt(o.target[0], o.target[1], o.target[2]);
+  }
+
+  buildScene(design) {
+    const THREE = window.THREE;
+    const g = this.g;
+    const inSteps = this.state.screen === 'result' && this.state.tab === 'steps';
+    const step = inSteps ? design.steps.find((s) => s.order === this.state.activeStep) || null : null;
+    const sig = JSON.stringify([
+      design.templateId, design.params, this.state.exploded,
+      step ? step.order : null, this.showGrid, this.explodeFactor,
+    ]);
+    if (sig === g.signature) return;
+    g.signature = sig;
+    g.grid.visible = this.showGrid;
+
+    while (g.group.children.length) {
+      const c = g.group.children.pop();
+      c.traverse?.((n) => { n.geometry?.dispose?.(); n.material?.dispose?.(); });
+    }
+
+    const n = design.placements.length || 1;
+    const centroid = design.placements.reduce(
+      (a, p) => [a[0] + p.position[0] / n, a[1] + p.position[1] / n, a[2] + p.position[2] / n],
+      [0, 0, 0],
+    );
+    const F = this.explodeFactor;
+    const highlight = step ? new Set(step.panelRefs) : null;
+    const offsets = (step && step.explodeOffsets) || {};
+
+    for (const p of design.placements) {
+      let pos = this.state.exploded
+        ? [
+            centroid[0] + (p.position[0] - centroid[0]) * F,
+            centroid[1] + (p.position[1] - centroid[1]) * F,
+            centroid[2] + (p.position[2] - centroid[2]) * F,
+          ]
+        : p.position.slice();
+      const off = highlight ? offsets[p.panelId] : undefined;
+      if (off) pos = [pos[0] + off[0], pos[1] + off[1], pos[2] + off[2]];
+      const color = !highlight ? 0xc08a4e : highlight.has(p.panelId) ? 0xdb011c : 0x4a5057;
+      const geo = new THREE.BoxGeometry(p.size[0], p.size[1], p.size[2]);
+      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness: 0.62 }));
+      mesh.position.set(pos[0], pos[1], pos[2]);
+      mesh.castShadow = true;
+      mesh.add(new THREE.LineSegments(
+        new THREE.EdgesGeometry(geo),
+        new THREE.LineBasicMaterial({ color: highlight && highlight.has(p.panelId) ? 0xffffff : 0x1a1c20 }),
+      ));
+      g.group.add(mesh);
+    }
+
+    if (!g.orbit) {
+      const off = [2000 - centroid[0], 1900 - centroid[1], 3000 - centroid[2]];
+      const radius = Math.hypot(off[0], off[1], off[2]);
+      g.orbit = { target: centroid, radius, theta: Math.atan2(off[0], off[2]), phi: Math.acos(off[1] / radius) };
+    } else {
+      g.orbit.target = centroid;
+    }
+    this.placeCamera(g);
+  }
+
+  tick = () => {
+    this.raf = requestAnimationFrame(this.tick);
+    const g = this.g;
+    if (!g || !g.live || !g.canvas.isConnected) return;
+    const w = g.canvas.clientWidth, h = g.canvas.clientHeight;
+    if (!w || !h) return;
+    if (g.w !== w || g.h !== h) {
+      g.w = w; g.h = h;
+      g.renderer.setSize(w, h, false);
+      g.camera.aspect = w / h;
+      g.camera.updateProjectionMatrix();
+    }
+    g.renderer.render(g.scene, g.camera);
+  };
+
+  renderVals() {
+    const E = window.PlyEngine;
+    const st = this.state;
+    const nav = this.nav;
+    const immersive = this.view3d === 'immersive';
+    const isTabs = nav === 'tabs';
+    const taller = this.taller;
+    const wizStepIdx = st.screen === 'templates' ? 0 : st.screen === 'measure' ? 1 : 2;
+
+    const go = (screen) => () => this.setState({ screen, sheetOpen: false });
+
+    const vals = {
+      canvasRef: this.canvasRef,
+      isOnboarding: st.screen === 'onboarding',
+      isProjects: st.screen === 'projects',
+      isTemplates: st.screen === 'templates',
+      isMeasure: st.screen === 'measure',
+      isCamera: st.screen === 'camera',
+      isResult: st.screen === 'result',
+      isTabs: isTabs && st.screen === 'result',
+      isWizard: !isTabs,
+      goProjects: go('projects'),
+      goTemplates: go('templates'),
+      goMeasure: go('measure'),
+      goCamera: go('camera'),
+      goResult: () => this.setState({ screen: 'result', tab: 'model', sheetOpen: false }),
+      goCuts: () => this.setState({ screen: 'result', tab: 'cuts' }),
+      backFromResult: () => this.setState({ screen: 'measure' }),
+      openExport: () => this.setState({ sheetOpen: true }),
+      closeExport: () => this.setState({ sheetOpen: false }),
+      sheetOpen: st.sheetOpen,
+      hasToast: !!st.toast,
+      toast: st.toast,
+      show3d: st.tab === 'model',
+      showCuts: st.tab === 'cuts',
+      showSteps: st.tab === 'steps',
+      camValue: '812',
+      camCta: 'Usar 812 mm',
+      useMeasure: () => {
+        this.setParam('width', 810);
+        this.setState({ screen: 'measure' });
+        this.flash('Ancho actualizado a 810 mm');
+      },
+      wizLabel: `Paso ${wizStepIdx + 1} de 3`,
+      wizStepName: ['Plantilla', 'Medidas', 'Resultado'][wizStepIdx],
+      wizPct: `${((wizStepIdx + 1) / 3) * 100}%`,
+      templatesCta: isTabs ? 'Elegir medidas' : 'Continuar · medidas',
+      measureCta: isTabs ? 'Ver diseño' : 'Continuar · resultado',
+      measureTitle: isTabs ? 'Medidas' : 'Dime las medidas',
+      taller,
+      toggleTaller: () => this.toggleTaller(),
+      tallerBtnStyle: taller ? 'border-color:#DB011C; background:#DB011C; color:#fff' : '',
+      contentTop: (isTabs ? 104 : 150) + (taller ? 42 : 0) + 'px',
+      contentBottom: isTabs ? '110px' : '40px',
+      hintTop: (isTabs ? 116 : 160) + (taller ? 42 : 0) + 'px',
+      stepsPaneHeight: 250 + (isTabs ? 104 : 150) + (taller ? 42 : 0) + 'px',
+      canvasWrapStyle: immersive ? 'flex:1; min-height:0' : 'flex:0 0 46%',
+      infoCardStyle: immersive
+        ? 'position:absolute; left:12px; right:12px; bottom:' + (isTabs ? '96px' : '18px') + '; border-radius:4px; border:1px solid #2E3238; border-top:3px solid #DB011C; background:rgba(20,22,26,.95); backdrop-filter:blur(16px); padding:16px; box-shadow:0 16px 34px rgb(0 0 0 / .45)'
+        : 'flex:1; min-height:0; overflow-y:auto; border-top:1px solid #2E3238; background:#14161A; padding:16px 18px ' + (isTabs ? '104px' : '32px'),
+      navSwitch: [
+        { id: 'tabs', label: 'Tabs' },
+        { id: 'wizard', label: 'Wizard' },
+      ].map((o) => ({
+        label: o.label,
+        onSelect: () => this.setState({ navModel: o.id, screen: 'result', tab: 'model' }),
+        selStyle: nav === o.id ? 'border-color:#DB011C; background:#DB011C; color:#fff' : '',
+      })),
+      view3dSwitch: [
+        { id: 'immersive', label: 'Inmersivo' },
+        { id: 'card', label: 'Tarjeta' },
+      ].map((o) => ({
+        label: o.label,
+        onSelect: () => this.setState({ view3d: o.id, screen: 'result', tab: 'model' }),
+        selStyle: this.view3d === o.id ? 'border-color:#DB011C; background:#DB011C; color:#fff' : '',
+      })),
+      screenIndex: [
+        { id: 'onboarding', label: 'Bienvenida', en: 'onboarding' },
+        { id: 'projects', label: 'Proyectos', en: 'saved projects' },
+        { id: 'templates', label: 'Plantillas', en: 'template picker' },
+        { id: 'measure', label: 'Medidas', en: 'measurements' },
+        { id: 'camera', label: 'Medir con cámara', en: 'camera measure' },
+        { id: 'result', label: 'Diseño · Cortes · Pasos', en: 'result' },
+      ].map((s, i) => ({
+        num: String(i + 1).padStart(2, '0'),
+        label: s.label,
+        en: s.en,
+        onSelect: () => this.setState({ screen: s.id, sheetOpen: false }),
+        selStyle: st.screen === s.id ? 'border-left-color:#DB011C; background:#fff; color:#101113' : '',
+        numStyle: st.screen === s.id ? 'color:#DB011C' : '',
+      })),
+      projects: [
+        { name: 'Librero sala', meta: '800 × 1200 × 300 · 18 mm', when: 'hoy', b1: '60%', b2: '85%', b3: '45%' },
+        { name: 'Mesa auxiliar', meta: '500 × 350 × 450 · 15 mm', when: 'ayer', b1: '40%', b2: '55%', b3: '70%' },
+        { name: 'Librero taller', meta: '1100 × 1800 × 350 · 18 mm', when: 'may 12', b1: '80%', b2: '50%', b3: '90%' },
+      ].map((p, i) => ({
+        ...p,
+        onOpen: () => this.setState({
+          screen: 'result',
+          tab: 'model',
+          templateId: i === 1 ? 'side-table' : 'bookshelf',
+        }),
+      })),
+      tabItems: [
+        { id: 'model', label: 'Diseño' },
+        { id: 'cuts', label: 'Cortes' },
+        { id: 'steps', label: 'Pasos' },
+      ].map((t) => ({
+        label: t.label,
+        isModel: t.id === 'model',
+        isCuts: t.id === 'cuts',
+        isSteps: t.id === 'steps',
+        onSelect: () => this.setState({ tab: t.id }),
+        selStyle: st.tab === t.id ? 'background:#DB011C; color:#fff' : '',
+      })),
+      segItems: [
+        { id: 'model', label: '3D' },
+        { id: 'cuts', label: 'Cortes' },
+        { id: 'steps', label: 'Pasos' },
+      ].map((t) => ({
+        label: t.label,
+        onSelect: () => this.setState({ tab: t.id }),
+        selStyle: st.tab === t.id ? 'background:#DB011C; color:#fff' : '',
+      })),
+      exportRows: [
+        { tag: 'PDF', label: 'Plan de corte', sub: 'Hojas, lista de piezas y pasos' },
+        { tag: 'TXT', label: 'Lista de compras', sub: 'Para el mostrador de la maderería' },
+        { tag: '↗', label: 'Compartir enlace', sub: 'Vista 3D en el navegador' },
+        { tag: 'AD', label: 'AirDrop al carpintero', sub: 'Dispositivos cerca' },
+      ].map((e) => ({
+        ...e,
+        onSelect: () => { this.setState({ sheetOpen: false }); this.flash(e.label + ' listo'); },
+      })),
+      toggleExploded: () => this.setState((s) => ({ exploded: !s.exploded })),
+      explodeLabel: st.exploded ? 'Armado' : 'Explosión',
+      explodeStyle: st.exploded ? 'border-color:#DB011C; background:#DB011C; color:#fff' : '',
+      stepHint: st.activeStep ? `Paso ${st.activeStep} resaltado` : 'Toca un paso para resaltar',
+    };
+
+    if (!E) return vals;
+
+    const template = this.template;
+    const params = E.resolveParams(template.params, this.params);
+    const result = template.generate(this.params);
+    if (result.ok) this.lastGood = result.design;
+    const design = result.ok ? result.design : this.lastGood;
+    this.designNow = design;
+    const issues = result.ok ? [] : result.issues;
+
+    vals.staleOpacity = result.ok ? '1' : '0.45';
+    vals.hasGeneralIssues = issues.some((i) => !i.paramKey);
+    vals.generalIssues = issues.filter((i) => !i.paramKey);
+    vals.resultCtaStyle = result.ok ? '' : 'background:#2E3238; color:#6E747C';
+    vals.templateCards = E.templates.map((t, i) => {
+      const active = t.id === st.templateId;
+      const chips = t.params
+        .filter((p) => p.kind === 'number')
+        .slice(0, 3)
+        .map((p) => ({ label: `${p.label} ${p.min}–${p.max}` }));
+      return {
+        num: String(i + 1).padStart(2, '0') + ' · ' + (t.id === 'bookshelf' ? 'estantería' : 'mesa'),
+        name: t.name,
+        description: t.description,
+        chips,
+        onSelect: () => this.setState({ templateId: t.id, activeStep: 1, checked: [], doneSteps: [] }),
+        selStyle: active ? 'border-color:#DB011C; background:#23181A' : '',
+        checkStyle: active ? 'border-color:#DB011C; background:#DB011C; color:#fff; animation:pop .3s ease both' : '',
+      };
+    });
+    vals.fields = template.params.map((spec) => {
+      const value = params[spec.key];
+      const fieldIssues = issues.filter((i) => i.paramKey === spec.key);
+      const bad = fieldIssues.length > 0;
+      return {
+        key: spec.key,
+        label: spec.label,
+        value,
+        unitText: spec.unit ? ' ' + spec.unit : '',
+        isNumber: spec.kind === 'number',
+        isSelect: spec.kind === 'select',
+        min: spec.min,
+        max: spec.max,
+        step: spec.step,
+        invalidAttr: bad ? 'true' : 'false',
+        chipStyle: bad ? 'border-color:#DB011C; background:#2A0F14; color:#FF6B78' : '',
+        onChange: (e) => this.setParam(spec.key, Number(e.target.value)),
+        options: (spec.options || []).map((opt) => ({
+          label: opt,
+          onSelect: () => this.setParam(spec.key, opt),
+          selStyle: opt === value ? 'border-color:#DB011C; background:#DB011C; color:#fff' : '',
+        })),
+        issues: fieldIssues,
+      };
+    });
+
+    if (!design) return vals;
+
+    const labels = Object.fromEntries(design.panels.map((p) => [p.id, p.label]));
+    const layout = E.nest(design.panels);
+    const totalPieces = design.panels.reduce((n, p) => n + p.qty, 0);
+    const p = design.params;
+
+    vals.projectTitle = this.props.projectName ?? (template.id === 'bookshelf' ? 'Librero sala' : 'Mesa auxiliar');
+    vals.projectMeta = `${p.width} × ${p.height} × ${p.depth} · ${p.thickness} mm`;
+    vals.dimsHeadline = `${p.width} × ${p.height} × ${p.depth} mm`;
+    vals.measureSummary = `Con estas medidas salen ${totalPieces} piezas en ${layout.sheets.length} hoja${layout.sheets.length > 1 ? 's' : ''} de triplay, con ${layout.wastePercent.toFixed(0)}% de desperdicio.`;
+    vals.cutsMeta = `${layout.sheets.length} hoja${layout.sheets.length > 1 ? 's' : ''} · 1220 × 2440 mm · sierra 3 mm`;
+    vals.statCards = [
+      { label: 'Hojas', value: String(layout.sheets.length), sub: 'triplay' },
+      { label: 'Piezas', value: String(totalPieces), sub: 'cortes' },
+      { label: 'Merma', value: layout.wastePercent.toFixed(0) + '%', sub: 'del material' },
+    ];
+    vals.sheets = layout.sheets.map((sheet, i) => ({
+      caption: `Hoja ${i + 1} de ${layout.sheets.length} — ${sheet.thickness} mm`,
+      pieces: sheet.pieces.map((pc) => {
+        const id = `${pc.panelId}#${pc.instance}`;
+        const done = st.checked.includes(id);
+        return {
+          x: pc.x, y: pc.y, w: pc.width, h: pc.length,
+          cx: pc.x + pc.width / 2,
+          ty1: pc.y + pc.length / 2 - 8,
+          ty2: pc.y + pc.length / 2 + 42,
+          label: `${labels[pc.panelId] ?? pc.panelId} ${pc.instance + 1}`,
+          dims: `${pc.width} × ${pc.length}`,
+          fill: done ? '#2E3238' : '#C08A4E',
+          stroke: done ? '#4A5057' : '#8A5F2C',
+          textFill: done ? '#8B9198' : '#1A1206',
+          subFill: done ? '#6E747C' : '#5C3D18',
+        };
+      }),
+    }));
+
+    const allPieces = layout.sheets.flatMap((s) => s.pieces);
+    vals.checklist = allPieces.map((pc) => {
+      const id = `${pc.panelId}#${pc.instance}`;
+      const done = st.checked.includes(id);
+      return {
+        label: `${labels[pc.panelId] ?? pc.panelId} ${pc.instance + 1}`,
+        dims: `${pc.width} × ${pc.length} mm`,
+        onToggle: () => this.setState((s) => ({
+          checked: s.checked.includes(id) ? s.checked.filter((x) => x !== id) : [...s.checked, id],
+        })),
+        rowStyle: (done ? 'border-color:#2E3238; background:#191B1F; opacity:.7' : '')
+          + (taller ? '; min-height:68px; border-width:2px' : ''),
+        boxStyle: done ? 'border-color:#DB011C; background:#DB011C; color:#fff; animation:pop .28s ease both' : '',
+        labelStyle: done ? 'color:#8B9198; text-decoration:line-through' : '',
+      };
+    });
+    const doneCuts = allPieces.filter((pc) => st.checked.includes(`${pc.panelId}#${pc.instance}`)).length;
+    vals.cutProgressText = `${doneCuts} de ${allPieces.length} cortes`;
+    vals.cutProgressPct = `${allPieces.length ? (doneCuts / allPieces.length) * 100 : 0}%`;
+
+    vals.shoppingRows = [
+      { name: `Triplay ${p.thickness} mm · 1220 × 2440`, qty: `${layout.sheets.length} hoja${layout.sheets.length > 1 ? 's' : ''}` },
+      ...design.hardware.map((h) => ({ name: `${E.HARDWARE_LABELS[h.type]} ${h.size}`, qty: `${h.qty} pzas` })),
+      { name: 'Lija grano 180', qty: '2 pliegos' },
+    ].map((row, i) => ({ ...row, firstStyle: i === 0 ? 'border-top:0' : '' }));
+
+    const doneCount = st.doneSteps.length;
+    vals.stepsDoneText = `${doneCount}/${design.steps.length}`;
+    vals.stepsSubtitle = doneCount === design.steps.length ? 'Terminado · nice work' : 'Toca un paso para verlo en 3D';
+    const pct = design.steps.length ? (doneCount / design.steps.length) * 360 : 0;
+    vals.ringGradient = `conic-gradient(#DB011C ${pct}deg, #2E3238 ${pct}deg)`;
+    vals.stepCards = design.steps.map((step) => {
+      const active = step.order === st.activeStep;
+      const done = st.doneSteps.includes(step.order);
+      return {
+        num: String(step.order).padStart(2, '0'),
+        title: step.title,
+        description: step.description,
+        onSelect: () => this.setState({ activeStep: step.order }),
+        onToggleDone: () => this.setState((s) => ({
+          doneSteps: s.doneSteps.includes(step.order)
+            ? s.doneSteps.filter((x) => x !== step.order)
+            : [...s.doneSteps, step.order],
+          activeStep: step.order,
+        })),
+        photoId: `paso-${template.id}-${step.order}`,
+        showPhoto: taller && (active || done),
+        cardStyle: (done
+          ? 'border-color:#2E3238; background:#191B1F; opacity:.72'
+          : active
+            ? 'border-color:#DB011C; border-left:3px solid #DB011C; background:#23181A'
+            : '') + (taller ? '; border-width:2px; padding:16px' : ''),
+        checkStyle: done ? 'border-color:#DB011C; background:#DB011C; color:#fff; animation:pop .28s ease both' : '',
+        titleStyle: done ? 'color:#8B9198; text-decoration:line-through' : '',
+        hasRefs: step.panelRefs.length > 0,
+        refs: step.panelRefs.map((id) => ({
+          label: labels[id] ?? id,
+          chipStyle: active && !done ? 'border-color:#DB011C; background:#2A0F14; color:#FF9AA4' : '',
+        })),
+      };
+    });
+
+    return vals;
+  }
+}
+</script>
+</body>
+</html>
