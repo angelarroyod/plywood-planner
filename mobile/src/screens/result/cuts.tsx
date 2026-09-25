@@ -5,10 +5,10 @@ import { SheetSvg } from '@/components/sheet-svg';
 import {
   CUT_TIP,
   EDGE_BANDING_NOTE,
-  HARDWARE_LABELS,
   cutText,
   edgeBandTotals,
   edgeCodes,
+  hardwareText,
   sheetCuts,
 } from '@/lib/engine';
 import { useApp } from '@/lib/store';
@@ -44,7 +44,7 @@ export function CutsPane() {
     })),
     ...edgeBandTotals(design!.panels).map((t) => ({ name: t.label, qty: `${t.meters.toFixed(1)} m` })),
     ...design!.hardware.map((h) => ({
-      name: `${HARDWARE_LABELS[h.type]} ${h.size}`,
+      name: hardwareText(h),
       qty: `${h.qty} pzas`,
     })),
     // melamine is wiped, not sanded

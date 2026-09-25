@@ -14,8 +14,9 @@ export function StepsPane() {
   const { design, exploded, activeStep, setActiveStep, doneSteps, toggleStepDone, stale, taller } =
     useApp();
   const steps = design!.steps;
+  // A step may reference a fitting (the rod); panel labels win on a shared id.
   const labels = useMemo(
-    () => Object.fromEntries(design!.panels.map((p) => [p.id, p.label])),
+    () => Object.fromEntries([...design!.fittings, ...design!.panels].map((p) => [p.id, p.label])),
     [design],
   );
   const step = steps.find((s) => s.order === activeStep) ?? null;
