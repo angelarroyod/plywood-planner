@@ -103,7 +103,7 @@ export function CutDiagram({ design }: { design: Design }) {
 
           <section className="w-80 shrink-0 space-y-8">
             <div>
-              <h3 className="rule-label">Lista de cortes</h3>
+              <h3 className="rule-label">Piezas</h3>
               <table className="mt-3 w-full text-sm">
                 <thead>
                   <tr className="border-b border-rule-strong text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">

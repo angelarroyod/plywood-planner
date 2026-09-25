@@ -101,7 +101,7 @@ export function PrintReport({ design }: { design: Design | null }) {
       <h1 className="display text-3xl font-extrabold">{template?.name ?? design.templateId}</h1>
       <p className="mt-1 font-mono text-[11px] text-ink-soft">{paramLine}</p>
 
-      <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Lista de cortes</h2>
+      <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Piezas</h2>
       <table className="mt-2 w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-ink/40 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
