@@ -4,6 +4,7 @@ import { hardwareText } from './labels.ts';
 import { nest } from './nesting.ts';
 import { bookshelf } from './templates/bookshelf.ts';
 import { sideTable } from './templates/side-table.ts';
+import { closet } from './templates/closet.ts';
 import type { Boring, Template } from './types.ts';
 
 function orderFor(template: Template, params = {}, title = 'Librero') {
@@ -123,5 +124,19 @@ describe('boring in the order', () => {
         'centro a 22 mm del canto, 12 mm de profundidad.',
     );
     expect(text).toContain('Total de perforaciones: 6.');
+  });
+});
+
+describe('closet order', () => {
+  it('asks the yard to drill the doors and cut the rod', () => {
+    const text = orderText(orderFor(closet, {}, 'Clóset modular'));
+    expect(text).toContain('7. Puerta — 1926 × 396 — 2 pzas — veta a lo largo — cubrecanto L1 L2 A1 A2');
+    expect(text).toContain(
+      'Barrenado para bisagra de 35 mm: pieza 7 (×2), 4 perforaciones cada una a 100 · 675 · 1251 · 1826 mm desde arriba, ' +
+        'centro a 22 mm del canto, 12 mm de profundidad.',
+    );
+    expect(text).toContain('Total de perforaciones: 8.');
+    expect(text).toContain('Tubo oval para clóset 15×30 mm, cortado a 762 mm × 1');
+    expect(text).toContain('Bisagra de cazoleta 35 mm recta × 8');
   });
 });
