@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildOrder, orderText } from './order.ts';
+import { BORING_NOTE, buildOrder, orderText } from './order.ts';
+import { hardwareText } from './labels.ts';
 import { nest } from './nesting.ts';
 import { bookshelf } from './templates/bookshelf.ts';
 import { sideTable } from './templates/side-table.ts';
-import type { Template } from './types.ts';
+import { closet } from './templates/closet.ts';
+import type { Boring, Template } from './types.ts';
 
 function orderFor(template: Template, params = {}, title = 'Librero') {
   const result = template.generate(params);
@@ -79,5 +81,73 @@ describe('orderText', () => {
 
   it('never contains prices', () => {
     expect(orderText(orderFor(bookshelf))).not.toMatch(/\$|MXN/);
+  });
+});
+
+describe('hardwareText', () => {
+  it('names the hardware and its size', () => {
+    expect(hardwareText({ type: 'confirmat', size: '5x50', qty: 20 })).toBe('Tornillo confirmat 5x50');
+  });
+
+  it('adds the cut length of items cut to size', () => {
+    expect(hardwareText({ type: 'rod', size: '15×30 mm', qty: 1, cutTo: 762 })).toBe(
+      'Tubo oval para clóset 15×30 mm, cortado a 762 mm',
+    );
+  });
+});
+
+const SIDE_CUPS: Boring = { panelId: 'side', kind: 'hinge-cup', diameter: 35, depth: 12, fromEdge: 22, along: [100, 600, 1100] };
+
+function drilledBookshelf() {
+  const result = bookshelf.generate({});
+  if (!result.ok) throw new Error('bookshelf must validate');
+  const design = { ...result.design, boring: [SIDE_CUPS] };
+  return buildOrder(design, nest(design.panels), 'Librero');
+}
+
+describe('boring in the order', () => {
+  it('lists none for designs without holes', () => {
+    expect(orderFor(bookshelf).boring).toEqual([]);
+    expect(orderText(orderFor(bookshelf))).not.toContain('Barrenado');
+  });
+
+  it('points the yard at the drilled piece by its order line', () => {
+    expect(drilledBookshelf().boring).toEqual([
+      { n: 1, label: 'Lateral', qty: 2, diameter: 35, depth: 12, fromEdge: 22, along: [100, 600, 1100] },
+    ]);
+  });
+
+  it('writes each drilled piece and the total holes into the text', () => {
+    const text = orderText(drilledBookshelf());
+    expect(text).toContain(
+      'Barrenado para bisagra de 35 mm: pieza 1 (×2), 3 perforaciones cada una a 100 · 600 · 1100 mm desde arriba, ' +
+        'centro a 22 mm del canto, 12 mm de profundidad.',
+    );
+    expect(text).toContain('Total de perforaciones: 6.');
+    expect(text).toContain('Total de perforaciones: 6.\n' + BORING_NOTE);
+  });
+});
+
+describe('BORING_NOTE', () => {
+  it('tells the yard the face, the mirror pair and the top', () => {
+    expect(BORING_NOTE).toBe(
+      'Cazoletas en la cara interior. Si son dos puertas, van en espejo: una con las perforaciones en el canto ' +
+        'izquierdo y la otra en el derecho. Marquen ARRIBA en cada puerta: las medidas son desde arriba.',
+    );
+  });
+});
+
+describe('closet order', () => {
+  it('asks the yard to drill the doors and cut the rod', () => {
+    const text = orderText(orderFor(closet, {}, 'Clóset modular'));
+    expect(text).toContain('7. Puerta — 1926 × 396 — 2 pzas — veta a lo largo — cubrecanto L1 L2 A1 A2');
+    expect(text).toContain(
+      'Barrenado para bisagra de 35 mm: pieza 7 (×2), 4 perforaciones cada una a 100 · 675 · 1251 · 1826 mm desde arriba, ' +
+        'centro a 22 mm del canto, 12 mm de profundidad.',
+    );
+    expect(text).toContain('Total de perforaciones: 8.');
+    expect(text).toContain('Total de perforaciones: 8.\n' + BORING_NOTE);
+    expect(text).toContain('Tubo oval para clóset 15×30 mm, cortado a 762 mm × 1');
+    expect(text).toContain('Bisagra de cazoleta 35 mm recta × 8');
   });
 });

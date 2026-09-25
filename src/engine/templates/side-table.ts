@@ -108,6 +108,8 @@ export function generateSideTable(raw: TemplateParams): GenerateResult {
     panels,
     placements,
     hardware: [{ type: 'confirmat', size: '5x50', qty: 8 }],
+    fittings: [],
+    boring: [],
     steps: steps.map((s, i) => ({ ...s, order: i + 1 })),
     edgeBanding: mode,
   };

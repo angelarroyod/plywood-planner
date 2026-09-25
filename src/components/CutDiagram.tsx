@@ -8,7 +8,7 @@ import { DEFAULT_CONFIG } from '../engine/types.ts';
 import type { Design } from '../engine/types.ts';
 import { useAppStore } from '../state/store.ts';
 import { SheetSvg } from './SheetSvg.tsx';
-import { HARDWARE_LABELS } from './labels.ts';
+import { hardwareText } from '../engine/labels.ts';
 
 export function CutDiagram({ design }: { design: Design }) {
   const layout = useMemo(() => nest(design.panels), [design]);
@@ -131,14 +131,11 @@ export function CutDiagram({ design }: { design: Design }) {
             </div>
 
             <div>
-              <h3 className="rule-label">Tornillería</h3>
+              <h3 className="rule-label">Herrajes</h3>
               <ul className="mt-3 space-y-1.5 text-sm">
                 {design.hardware.map((h, i) => (
                   <li key={i} className="flex items-baseline justify-between gap-2">
-                    <span>
-                      {HARDWARE_LABELS[h.type]}{' '}
-                      <span className="font-mono text-xs text-ink-soft">{h.size}</span>
-                    </span>
+                    <span>{hardwareText(h)}</span>
                     <span className="font-mono text-xs tabular-nums text-ply-deep">×{h.qty}</span>
                   </li>
                 ))}

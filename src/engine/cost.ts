@@ -1,5 +1,5 @@
-import { HARDWARE_LABELS } from './labels.ts';
-import type { Order } from './order.ts';
+import { hardwareText } from './labels.ts';
+import { boringHoles, type Order } from './order.ts';
 import type { Hardware } from './types.ts';
 
 /** User-entered prices in MXN. Never a price database — nothing here ships with values. */
@@ -8,9 +8,16 @@ export interface Prices {
   cut: { unit: 'meter' | 'cut'; price: number }; // per meter of cut, or per cut
   bands: Record<string, number>; // band label → per meter
   hardware: Record<string, number>; // hardwareKey → per piece
+  boring: number; // per hinge-cup hole the yard drills
 }
 
-export const EMPTY_PRICES: Prices = { sheets: {}, cut: { unit: 'meter', price: 0 }, bands: {}, hardware: {} };
+export const EMPTY_PRICES: Prices = {
+  sheets: {},
+  cut: { unit: 'meter', price: 0 },
+  bands: {},
+  hardware: {},
+  boring: 0,
+};
 
 export function hardwareKey(h: Hardware): string {
   return `${h.type} ${h.size}`;
@@ -37,7 +44,7 @@ function pickFiniteNumbers<K extends string | number>(v: unknown): Record<K, num
  */
 export function normalizePrices(stored: unknown): Prices {
   if (typeof stored !== 'object' || stored === null) return EMPTY_PRICES;
-  const s = stored as { sheets?: unknown; cut?: unknown; bands?: unknown; hardware?: unknown };
+  const s = stored as { sheets?: unknown; cut?: unknown; bands?: unknown; hardware?: unknown; boring?: unknown };
   const rawCut = typeof s.cut === 'object' && s.cut !== null ? (s.cut as { unit?: unknown; price?: unknown }) : {};
   const unit = rawCut.unit === 'meter' || rawCut.unit === 'cut' ? rawCut.unit : EMPTY_PRICES.cut.unit;
   const price = typeof rawCut.price === 'number' && Number.isFinite(rawCut.price) ? rawCut.price : EMPTY_PRICES.cut.price;
@@ -46,14 +53,15 @@ export function normalizePrices(stored: unknown): Prices {
     cut: { unit, price },
     bands: pickFiniteNumbers<string>(s.bands),
     hardware: pickFiniteNumbers<string>(s.hardware),
+    boring: typeof s.boring === 'number' && Number.isFinite(s.boring) ? s.boring : EMPTY_PRICES.boring,
   };
 }
 
 export interface CostLine {
-  key: string; // `sheet:{id}` | 'cut' | `band:{label}` | `hw:{hardwareKey}`
+  key: string; // `sheet:{id}` | 'cut' | 'boring' | `band:{label}` | `hw:{hardwareKey}`
   label: string;
   qty: number;
-  unit: string; // 'hoja' | 'm' | 'corte' | 'pza'
+  unit: string; // 'hoja' | 'm' | 'corte' | 'perforación' | 'pza'
   price: number | null; // null when missing or ≤ 0
   subtotal: number | null;
 }
@@ -69,9 +77,12 @@ export function orderCost(order: Order, prices: Prices): { lines: CostLine[]; to
   const lines = [
     ...order.groups.map((g) => line(`sheet:${g.stock.id}`, g.stock.label, g.sheets, 'hoja', prices.sheets[g.stock.id])),
     line('cut', 'Corte', perMeter ? order.cuts.meters : order.cuts.count, perMeter ? 'm' : 'corte', prices.cut.price),
+    ...(order.boring.length > 0
+      ? [line('boring', 'Barrenado de bisagra', boringHoles(order.boring), 'perforación', prices.boring)]
+      : []),
     ...order.bands.map((b) => line(`band:${b.label}`, b.label, b.meters, 'm', prices.bands[b.label])),
     ...order.hardware.map((h) =>
-      line(`hw:${hardwareKey(h)}`, `${HARDWARE_LABELS[h.type]} ${h.size}`, h.qty, 'pza', prices.hardware[hardwareKey(h)]),
+      line(`hw:${hardwareKey(h)}`, hardwareText(h), h.qty, 'pza', prices.hardware[hardwareKey(h)]),
     ),
   ];
   return {

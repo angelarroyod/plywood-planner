@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Body, Display, Mono } from '@/components/ui';
 import { Viewer3D } from '@/components/viewer-3d';
+import { refLabels } from '@/lib/engine';
 import { useApp } from '@/lib/store';
 import { color, font, radius, space } from '@/theme';
 
@@ -14,10 +15,7 @@ export function StepsPane() {
   const { design, exploded, activeStep, setActiveStep, doneSteps, toggleStepDone, stale, taller } =
     useApp();
   const steps = design!.steps;
-  const labels = useMemo(
-    () => Object.fromEntries(design!.panels.map((p) => [p.id, p.label])),
-    [design],
-  );
+  const labels = useMemo(() => refLabels(design!), [design]);
   const step = steps.find((s) => s.order === activeStep) ?? null;
   const done = doneSteps.length;
   const pct = steps.length ? done / steps.length : 0;

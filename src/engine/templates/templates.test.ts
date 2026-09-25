@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bookshelf } from './bookshelf.ts';
 import { sideTable } from './side-table.ts';
+import { closet } from './closet.ts';
 import { nest } from '../nesting.ts';
 import type { Design, Template } from '../types.ts';
 import { FIBRACEL_3 } from '../stock.ts';
@@ -16,7 +17,7 @@ function totalQty(design: Design): number {
   return design.panels.reduce((sum, p) => sum + p.qty, 0);
 }
 
-for (const template of [bookshelf, sideTable]) {
+for (const template of [bookshelf, sideTable, closet]) {
   describe(`${template.id} (shared invariants)`, () => {
     const design = designOrThrow(template);
 
@@ -38,12 +39,17 @@ for (const template of [bookshelf, sideTable]) {
       }
     });
 
-    it('steps and explode offsets reference existing panel ids', () => {
-      const ids = new Set(design.panels.map((p) => p.id));
+    it('steps and explode offsets reference existing panel or fitting ids', () => {
+      const ids = new Set([...design.panels.map((p) => p.id), ...design.fittings.map((f) => f.id)]);
       for (const step of design.steps) {
         for (const ref of step.panelRefs) expect(ids.has(ref)).toBe(true);
         for (const key of Object.keys(step.explodeOffsets ?? {})) expect(ids.has(key)).toBe(true);
       }
+    });
+
+    it('bores only its own panels', () => {
+      const ids = new Set(design.panels.map((p) => p.id));
+      for (const b of design.boring) expect(ids.has(b.panelId)).toBe(true);
     });
 
     it('is pure: same params, same design', () => {
