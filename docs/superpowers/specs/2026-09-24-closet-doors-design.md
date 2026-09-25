@@ -166,6 +166,10 @@ export function doorSet(opts: {
      - The doors come drilled from the maderería. If the user drills them: `broca Forstner de 35 mm, 12 mm de profundidad, centro a 22 mm del canto`.
   2. **Cuelga las puertas.** Clip each hinge onto its plate, then use the hinge screws to set a 2 mm gap all round (side, depth and height).
   3. **Pon las jaladeras.** Drill 2 × 5 mm holes 128 mm apart, 40 mm from the closing edge, at the handle height.
+- **Plates clear the shelves.** `avoid?: { bottom; top }[]` lists the floor-y ranges of the case's fixed horizontal panels.
+  - A cup whose plate (its height ± 25 mm) overlaps one moves to the nearest clear height: just below or just above that panel, with a tie going toward the door's middle.
+  - The pattern may become asymmetric, so `BORING_NOTE` (after the drilling lines and under both Barrenado tables) says: cups on the inner face, a pair drilled in mirror, and ARRIBA marked on each door.
+  - `MIN_DOOR_THICKNESS = 15`.
 - With `count = 0` every list is empty.
 
 ## Closet template (`src/engine/templates/closet.ts`)
@@ -236,6 +240,7 @@ Defaults (plywood 18): rod at 1564, first Mixto shelf top face at 564, lower gap
 | Entrepaños/Mixto shelf gap `< 100` | `shelfCount` | `No caben {N} entrepaños: quedarían espacios de {gap} mm y el mínimo útil es 100 mm. Reduce los entrepaños o aumenta el alto.` |
 | One door and `W − 4 > 600` | `doors` | `Una sola puerta de {w} mm pesa y se descuadra; el máximo es 600 mm. Usa dos puertas.` |
 | Two doors and `⌊(W − 7)/2⌋ < 200` | `doors` | `Dos puertas quedarían de {w} mm y el mínimo es 200 mm. Usa una puerta.` |
+| Doors and `t < 15` | `material` | `Las bisagras de cazoleta necesitan puertas de al menos 15 mm: la cazoleta mide 12 mm de profundidad. Elige un material de 15 mm o más, o quita las puertas.` |
 
 The Mixto height row is the N = 1 case of the shelf-gap rule. When it fires, the shelf-gap issue is not reported.
 
@@ -258,9 +263,11 @@ Mark heights are measured from the floor and rounded to whole mm.
 2. The iron-on banding step (`ironStep`), only when Cubrecanto is set to iron-on.
 3. **Arma la caja acostada.**
    - Screw the Tapa and Base between the sides with confirmat, 2 per side, and fix the zoclo under the Base.
-   - `Al pararlo gira sobre su diagonal, que mide {⌈√(H² + D²)⌉} mm: revisa que libre tu techo.` (2075 mm by default)
 4. **Instala el maletero y los entrepaños** (with the wording adapted to the interior), 2 confirmat per side.
-5. **Verifica la escuadra y coloca el fondo.** Measure both diagonals, then screw the Fibracel back every 20 cm.
+5. **Verifica la escuadra y coloca el fondo.** Flip the closet face down, measure both diagonals, then screw the
+   Fibracel back every 20 cm to the sides, the Tapa, the Base (79 mm up from the bottom edge), the Maletero and
+   each shelf. The step ends with `Al pararlo gira sobre su diagonal, que mide {⌈√(H² + D²)⌉} mm: revisa que
+   libre tu techo.` (2075 mm by default).
 6. **Pon el tubo** (rod interiors only).
    - Supports at `{rodY} mm del piso`, centered in the depth.
    - Cut the rod to `{W − 2t − 2} mm`.
