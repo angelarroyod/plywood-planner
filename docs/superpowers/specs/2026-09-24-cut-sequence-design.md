@@ -74,7 +74,7 @@ The set of cut lines is 4.3's, except that a short run shares one trim and its i
   - kind: `A lo ancho` (cross), `A lo largo` (rip), `Recorte` (trim).
   - edge: `arriba` (`from: 'top'`), `la izquierda` (`from: 'left'`).
   - Examples: `A lo ancho — 1200 mm desde arriba`, `A lo largo — 297 mm desde la izquierda`, `Recorte — 764 mm desde arriba`.
-- `CUT_TIP`: `Mide desde el borde indicado del tablero que te queda y corta del lado del sobrante: el disco se come 3 mm.`
+- `CUT_TIP`: `Haz cada corte en la pieza donde está su número en el dibujo; mide desde el borde indicado y corta del lado del sobrante: el disco se come 3 mm.`
 - `cutBadge(cut)`: the point `d = min(70, length / 2)` mm from `(x1, y1)` toward `(x2, y2)`, where the saw enters. Placing it there keeps it off the piece labels, which sit at each piece's center.
 
 ### Resulting numbers

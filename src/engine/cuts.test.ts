@@ -128,7 +128,7 @@ describe('cutText / CUT_TIP', () => {
 
   it('reminds to cut on the waste side', () => {
     expect(CUT_TIP).toBe(
-      'Mide desde el borde indicado del tablero que te queda y corta del lado del sobrante: el disco se come 3 mm.',
+      'Haz cada corte en la pieza donde está su número en el dibujo; mide desde el borde indicado y corta del lado del sobrante: el disco se come 3 mm.',
     );
   });
 });

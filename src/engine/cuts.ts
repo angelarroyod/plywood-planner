@@ -80,7 +80,7 @@ export function cutText(cut: Cut): string {
 
 /** Shown once above every cut list. */
 export const CUT_TIP =
-  'Mide desde el borde indicado del tablero que te queda y corta del lado del sobrante: el disco se come 3 mm.';
+  'Haz cada corte en la pieza donde está su número en el dibujo; mide desde el borde indicado y corta del lado del sobrante: el disco se come 3 mm.';
 
 const BADGE_OFFSET = 70; // mm from where the saw enters, clear of the piece labels at each piece's center
 
