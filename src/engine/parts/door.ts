@@ -20,6 +20,9 @@ const HANDLE_SPACING = 128; // mm between a bar handle's screws
 const HANDLE_HEIGHT = 1050; // mm from the floor to a handle's center
 const HANDLE_FROM_EDGE = 40; // mm from the door's closing edge
 const HANDLE_BOX: Vec3 = [30, 160, 12]; // mm; sticks 30 mm out of the open door's outer face
+const PLATE_HALF = 25; // mm; a hinge plate and its arm take about 50 mm of the side's height
+
+export const MIN_DOOR_THICKNESS = 15; // mm; the 12 mm cup needs 3 mm of board behind it
 
 export interface DoorSetOptions {
   count: 0 | 1 | 2;
@@ -29,6 +32,7 @@ export interface DoorSetOptions {
   frontZ: number; // z of the case front
   stock: Stock;
   mode: EdgeBandingMode;
+  avoid?: { bottom: number; top: number }[]; // floor-y ranges of the case's fixed horizontal panels the hinge plates must clear
 }
 
 /** A design fragment a template merges with its own parts. */
@@ -54,6 +58,16 @@ export function doorWidth(count: 1 | 2, width: number): number {
   return count === 1 ? width - 2 * GAP : Math.floor((width - 2 * GAP - PAIR_GAP) / 2);
 }
 
+/** The height nearest `y` where a hinge plate clears every fixed panel; a tie goes toward the door's middle. */
+function clearHeight(y: number, avoid: { bottom: number; top: number }[], middle: number): number {
+  const clash = (v: number) => avoid.find((r) => v + PLATE_HALF > r.bottom && v - PLATE_HALF < r.top);
+  const hit = clash(y);
+  if (!hit) return y;
+  const options = [Math.floor(hit.bottom - PLATE_HALF), Math.ceil(hit.top + PLATE_HALF)].filter((v) => !clash(v));
+  options.sort((a, b) => Math.abs(a - y) - Math.abs(b - y) || Math.abs(a - middle) - Math.abs(b - middle));
+  return options[0] ?? y; // ponytail: shelves stand ≥ 100 mm apart, so one side always clears
+}
+
 /**
  * Full-overlay doors on 35 mm cup hinges, drilled by the lumber yard. Doors are drawn swung
  * open 90° so the interior stays visible: each stands in front of its side, sticking out
@@ -66,10 +80,11 @@ export function doorSet(o: DoorSetOptions): DoorSet {
   const h = o.top - o.bottom - 2 * GAP;
   const w = doorWidth(o.count, o.width);
   const k = hingeCount(h);
-  const along = Array.from({ length: k }, (_, i) => Math.round(HINGE_END + (i * (h - 2 * HINGE_END)) / (k - 1)));
   const doorBottom = o.bottom + GAP;
   const doorTop = doorBottom + h;
-  const plates = along.map((a) => doorTop - a).sort((a, b) => a - b);
+  const even = Array.from({ length: k }, (_, i) => Math.round(HINGE_END + (i * (h - 2 * HINGE_END)) / (k - 1)));
+  const plates = even.map((a) => clearHeight(doorTop - a, o.avoid ?? [], doorBottom + h / 2)).sort((a, b) => a - b);
+  const along = plates.map((y) => doorTop - y).sort((a, b) => a - b);
   const handleY = Math.min(Math.max(HANDLE_HEIGHT, doorBottom + 100), doorTop - 100);
   const pair = o.count === 2;
   const sides = pair ? [-1, 1] : [-1]; // −1 = hinged on the left

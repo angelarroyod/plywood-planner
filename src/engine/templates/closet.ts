@@ -23,7 +23,7 @@ import {
   prepSentence,
 } from '../edge-banding.ts';
 import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
-import { doorSet, doorWidth } from '../parts/door.ts';
+import { MIN_DOOR_THICKNESS, doorSet, doorWidth } from '../parts/door.ts';
 
 const PLINTH = 70; // mm, zoclo height: keeps mop water off the base
 const LUGGAGE = 350; // mm clear between the Maletero and the Tapa
@@ -152,6 +152,14 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
       message: `Dos puertas quedarían de ${doorWidth(2, W)} mm y el mínimo es ${MIN_DOOR} mm. Usa una puerta.`,
     });
   }
+  if (doors > 0 && t < MIN_DOOR_THICKNESS) {
+    issues.push({
+      paramKey: 'material',
+      message:
+        `Las bisagras de cazoleta necesitan puertas de al menos ${MIN_DOOR_THICKNESS} mm: la cazoleta mide 12 mm ` +
+        `de profundidad. Elige un material de ${MIN_DOOR_THICKNESS} mm o más, o quita las puertas.`,
+    });
+  }
   if (issues.length > 0) return { ok: false, issues };
 
   // Shelf undersides, bottom to top.
@@ -162,7 +170,13 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
     shelfBottoms.push(zoneTop - t);
   }
 
-  const door = doorSet({ count: doors, width: W, bottom: PLINTH, top: H, frontZ: D / 2, stock, mode });
+  const flatRanges = [
+    { bottom: PLINTH, top: floor }, // Base
+    { bottom: H - t, top: H }, // Tapa
+    ...(hasRod ? [{ bottom: hatBottom, top: hatBottom + t }] : []),
+    ...shelfBottoms.map((y) => ({ bottom: y, top: y + t })),
+  ];
+  const door = doorSet({ count: doors, width: W, bottom: PLINTH, top: H, frontZ: D / 2, stock, mode, avoid: flatRanges });
   const rodLength = span - ROD_CLEARANCE;
 
   // Every panel fits a 1220 × 2440 sheet: H ≤ 2400, W ≤ 1000, Dc ≤ 647.

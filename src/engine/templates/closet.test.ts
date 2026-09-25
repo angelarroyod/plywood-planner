@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { closet } from './closet.ts';
 import { nest } from '../nesting.ts';
+import { refLabels } from '../labels.ts';
 import { FIBRACEL_3, MATERIAL_OPTIONS } from '../stock.ts';
 import type { Design, TemplateParams, ValidationIssue } from '../types.ts';
 
@@ -129,6 +130,16 @@ describe('closet', () => {
     expect(designOf({ edgeBanding: 2 }).steps[1]!.title).toBe('Aplica el cubrecanto');
   });
 
+  it('keeps every hinge plate off the shelves (Mixto, 2000 mm, 4 shelves)', () => {
+    // shelves at 189..207, 308..326, 427..445, 546..564: the bottom plate moves from 172 down to 164
+    expect(designOf({ shelfCount: 4 }).boring[0]!.along).toEqual([100, 675, 1251, 1834]);
+  });
+
+  it('labels every step reference, fittings included', () => {
+    const labels = refLabels(designOf());
+    expect([labels['side'], labels['rod'], labels['handle']]).toEqual(['Lateral', 'Tubo', 'Jaladera']);
+  });
+
   it('drops the door parts and steps without doors', () => {
     const d = designOf({ doors: 0 });
     expect(ids(d)).not.toContain('door');
@@ -202,7 +213,46 @@ describe('closet validation', () => {
       { paramKey: 'doors', message: 'Dos puertas quedarían de 196 mm y el mínimo es 200 mm. Usa una puerta.' },
     ]);
   });
+
+  it('needs doors of at least 15 mm for the 12 mm hinge cups', () => {
+    expect(issuesOf({ material: 1, width: 500, doors: 1, interior: 2 })).toEqual([
+      {
+        paramKey: 'material',
+        message:
+          'Las bisagras de cazoleta necesitan puertas de al menos 15 mm: la cazoleta mide 12 mm de profundidad. ' +
+          'Elige un material de 15 mm o más, o quita las puertas.',
+      },
+    ]);
+    expect(closet.generate({ material: 1, width: 500, doors: 0, interior: 2 }).ok).toBe(true);
+  });
 });
+
+/** Every hinge plate (cup height ± 25 mm) clears every horizontal panel, and no two 3D boxes overlap. */
+function expectBuildable(d: Design) {
+  const flats = d.placements.filter((p) => ['top', 'bottom', 'hat-shelf', 'shelf'].includes(p.panelId));
+  const door = d.placements.find((p) => p.panelId === 'door');
+  if (door) {
+    const doorTop = door.position[1] + door.size[1] / 2;
+    for (const a of d.boring[0]!.along) {
+      const y = doorTop - a;
+      for (const f of flats) {
+        const bottom = f.position[1] - f.size[1] / 2;
+        const top = f.position[1] + f.size[1] / 2;
+        expect(y + 25 <= bottom || y - 25 >= top).toBe(true);
+      }
+    }
+  }
+  const boxes = [...d.placements, ...d.fittings];
+  for (let i = 0; i < boxes.length; i++)
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i]!;
+      const b = boxes[j]!;
+      const overlaps = [0, 1, 2].every(
+        (k) => Math.abs(a.position[k]! - b.position[k]!) < (a.size[k]! + b.size[k]!) / 2 - 0.001,
+      );
+      expect(overlaps).toBe(false);
+    }
+}
 
 describe('closet sheet fit', () => {
   it('nests every valid module across the param range', () => {
@@ -218,6 +268,7 @@ describe('closet sheet fit', () => {
                   if (!result.ok) continue;
                   valid++;
                   expect(() => nest(result.design.panels)).not.toThrow();
+                  expectBuildable(result.design);
                 }
     expect(valid).toBeGreaterThan(100);
   });

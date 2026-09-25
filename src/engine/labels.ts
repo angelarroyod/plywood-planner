@@ -1,4 +1,4 @@
-import type { Hardware } from './types.ts';
+import type { Design, Hardware } from './types.ts';
 
 /**
  * Spanish display names for hardware types. Lives in the engine rather than in a
@@ -20,4 +20,9 @@ export const HARDWARE_LABELS: Record<Hardware['type'], string> = {
 export function hardwareText(h: Hardware): string {
   const text = `${HARDWARE_LABELS[h.type]} ${h.size}`;
   return h.cutTo === undefined ? text : `${text}, cortado a ${h.cutTo} mm`;
+}
+
+/** A label for every id a step may reference: panels and fittings, with the panel winning on a shared id. */
+export function refLabels(design: Design): Record<string, string> {
+  return Object.fromEntries([...design.fittings, ...design.panels].map((p) => [p.id, p.label]));
 }

@@ -92,6 +92,13 @@ describe('doorSet', () => {
     expect(steps[1]!.description).not.toContain('entre las puertas');
   });
 
+  it('moves a hinge whose plate would land on a fixed shelf to the nearest clear height', () => {
+    const d = doorSet({ ...BASE, avoid: [{ bottom: 730, top: 748 }] });
+    // the plate at 747 would overlap 730..748: 773 (26 up) beats 705 (42 down)
+    expect(d.boring[0]!.along).toEqual([100, 675, 1225, 1826]);
+    expect(d.steps[0]!.description).toContain('a 172 · 773 · 1323 · 1898 mm del piso.');
+  });
+
   it('returns nothing without doors', () => {
     expect(doorSet({ ...BASE, count: 0 })).toEqual({
       panels: [],

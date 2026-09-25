@@ -47,6 +47,11 @@ export const ORDER_BAND_NOTE: Record<'yard' | 'diy', string> = {
   diy: 'Solo el material (pre-engomado); yo lo aplico.',
 };
 
+/** Said after the drilling lines: the yard drills blank panels, so it needs the face, the pairing and which end is up. */
+export const BORING_NOTE =
+  'Cazoletas en la cara interior. Si son dos puertas, van en espejo: una con las perforaciones en el canto izquierdo ' +
+  'y la otra en el derecho. Marquen ARRIBA en cada puerta: las medidas son desde arriba.';
+
 /** Every hole to drill, counting each piece of a line. */
 export function boringHoles(boring: OrderBoring[]): number {
   return boring.reduce((sum, b) => sum + b.qty * b.along.length, 0);
@@ -124,6 +129,7 @@ export function orderText(order: Order): string {
       );
     }
     out.push(`Total de perforaciones: ${boringHoles(order.boring)}.`);
+    out.push(BORING_NOTE);
   }
   out.push('');
   const note = order.edgeBanding === 'none' ? '' : ` ${ORDER_BAND_NOTE[order.edgeBanding]}`;

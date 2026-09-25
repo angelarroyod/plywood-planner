@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildOrder, orderText } from './order.ts';
+import { BORING_NOTE, buildOrder, orderText } from './order.ts';
 import { hardwareText } from './labels.ts';
 import { nest } from './nesting.ts';
 import { bookshelf } from './templates/bookshelf.ts';
@@ -124,6 +124,16 @@ describe('boring in the order', () => {
         'centro a 22 mm del canto, 12 mm de profundidad.',
     );
     expect(text).toContain('Total de perforaciones: 6.');
+    expect(text).toContain('Total de perforaciones: 6.\n' + BORING_NOTE);
+  });
+});
+
+describe('BORING_NOTE', () => {
+  it('tells the yard the face, the mirror pair and the top', () => {
+    expect(BORING_NOTE).toBe(
+      'Cazoletas en la cara interior. Si son dos puertas, van en espejo: una con las perforaciones en el canto ' +
+        'izquierdo y la otra en el derecho. Marquen ARRIBA en cada puerta: las medidas son desde arriba.',
+    );
   });
 });
 
@@ -136,6 +146,7 @@ describe('closet order', () => {
         'centro a 22 mm del canto, 12 mm de profundidad.',
     );
     expect(text).toContain('Total de perforaciones: 8.');
+    expect(text).toContain('Total de perforaciones: 8.\n' + BORING_NOTE);
     expect(text).toContain('Tubo oval para clóset 15×30 mm, cortado a 762 mm × 1');
     expect(text).toContain('Bisagra de cazoleta 35 mm recta × 8');
   });
