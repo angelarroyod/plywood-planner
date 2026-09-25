@@ -30,6 +30,17 @@ describe('sheetCuts', () => {
     ]);
   });
 
+  it('flags cuts that leave less than the blade width past their line', () => {
+    // A 300-long row with a 298-long run ending 2 mm short of the sheet edge: both of its cuts only shave 2 mm.
+    const cuts = sheetCuts(sheet(piece({ length: 300 }), piece({ instance: 1, x: 403, length: 298, width: 815 })));
+    expect(cuts).toEqual([
+      { n: 1, kind: 'cross', x1: 0, y1: 300, x2: 1220, y2: 300, from: 'top', mm: 300 },
+      { n: 2, kind: 'rip', x1: 400, y1: 0, x2: 400, y2: 300, from: 'left', mm: 400 },
+      { n: 3, kind: 'rip', x1: 1218, y1: 0, x2: 1218, y2: 300, from: 'left', mm: 815, sliver: 2 },
+      { n: 4, kind: 'trim', x1: 403, y1: 298, x2: 1218, y2: 298, from: 'top', mm: 298, sliver: 2 },
+    ]);
+  });
+
   it('needs no cut for a piece that fills the sheet', () => {
     expect(sheetCuts(sheet(piece({ length: 2440, width: 1220 })))).toEqual([]);
   });
@@ -126,6 +137,12 @@ describe('cutText / CUT_TIP', () => {
     expect(cutText({ ...at, kind: 'trim', from: 'top', mm: 764 })).toBe('Recorte — 764 mm desde arriba');
   });
 
+  it('warns when the cut only shaves a strip thinner than the blade', () => {
+    expect(cutText({ ...at, kind: 'trim', from: 'top', mm: 298, sliver: 2 })).toBe(
+      'Recorte — 298 mm desde arriba (solo rebaja 2 mm)',
+    );
+  });
+
   it('reminds to cut on the waste side', () => {
     expect(CUT_TIP).toBe(
       'Haz cada corte en la pieza donde está su número en el dibujo; mide desde el borde indicado y corta del lado del sobrante: el disco se come 3 mm.',
@@ -137,12 +154,19 @@ describe('cutBadge', () => {
   it('sits 70 mm in from where the saw enters', () => {
     const cross: Cut = { n: 1, kind: 'cross', x1: 0, y1: 600, x2: 1220, y2: 600, from: 'top', mm: 600 };
     const rip: Cut = { n: 2, kind: 'rip', x1: 400, y1: 0, x2: 400, y2: 600, from: 'left', mm: 400 };
-    expect(cutBadge(cross)).toEqual({ x: 70, y: 600 });
-    expect(cutBadge(rip)).toEqual({ x: 400, y: 70 });
+    expect(cutBadge(cross, PLY18.sheet)).toEqual({ x: 70, y: 600 });
+    expect(cutBadge(rip, PLY18.sheet)).toEqual({ x: 400, y: 70 });
+  });
+
+  it('stays inside the sheet, whatever its radius', () => {
+    const edgeRip: Cut = { n: 4, kind: 'rip', x1: 1197, y1: 0, x2: 1197, y2: 600, from: 'left', mm: 597 };
+    const cross: Cut = { n: 1, kind: 'cross', x1: 0, y1: 600, x2: 1220, y2: 600, from: 'top', mm: 600 };
+    expect(cutBadge(edgeRip, PLY18.sheet)).toEqual({ x: 1186, y: 70 });
+    expect(cutBadge(cross, PLY18.sheet, 90)).toEqual({ x: 90, y: 600 });
   });
 
   it('uses the midpoint of a short cut', () => {
     const short: Cut = { n: 1, kind: 'trim', x1: 0, y1: 50, x2: 100, y2: 50, from: 'top', mm: 50 };
-    expect(cutBadge(short)).toEqual({ x: 50, y: 50 });
+    expect(cutBadge(short, PLY18.sheet)).toEqual({ x: 50, y: 50 });
   });
 });

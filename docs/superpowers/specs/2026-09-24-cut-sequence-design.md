@@ -42,12 +42,14 @@ export interface Cut {
   x1: number; y1: number; x2: number; y2: number; // start → end; x1 ≤ x2, y1 ≤ y2
   from: 'top' | 'left'; // edge of the board as it is at this cut, to measure from
   mm: number; // distance from that edge to the cut line
+  sliver?: number; // mm of board past the line when that is thinner than the blade, which eats it whole
 }
 export function sheetCuts(sheet: SheetLayout): Cut[];
 export function cutTotals(layout: NestingResult): { count: number; meters: number };
 export function cutText(cut: Cut): string;
 export const CUT_TIP: string;
-export function cutBadge(cut: Cut): { x: number; y: number };
+export const BADGE_RADIUS = 34;
+export function cutBadge(cut: Cut, sheet: Stock['sheet'], r = BADGE_RADIUS): { x: number; y: number };
 ```
 
 ### Sequence per sheet
@@ -74,8 +76,9 @@ The set of cut lines is 4.3's, except that a short run shares one trim and its i
   - kind: `A lo ancho` (cross), `A lo largo` (rip), `Recorte` (trim).
   - edge: `arriba` (`from: 'top'`), `la izquierda` (`from: 'left'`).
   - Examples: `A lo ancho — 1200 mm desde arriba`, `A lo largo — 297 mm desde la izquierda`, `Recorte — 764 mm desde arriba`.
+  - A cut with `sliver` (less than the 3 mm kerf of board past its line) appends ` (solo rebaja {sliver} mm)`, e.g. `Recorte — 300 mm desde arriba (solo rebaja 2 mm)`.
 - `CUT_TIP`: `Haz cada corte en la pieza donde está su número en el dibujo; mide desde el borde indicado y corta del lado del sobrante: el disco se come 3 mm.`
-- `cutBadge(cut)`: the point `d = min(70, length / 2)` mm from `(x1, y1)` toward `(x2, y2)`, where the saw enters. Placing it there keeps it off the piece labels, which sit at each piece's center.
+- `cutBadge(cut)`: the point `d = min(70, length / 2)` mm from `(x1, y1)` toward `(x2, y2)`, where the saw enters, then pulled inside the sheet so a badge of radius `r` is never clipped. Placing it there keeps it off the piece labels, which sit at each piece's center.
 
 ### Resulting numbers
 
@@ -113,7 +116,7 @@ Default bookshelf, sheet by sheet:
 ## iOS (`mobile/`)
 
 - **`components/sheet-svg.tsx`:**
-  - The same badges, at the same size and placement.
+  - The same badges and placement, sized to 9 pt radius with an 11 pt number on screen (the web's 34 mm would be about 5 pt on a phone).
   - A cut whose id is in `checked` draws its badge in the "done" tone.
   - Pieces no longer grey out, since progress is per cut.
 - **`screens/result/cuts.tsx`:**

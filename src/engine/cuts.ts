@@ -1,4 +1,4 @@
-import type { NestingResult, PlacedPiece, SheetLayout } from './types.ts';
+import { DEFAULT_CONFIG, type NestingResult, type PlacedPiece, type SheetLayout, type Stock } from './types.ts';
 
 /** One straight saw pass across a sheet, in sheet mm (origin top-left, x along width, y along length). */
 export interface Cut {
@@ -10,6 +10,7 @@ export interface Cut {
   y2: number;
   from: 'top' | 'left'; // edge of the board as it is at this cut, to measure from
   mm: number; // distance from that edge to the cut line
+  sliver?: number; // mm of board past the line when that is thinner than the blade, which eats it whole
 }
 
 /**
@@ -27,12 +28,16 @@ export function sheetCuts(sheet: SheetLayout): Cut[] {
   for (const p of sheet.pieces) rows.set(p.y, [...(rows.get(p.y) ?? []), p]);
 
   const cuts: Cut[] = [];
-  const add = (cut: Omit<Cut, 'n'>) => cuts.push({ n: cuts.length + 1, ...cut });
+  /** `far` is the board's far edge past the cut line: x for rips, y for crosses and trims. */
+  const add = (cut: Omit<Cut, 'n' | 'sliver'>, far: number) => {
+    const past = far - (cut.kind === 'rip' ? cut.x1 : cut.y1);
+    cuts.push({ n: cuts.length + 1, ...cut, ...(past < DEFAULT_CONFIG.nesting.kerf ? { sliver: past } : {}) });
+  };
 
   for (const y of [...rows.keys()].sort((a, b) => a - b)) {
     const row = rows.get(y)!.sort((a, b) => a.x - b.x);
     const h = Math.max(...row.map((p) => p.length));
-    if (y + h < L) add({ kind: 'cross', x1: 0, y1: y + h, x2: W, y2: y + h, from: 'top', mm: h });
+    if (y + h < L) add({ kind: 'cross', x1: 0, y1: y + h, x2: W, y2: y + h, from: 'top', mm: h }, L);
 
     const runs: PlacedPiece[][] = []; // neighbouring pieces of equal length
     for (const p of row) {
@@ -48,14 +53,14 @@ export function sheetCuts(sheet: SheetLayout): Cut[] {
       if (length === h) {
         for (const p of run) {
           const right = p.x + p.width;
-          if (right < W) add({ kind: 'rip', x1: right, y1: y, x2: right, y2: y + h, from: 'left', mm: p.width });
+          if (right < W) add({ kind: 'rip', x1: right, y1: y, x2: right, y2: y + h, from: 'left', mm: p.width }, W);
         }
       } else {
-        if (xEnd < W) add({ kind: 'rip', x1: xEnd, y1: y, x2: xEnd, y2: y + h, from: 'left', mm: xEnd - xStart });
-        add({ kind: 'trim', x1: xStart, y1: y + length, x2: xEnd, y2: y + length, from: 'top', mm: length });
+        if (xEnd < W) add({ kind: 'rip', x1: xEnd, y1: y, x2: xEnd, y2: y + h, from: 'left', mm: xEnd - xStart }, W);
+        add({ kind: 'trim', x1: xStart, y1: y + length, x2: xEnd, y2: y + length, from: 'top', mm: length }, y + h);
         for (const p of run.slice(0, -1)) {
           const right = p.x + p.width;
-          add({ kind: 'rip', x1: right, y1: y, x2: right, y2: y + length, from: 'left', mm: p.width });
+          add({ kind: 'rip', x1: right, y1: y, x2: right, y2: y + length, from: 'left', mm: p.width }, xEnd);
         }
       }
     }
@@ -75,7 +80,8 @@ const EDGE_TEXT: Record<Cut['from'], string> = { top: 'arriba', left: 'la izquie
 
 /** One saw step in Spanish, e.g. 'A lo largo — 297 mm desde la izquierda'. */
 export function cutText(cut: Cut): string {
-  return `${KIND_TEXT[cut.kind]} — ${cut.mm} mm desde ${EDGE_TEXT[cut.from]}`;
+  const text = `${KIND_TEXT[cut.kind]} — ${cut.mm} mm desde ${EDGE_TEXT[cut.from]}`;
+  return cut.sliver ? `${text} (solo rebaja ${cut.sliver} mm)` : text;
 }
 
 /** Shown once above every cut list. */
@@ -83,10 +89,18 @@ export const CUT_TIP =
   'Haz cada corte en la pieza donde está su número en el dibujo; mide desde el borde indicado y corta del lado del sobrante: el disco se come 3 mm.';
 
 const BADGE_OFFSET = 70; // mm from where the saw enters, clear of the piece labels at each piece's center
+export const BADGE_RADIUS = 34; // mm, the web's badge; iOS draws larger ones to stay readable on a phone
 
-/** Where to draw a cut's number: 70 mm in from its start, or its midpoint when the cut is shorter than 140 mm. */
-export function cutBadge(cut: Cut): { x: number; y: number } {
+/**
+ * Where to draw a cut's number: 70 mm in from its start, or its midpoint when the cut is shorter than
+ * 140 mm, pulled inside the sheet so a badge of radius `r` is never clipped at its edge.
+ */
+export function cutBadge(cut: Cut, sheet: Stock['sheet'], r = BADGE_RADIUS): { x: number; y: number } {
   const length = Math.abs(cut.x2 - cut.x1) + Math.abs(cut.y2 - cut.y1);
   const d = Math.min(BADGE_OFFSET, length / 2);
-  return { x: cut.x1 + Math.sign(cut.x2 - cut.x1) * d, y: cut.y1 + Math.sign(cut.y2 - cut.y1) * d };
+  const clamp = (v: number, max: number) => Math.min(Math.max(v, r), max - r);
+  return {
+    x: clamp(cut.x1 + Math.sign(cut.x2 - cut.x1) * d, sheet.width),
+    y: clamp(cut.y1 + Math.sign(cut.y2 - cut.y1) * d, sheet.length),
+  };
 }

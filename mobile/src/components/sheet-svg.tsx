@@ -15,10 +15,14 @@ interface Props {
 }
 
 const BAND_INSET = 7; // mm; banded edges are 14 mm lines that stay inside the piece
+const BADGE_PT = 9; // badge radius on screen; the number is 11 pt, readable at any sheet height
 
 /** One sheet, 1 SVG unit = 1 mm, sized by its stock — same geometry the web app draws. */
 export function SheetSvg({ sheet, labels, edges, checked, sheetNo, height = 330 }: Props) {
   const { width: W, length: H } = sheet.stock.sheet;
+  const k = H / height; // mm per point
+  const r = BADGE_PT * k;
+  const fontSize = 11 * k;
   return (
     <Svg viewBox={`0 0 ${W} ${H}`} height={height} width={(height * W) / H}>
       <Defs>
@@ -78,12 +82,12 @@ export function SheetSvg({ sheet, labels, edges, checked, sheetNo, height = 330 
 
       {/* Numbered cuts, drawn last so they sit on top; placed where the saw enters. */}
       {sheetCuts(sheet).map((c) => {
-        const b = cutBadge(c);
+        const b = cutBadge(c, sheet.stock.sheet, r);
         const done = checked.includes(`${sheetNo}:${c.n}`);
         return (
           <G key={c.n}>
-            <Circle cx={b.x} cy={b.y} r={34} fill={done ? color.border : color.red} />
-            <SvgText x={b.x} y={b.y + 14} fontSize={40} fontWeight="700" textAnchor="middle" fill={color.white}>
+            <Circle cx={b.x} cy={b.y} r={r} fill={done ? color.border : color.red} />
+            <SvgText x={b.x} y={b.y + fontSize * 0.35} fontSize={fontSize} fontWeight="700" textAnchor="middle" fill={color.white}>
               {String(c.n)}
             </SvgText>
           </G>
