@@ -119,8 +119,12 @@ describe('closet', () => {
     expect(steps[0]!.description).toContain(
       'Marca en los laterales la cara de abajo de cada pieza: base a 70 mm, entrepaños a 229 · 387 · 546 mm, maletero a 1614 mm.',
     );
-    expect(steps[1]!.description).toContain('su diagonal, que mide 2075 mm: revisa que libre tu techo.');
-    expect(steps[3]!.description).toContain('al contorno, al maletero y a cada entrepaño.');
+    expect(steps[1]!.description).not.toContain('diagonal');
+    expect(steps[3]!.description).toContain(
+      'Con el clóset boca abajo, mide las dos diagonales: deben ser iguales. Atornilla el fondo de fibracel con la ' +
+        'cara lisa hacia el frente, cada 20 cm, a los laterales, a la tapa, a la base (a 79 mm del borde de abajo), ' +
+        'al maletero y a cada entrepaño. Al pararlo gira sobre su diagonal, que mide 2075 mm: revisa que libre tu techo.',
+    );
     expect(steps[4]).toMatchObject({ panelRefs: ['rod'], explodeOffsets: { rod: [0, 0, 200] } });
     expect(steps[4]!.description).toContain('a 1564 mm del piso y a 274 mm del frente');
     expect(steps[4]!.description).toContain('Corta el tubo a 762 mm');

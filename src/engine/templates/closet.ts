@@ -68,7 +68,7 @@ const params: ParamSpec[] = [
 
 /** 'a, b y c' */
 function spanishList(items: string[]): string {
-  return items.length === 1 ? items[0]! : `${items.slice(0, -1).join(', ')} y ${items.at(-1)}`;
+  return `${items.slice(0, -1).join(', ')} y ${items.at(-1)}`;
 }
 
 /**
@@ -247,7 +247,13 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
   const interiorIds = [...(hasRod ? ['hat-shelf'] : []), ...(shelves > 0 ? ['shelf'] : [])];
   const interiorTitle =
     interior === 1 ? 'Instala el maletero' : interior === 2 ? 'Instala los entrepaños' : 'Instala el maletero y los entrepaños';
-  const backTo = ['al contorno', ...(hasRod ? ['al maletero'] : []), ...(shelves > 0 ? ['a cada entrepaño'] : [])];
+  const backTo = [
+    'a los laterales',
+    'a la tapa',
+    `a la base (a ${Math.round(PLINTH + t / 2)} mm del borde de abajo)`,
+    ...(hasRod ? ['al maletero'] : []),
+    ...(shelves > 0 ? ['a cada entrepaño'] : []),
+  ];
   const rodSteps: Omit<Step, 'order'>[] = hasRod
     ? [
         {
@@ -273,8 +279,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
       title: 'Arma la caja acostada',
       description:
         'Fija la tapa y la base entre los laterales con tornillos confirmat, 2 por lado, y el zoclo bajo la base, ' +
-        `al frente, con 1 por lado. Al pararlo gira sobre su diagonal, que mide ${Math.ceil(Math.hypot(H, D))} mm: ` +
-        'revisa que libre tu techo.',
+        'al frente, con 1 por lado.',
       panelRefs: ['side', 'top', 'bottom', 'plinth'],
       explodeOffsets: { top: [0, 150, 0], bottom: [0, -150, 0], plinth: [0, 0, 150] },
     },
@@ -287,8 +292,9 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
     {
       title: 'Verifica la escuadra y coloca el fondo',
       description:
-        'Mide las dos diagonales del frente: deben ser iguales. Con el clóset boca abajo, atornilla el fondo de ' +
-        `fibracel con la cara lisa hacia el frente cada 20 cm ${spanishList(backTo)}.`,
+        'Con el clóset boca abajo, mide las dos diagonales: deben ser iguales. Atornilla el fondo de fibracel con la ' +
+        `cara lisa hacia el frente, cada 20 cm, ${spanishList(backTo)}. Al pararlo gira sobre su diagonal, que mide ` +
+        `${Math.ceil(Math.hypot(H, D))} mm: revisa que libre tu techo.`,
       panelRefs: ['back'],
       explodeOffsets: { back: [0, 0, -200] },
     },
