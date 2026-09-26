@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { bookshelf } from './bookshelf.ts';
 import { sideTable } from './side-table.ts';
 import { closet } from './closet.ts';
+import { tvStand } from './tv-stand.ts';
 import { nest } from '../nesting.ts';
-import type { Design, Template } from '../types.ts';
+import type { Design, Template, TemplateParams } from '../types.ts';
 import { FIBRACEL_3 } from '../stock.ts';
 import { NO_EDGES, edgeBandTotals } from '../edge-banding.ts';
 
@@ -17,7 +18,7 @@ function totalQty(design: Design): number {
   return design.panels.reduce((sum, p) => sum + p.qty, 0);
 }
 
-for (const template of [bookshelf, sideTable, closet]) {
+for (const template of [bookshelf, sideTable, closet, tvStand]) {
   describe(`${template.id} (shared invariants)`, () => {
     const design = designOrThrow(template);
 
@@ -66,8 +67,10 @@ for (const template of [bookshelf, sideTable, closet]) {
     });
 
     it('uses the chosen material for its panels', () => {
-      const melamine = designOrThrow(template, { width: 500, material: 4 }); // span ≤ 550
-      expect(melamine.panels.filter((p) => p.id !== 'back').every((p) => p.stock.id === 4)).toBe(true);
+      // melamine spans 550 mm: the TV stand's bays are half its width, the others span their whole width
+      const params: TemplateParams = template.id === 'tv-stand' ? { width: 1000, material: 4 } : { width: 500, material: 4 };
+      const melamine = designOrThrow(template, params);
+      expect(melamine.panels.filter((p) => p.stock.id !== FIBRACEL_3.id).every((p) => p.stock.id === 4)).toBe(true);
     });
   });
 }
