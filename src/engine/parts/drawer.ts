@@ -6,7 +6,8 @@ import type { PartSet } from './merge.ts';
 const GAP = 2; // mm at the top and bottom of a stack's fronts
 const FRONT_GAP = 3; // mm between stacked fronts
 const SLIDE_CLEARANCE = 26; // mm the box is narrower than its opening: 12.7 mm per telescopic slide, rounded
-const BOX_SHORTER = 40; // mm the box is lower than its front: 20 mm above and 20 mm below
+const BOX_BELOW = 30; // mm from the front's bottom edge up to the box: clears the Base by 29 − t (≥ 11)
+const BOX_ABOVE = 25; // mm from the box's top down to the front's top edge: clears a Tapa or shelf above
 const SLIDE_BACK_CLEARANCE = 10; // mm left behind the slide
 const BOTTOM_SCREW_SPACING = 150; // mm between the bottom's screws
 const HANDLE_SPACING = 128; // mm between a bar handle's screws
@@ -46,7 +47,7 @@ export interface DrawerStack {
 export interface DrawerSetOptions {
   count: number; // drawers per stack, stacked bottom to top
   stacks: DrawerStack[]; // 1 or 2 columns side by side, all the same size
-  bottom: number; // y where the fronts start
+  bottom: number; // y where the fronts start: the underside of the Base the lowest box runs over (its top is bottom + t)
   top: number; // y where they end
   frontZ: number; // z of the case front
   depth: number; // inside depth available for the slides
@@ -67,15 +68,17 @@ export function drawerSet(o: DrawerSetOptions): PartSet {
 
   const t = o.stock.thickness;
   const tb = FIBRACEL_3.thickness;
+  const frontScrew = t >= 15 ? '3.5x25' : '3.5x19';
+  const handleBolt = t >= 18 ? 45 : t >= 15 ? 40 : 35;
   const L = slide.mm;
   const hf = drawerFrontHeight(o.count, o.bottom, o.top);
-  const hb = hf - BOX_SHORTER;
+  const hb = hf - BOX_BELOW - BOX_ABOVE;
   const first = o.stacks[0]!; // ponytail: every stack is the same size
   const wf = first.frontRight - first.frontLeft;
   const wb = Math.floor(first.openingRight - first.openingLeft - SLIDE_CLEARANCE);
   const pull = Math.round(L / 3);
   const frontBottoms = Array.from({ length: o.count }, (_, i) => o.bottom + GAP + i * (hf + FRONT_GAP));
-  const centers = frontBottoms.map((y) => Math.round(y + hf / 2));
+  const slideHeights = frontBottoms.map((fy) => Math.round(fy + BOX_BELOW + hb / 2 - (o.bottom + t)));
   const zBox = o.frontZ - L / 2 + pull;
 
   const placements: Placement[] = [];
@@ -85,7 +88,7 @@ export function drawerSet(o: DrawerSetOptions): PartSet {
     const fx = (s.frontLeft + s.frontRight) / 2;
     const bx = (s.openingLeft + s.openingRight) / 2;
     for (const fy of frontBottoms) {
-      const by = fy + BOX_SHORTER / 2; // the box walls' underside
+      const by = fy + BOX_BELOW; // the box walls' underside
       const cy = by + hb / 2;
       placements.push(
         { panelId: 'drawer-front', instance: k, position: [fx, fy + hf / 2, o.frontZ + t / 2 + pull], size: [wf, hf, t] },
@@ -134,7 +137,8 @@ export function drawerSet(o: DrawerSetOptions): PartSet {
   const hardware: Hardware[] = [
     { type: 'confirmat', size: '5x50', qty: 8 * n },
     { type: 'screw', size: '3.5x16', qty: Math.ceil((2 * (wb + L)) / BOTTOM_SCREW_SPACING) * n },
-    { type: 'screw', size: '3.5x25', qty: 4 * n },
+    { type: 'screw', size: frontScrew, qty: 4 * n },
+    { type: 'screw', size: `M4x${handleBolt}`, qty: 2 * n },
     { type: 'slide', size: `${slide.inches}" (${slide.mm} mm)`, qty: n },
     { type: 'handle', size: `${HANDLE_SPACING} mm`, qty: n },
   ];
@@ -145,14 +149,15 @@ export function drawerSet(o: DrawerSetOptions): PartSet {
       description:
         'Arma cada caja con tornillos confirmat, 2 por esquina, con los costados por fuera del frente y la trasera. ' +
         'Mide sus diagonales para dejarla a escuadra y atornilla el fondo de fibracel por debajo cada ' +
-        `${BOTTOM_SCREW_SPACING / 10} cm.`,
+        `${BOTTOM_SCREW_SPACING / 10} cm. Hunde al ras las cabezas de los confirmat: la corredera pasa encima.`,
       panelRefs: ['drawer-side', 'drawer-end', 'drawer-bottom'],
     },
     {
       title: 'Monta las correderas',
       description:
         'Separa cada corredera en sus dos partes. Atornilla la parte fija en las paredes del hueco, al ras del frente, ' +
-        `centrada a ${centers.join(' · ')} mm del piso, y la parte móvil en los costados de cada caja, centrada en su alto.`,
+        `centrada a ${slideHeights.join(' · ')} mm sobre la base, y la parte móvil en los costados de cada caja, ` +
+        'al ras de su frente y centrada en su alto.',
       panelRefs: ['drawer-side'],
     },
     {
@@ -164,13 +169,15 @@ export function drawerSet(o: DrawerSetOptions): PartSet {
       title: 'Pon los frentes',
       description:
         `Deja ${FRONT_GAP} mm entre frentes y ${GAP} mm alrededor, con cartón o monedas de separadores. Pega cada ` +
-        'frente con cinta doble cara, abre el cajón y atorníllalo desde dentro con 4 tornillos de 3.5×25.',
+        `frente con cinta doble cara, abre el cajón y atorníllalo desde dentro con 4 tornillos de ${frontScrew.replace('x', '×')}.`,
       panelRefs: ['drawer-front'],
       explodeOffsets: { 'drawer-front': [0, 0, 150] },
     },
     {
       title: 'Pon las jaladeras de los cajones',
-      description: `Barrena 2 agujeros de 5 mm separados ${HANDLE_SPACING} mm, centrados en cada frente, y atornilla la jaladera.`,
+      description:
+        `Barrena 2 agujeros de 5 mm separados ${HANDLE_SPACING} mm, centrados en cada frente y atravesando también la caja, ` +
+        `y atornilla la jaladera con 2 tornillos M4×${handleBolt}: los que trae la jaladera no alcanzan.`,
       panelRefs: ['drawer-front', 'drawer-handle'],
     },
   ];

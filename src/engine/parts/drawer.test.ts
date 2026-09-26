@@ -53,23 +53,23 @@ describe('drawerSet', () => {
     const { panels } = drawerSet(CLOSET);
     expect(panels.map((p) => [p.id, p.label, p.length, p.width, p.qty, p.stock.id, p.grain])).toEqual([
       ['drawer-front', 'Frente de cajón', 796, 200, 2, 3, 'length'],
-      ['drawer-side', 'Costado de cajón', 508, 160, 4, 3, 'length'],
-      ['drawer-end', 'Frente y trasera de cajón', 702, 160, 4, 3, 'length'],
+      ['drawer-side', 'Costado de cajón', 508, 145, 4, 3, 'length'],
+      ['drawer-end', 'Frente y trasera de cajón', 702, 145, 4, 3, 'length'],
       ['drawer-bottom', 'Fondo de cajón', 508, 738, 2, FIBRACEL_3.id, 'any'],
     ]);
     expect(panels[0]!.edges).toEqual({ L1: true, L2: true, A1: true, A2: true });
     for (const p of panels.slice(1)) expect(p.edges).toEqual(NO_EDGES);
   });
 
-  it('draws each drawer pulled out a third of its slide, with the box centred on its front', () => {
+  it('draws each drawer pulled out a third of its slide, with the box clearing the Base', () => {
     const { placements } = drawerSet(CLOSET);
     expect(placements.slice(0, 6)).toEqual([
       { panelId: 'drawer-front', instance: 0, position: [0, 172, 453], size: [796, 200, 18] },
-      { panelId: 'drawer-side', instance: 0, position: [-360, 172, 190], size: [18, 160, 508] },
-      { panelId: 'drawer-side', instance: 1, position: [360, 172, 190], size: [18, 160, 508] },
-      { panelId: 'drawer-end', instance: 0, position: [0, 172, 435], size: [702, 160, 18] },
-      { panelId: 'drawer-end', instance: 1, position: [0, 172, -55], size: [702, 160, 18] },
-      { panelId: 'drawer-bottom', instance: 0, position: [0, 90.5, 190], size: [738, 3, 508] },
+      { panelId: 'drawer-side', instance: 0, position: [-360, 174.5, 190], size: [18, 145, 508] },
+      { panelId: 'drawer-side', instance: 1, position: [360, 174.5, 190], size: [18, 145, 508] },
+      { panelId: 'drawer-end', instance: 0, position: [0, 174.5, 435], size: [702, 145, 18] },
+      { panelId: 'drawer-end', instance: 1, position: [0, 174.5, -55], size: [702, 145, 18] },
+      { panelId: 'drawer-bottom', instance: 0, position: [0, 100.5, 190], size: [738, 3, 508] },
     ]);
     expect(placements.filter((p) => p.panelId === 'drawer-front').map((p) => p.position[1])).toEqual([172, 375]);
   });
@@ -78,8 +78,8 @@ describe('drawerSet', () => {
     const d = drawerSet(TV_BOTH);
     expect(d.panels.map((p) => [p.id, p.length, p.width, p.qty])).toEqual([
       ['drawer-front', 696, 211, 4],
-      ['drawer-side', 356, 171, 8],
-      ['drawer-end', 611, 171, 8],
+      ['drawer-side', 356, 156, 8],
+      ['drawer-end', 611, 156, 8],
       ['drawer-bottom', 356, 647, 4],
     ]);
     expect(
@@ -106,13 +106,26 @@ describe('drawerSet', () => {
       { type: 'confirmat', size: '5x50', qty: 16 },
       { type: 'screw', size: '3.5x16', qty: 34 }, // ⌈2·(738 + 508)/150⌉ = 17 per bottom
       { type: 'screw', size: '3.5x25', qty: 8 },
+      { type: 'screw', size: 'M4x45', qty: 4 },
       { type: 'slide', size: '20" (508 mm)', qty: 2 },
       { type: 'handle', size: '128 mm', qty: 2 },
     ]);
     expect(d.boring).toEqual([]);
   });
 
-  it('gives the slide heights from the floor and ends with the handles', () => {
+  it('sizes the front screw and handle bolt by board thickness (12 mm boards)', () => {
+    const d = drawerSet({ ...CLOSET, stock: getStock(1) });
+    expect(d.hardware).toEqual([
+      { type: 'confirmat', size: '5x50', qty: 16 },
+      { type: 'screw', size: '3.5x16', qty: 34 },
+      { type: 'screw', size: '3.5x19', qty: 8 },
+      { type: 'screw', size: 'M4x35', qty: 4 },
+      { type: 'slide', size: '20" (508 mm)', qty: 2 },
+      { type: 'handle', size: '128 mm', qty: 2 },
+    ]);
+  });
+
+  it('gives the slide heights above the Base and ends with the handles', () => {
     const steps = drawerSet(CLOSET).steps;
     expect(steps.map((s) => s.title)).toEqual([
       'Arma las cajas',
@@ -121,10 +134,10 @@ describe('drawerSet', () => {
       'Pon los frentes',
       'Pon las jaladeras de los cajones',
     ]);
-    expect(steps[1]!.description).toContain('al ras del frente, centrada a 172 · 375 mm del piso');
+    expect(steps[1]!.description).toContain('al ras del frente, centrada a 87 · 290 mm sobre la base');
     expect(steps[3]).toMatchObject({ panelRefs: ['drawer-front'], explodeOffsets: { 'drawer-front': [0, 0, 150] } });
     expect(steps[4]!.panelRefs).toEqual(['drawer-front', 'drawer-handle']);
-    expect(drawerSet(TV_BOTH).steps[1]!.description).toContain('centrada a 178 · 392 mm del piso');
+    expect(drawerSet(TV_BOTH).steps[1]!.description).toContain('centrada a 92 · 306 mm sobre la base');
   });
 
   it('returns nothing without drawers or stacks', () => {
