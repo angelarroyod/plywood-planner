@@ -55,7 +55,7 @@ export interface Panel {
 }
 
 export interface Hardware {
-  type: 'screw' | 'dowel' | 'confirmat' | 'hinge' | 'handle' | 'rod' | 'rod-support';
+  type: 'screw' | 'dowel' | 'confirmat' | 'hinge' | 'handle' | 'rod' | 'rod-support' | 'slide';
   size: string; // '4x40', '5x50', '35 mm recta'
   qty: number;
   cutTo?: number; // mm, for items bought by length and cut to size (the closet rod)

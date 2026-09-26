@@ -14,6 +14,7 @@ export const HARDWARE_LABELS: Record<Hardware['type'], string> = {
   handle: 'Jaladera',
   rod: 'Tubo oval para clóset',
   'rod-support': 'Soporte de tubo',
+  slide: 'Corredera telescópica (par)',
 };
 
 /** One hardware line without its quantity, e.g. 'Tubo oval para clóset 15×30 mm, cortado a 762 mm'. */
