@@ -76,7 +76,7 @@ export function drawerSet(o: {
 - **Slide and box:**
   - Slide `slideFor(depth)`; the box depth `L` is the slide's `mm`.
   - Box outside width `wb = ⌊(openingRight − openingLeft) − 26⌋` (12.7 mm slide clearance each side, rounded down to whole mm).
-  - Box height `hb = hf − 40`, centred on its front, so the box bottom is 20 mm above the front's bottom edge.
+  - Box height `hb = hf − 55`. Box underside `by = fy + 30` (30 mm above the front's bottom edge, clearing the Base by 29 − t mm); its top sits 25 mm below the front's top edge, clearing a Tapa or shelf above.
 
 **Panels.** "Largo" is always the grain direction, as the lumber yard reads it.
 
@@ -102,23 +102,24 @@ export function drawerSet(o: {
 |---|---|---|
 | `confirmat 5x50` | 8 | the box |
 | `screw 3.5x16` | `⌈2(wb + L) / 150⌉` | the bottom, every 15 cm |
-| `screw 3.5x25` | 4 | the front, from inside |
+| `screw` (`3.5x25` if `t ≥ 15`, else `3.5x19`) | 4 | the front, from inside |
+| `screw M4×NN` (45 if `t ≥ 18`, 40 if `t ≥ 15`, else 35) | 2 | bolts the handle through the front and the box: the handle's own screws don't reach |
 | `slide` `` `${inches}" (${mm} mm)` `` | 1 | the pair of slides |
 | `handle 128 mm` | 1 | |
 
-**Steps**, in Spanish. Heights are front centres measured from the floor, rounded:
+**Steps**, in Spanish. Slide heights are box centres measured above the Base (`bottom + t`), rounded:
 
-1. **Arma las cajas.** Build each box with confirmat, 2 per corner (the sides go outside the ends). Square it by measuring the diagonals, then screw the Fibracel bottom underneath every 15 cm.
+1. **Arma las cajas.** Build each box with confirmat, 2 per corner (the sides go outside the ends). Square it by measuring the diagonals, then screw the Fibracel bottom underneath every 15 cm; sink the confirmat heads flush, since the slide runs over them.
    - `panelRefs: ['drawer-side', 'drawer-end', 'drawer-bottom']`.
-2. **Monta las correderas.** Separate each slide into its two parts.
-   - Screw the fixed part to the walls of the opening, flush with the front, centred at `172 · 375 mm del piso`.
-   - Screw the moving part to the box sides, centred in their height.
+2. **Monta las correderas.** Separate each slide into its two parts — they go on after the case is assembled, once the floor can no longer be reached.
+   - Screw the fixed part to the walls of the opening, flush with the front, centred at `87 · 290 mm sobre la base`.
+   - Screw the moving part to the box sides, flush with its front and centred in its height.
    - `panelRefs: ['drawer-side']`.
 3. **Mete los cajones.** Clip each box onto its slides and check that it runs and closes flush with the front.
    - `panelRefs: ['drawer-side']`.
-4. **Pon los frentes.** Leave 3 mm between fronts and 2 mm around them (cardboard or coins as spacers). Hold each front with double-sided tape, open the drawer and screw it from inside with 4 screws of 3.5×25.
+4. **Pon los frentes.** Leave 3 mm between fronts and 2 mm around them (cardboard or coins as spacers). Hold each front with double-sided tape, open the drawer and screw it from inside with 4 screws (3.5×25, or 3.5×19 on 12 mm boards).
    - `panelRefs: ['drawer-front']`, `explodeOffsets: { 'drawer-front': [0, 0, 150] }`.
-5. **Pon las jaladeras de los cajones.** (Named apart from the doors' step, since both can appear in one closet.) Drill 2 holes of 5 mm, 128 mm apart and centred on each front, then screw on the handle.
+5. **Pon las jaladeras de los cajones.** (Named apart from the doors' step, since both can appear in one closet.) Drill 2 holes of 5 mm, 128 mm apart, centred on each front and going through the box behind it, then bolt on the handle with 2 M4×NN screws — the handle's own screws don't reach through the box.
    - `panelRefs: ['drawer-front', 'drawer-handle']`.
 
 With `count = 0` or no stacks, every list is empty.
@@ -150,13 +151,27 @@ Example (plywood 18, 800 × 2000 × 550, 2 drawers, 2 doors):
 | Z | 477 |
 | Drawer shelf | 468–486 |
 | Fronts | 796 × 200, spanning 72–272 and 275–475, centres 172 · 375 |
-| Slides | 20" (508) |
-| Boxes | 738 wide, 160 tall, pulled out 169 |
+| Slides | 20" (508), heights 87 · 290 above the Base |
+| Boxes | 738 wide, 145 tall, pulled out 169 |
 | Bottom screws | 17 per drawer |
 | Doors | 1519 tall, 3 hinges, cups at 100 · 760 · 1419, plates at 579 · 1238 · 1898 |
 
+Merged hardware (Colgar, 2 drawers, 2 doors):
+
+| Item | Qty |
+|---|---|
+| confirmat 5x50 | 34 |
+| screw 3.5x16 | 70 |
+| rod 15×30 mm (cutTo 762) | 1 |
+| rod-support 15×30 mm | 2 |
+| screw 3.5x25 | 8 |
+| screw M4x45 | 4 |
+| slide `20" (508 mm)` | 2 |
+| handle 128 mm | 4 |
+| hinge 35 mm recta | 6 |
+
 - Colgar fits, with 1078 mm under the rod.
-- Mixto does not: 60 mm below its zone, so the existing "No caben la zona de colgar…" message shows under `height`.
+- Mixto does not: 60 mm below its zone, so the existing "No caben la zona de colgar…" message shows under `height` — with drawers > 0 it now also suggests "usa menos cajones".
 
 ### TV stand (`src/engine/templates/tv-stand.ts`)
 
@@ -184,7 +199,7 @@ Example (plywood 18, 800 × 2000 × 550, 2 drawers, 2 doors):
 | `bottom` | Base | (W − 2t) × Dc | 1 | L1 | y P … P + t |
 | `plinth` | Zoclo | (W − 2t) × P | 1 | L1 | y 0 … P, flush with the front |
 | `divider` | Divisor | hd × Dc | 1 | L1 | x = 0, y P + t … H − t |
-| `shelf` | Entrepaño | bay × Dc | Entrepaño bays | L1 | halfway up its bay: bottom face at `P + t + (hd − t)/2` |
+| `shelf` | Entrepaño | bay × Dc | Entrepaño bays | L1 | halfway up its bay: bottom face at `P + t + (hd − t)/2`, staggered ±25 mm (`SHELF_STAGGER`) when both bays hold a shelf, so the divider screws of one clear the other's end |
 | `back` | Fondo | W × (H − 100), Fibracel | 1 | none | y 0 … H − 100 (100 mm cable slot at the top), z = −D/2 + 1.5 |
 
 - Sides and divider keep `length` as their height, the grain direction, even when that is shorter than their depth.
@@ -204,21 +219,22 @@ The shallowest depth (350) still fits 12" slides, so there is no depth rule.
 
 **Hardware:**
 - `confirmat 5x50`: 4 each for the Tapa, Base, divider and each bay shelf, plus 2 for the zoclo.
-- `screw 3.5x16` for the back: `⌈2(W + H − 100) / 200⌉ + ⌈(H − 100) / 200⌉` (up the divider) + `⌈bay / 200⌉` per bay shelf.
+- `screw 3.5x16` for the back: `⌈(W + 2(H − 100)) / 200⌉` (the back's top edge is free, 100 mm below the Tapa, so only the bottom and the two sides take screws) + `⌈(H − 100) / 200⌉` (up the divider) + `⌈bay / 200⌉` per bay shelf.
 - The drawer hardware, then everything through `mergeHardware`.
 
 **Steps:**
 
 1. **Prepara y marca.**
    - `prepSentence(stock, mode)`.
-   - Mark the Base (`70 mm`) and, if there is a shelf, `entrepaño a {bottom face} mm` on the sides and the divider.
+   - Mark the Base (`70 mm`) on the sides; with one shelf, `entrepaño a {underside} mm`, with both, `entrepaño izquierdo a {underside} mm, entrepaño derecho a {underside} mm` (staggered).
+   - In the divider, mark each shelf again, measured from the divider's own bottom edge (`shelf underside − (P + t)`).
    - Mark the centre of the Tapa and the Base for the divider.
-2. The iron-on banding step (`ironStep`), only when Cubrecanto is set to iron-on.
+2. The iron-on banding step (`ironStep`), only when Cubrecanto is set to iron-on; it lists only panels that actually carry a banded edge (same filter as the closet).
 3. **Arma la caja.**
    - Screw the Base and the Tapa between the sides with confirmat, 2 per side.
-   - Screw the divider at their centre marks, 2 confirmat through each, before the zoclo, while the underside is still reachable.
+   - Screw the divider at their centre marks, 2 confirmat through each, before the zoclo, while the underside is still reachable; cover the heads with tapones.
    - Then fix the zoclo under the Base, at the front, with 1 per side.
-4. **Instala el entrepaño** (**Instala los entrepaños** when both bays are Entrepaño), only when a bay is Entrepaño, with 2 confirmat per end.
+4. **Instala el entrepaño** (**Instala los entrepaños** when both bays are Entrepaño), only when a bay is Entrepaño, with 2 confirmat per end, heads flush.
 5. **Verifica la escuadra y coloca el fondo.**
    - With the stand face down, check that the diagonals are equal.
    - Screw the Fibracel back, smooth face toward the front, every 20 cm, starting from the bottom edge: to the sides, the Base (`a {P + t/2} mm del borde de abajo`), the divider and the shelf.
@@ -233,8 +249,8 @@ Default (plywood 18, 1400 × 500 × 400, left bay Cajones, right bay Entrepaño,
 | Divider | 394 × 397 |
 | Shelf | 276–294 |
 | Fronts | 696 × 211, spanning 72–283 and 286–497, centres 178 · 392 (rounded from 177.5 · 391.5) |
-| Slides | 14" (356) |
-| Boxes | 647 wide, 171 tall, pulled out 119 |
+| Slides | 14" (356), heights 92 · 306 above the Base |
+| Boxes | 647 wide, 156 tall, pulled out 119 |
 | Bottom screws | 14 per drawer |
 | Back | 1400 × 400 |
 
@@ -243,8 +259,9 @@ Merged hardware:
 | Item | Qty |
 |---|---|
 | confirmat 5x50 | 34 |
-| screw 3.5x16 | 52 (24 back + 28 drawer bottoms) |
+| screw 3.5x16 | 45 (17 back + 28 drawer bottoms) |
 | screw 3.5x25 | 8 |
+| screw M4x45 | 4 |
 | slide `14" (356 mm)` | 2 |
 | handle 128 mm | 2 |
 

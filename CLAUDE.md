@@ -44,8 +44,9 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Drawers (`drawerSet`) stack in 1–2 side-by-side columns (`stacks`), with 3 mm between fronts and 2 mm at the ends. Each drawer is:
   - a screwed box: 2 sides, 2 ends, and a Fibracel bottom screwed underneath;
   - running on telescopic slides: `slideFor` picks the longest 10"–22" pair that leaves 10 mm behind it;
-  - sized from the slide: the box is the slide's length, 26 mm narrower than its opening and 40 mm lower than its front;
+  - sized from the slide: the box is the slide's length, 26 mm narrower than its opening and 55 mm lower than its front (it starts 30 mm above the front's bottom edge, so it clears the Base);
   - finished with a separate front banded all round, fixed last so the fronts line up after the boxes run.
+  - screwed on from inside with 3.5×25 (3.5×19 on 12 mm boards); its handle bolts through front and box with M4 screws sized by thickness (45 / 40 / 35 mm), since the handle's own screws don't reach.
 
   Drawers are drawn pulled out a third of their slide. Every front keeps 2 mm to the edge of the area it covers, so neighbouring blocks (closet drawers and doors, TV stand bays) sit 4 mm apart. `spanishList` in `labels.ts` builds every "a, b y c" in step copy.
 - Fittings, boring and hardware text:
