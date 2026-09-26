@@ -122,7 +122,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
       paramKey: 'height',
       message:
         `Bajo el tubo quedan ${Math.round(rodY - floor)} mm y la ropa necesita al menos ${HANG_MIN} mm. ` +
-        'Aumenta el alto o elige Entrepaños.',
+        (drawers > 0 ? 'Aumenta el alto, usa menos cajones o elige Entrepaños.' : 'Aumenta el alto o elige Entrepaños.'),
     });
   }
   // Entrepaños spread over the whole inside; Mixto spreads N − 1 shelves under the zone's shelf.
@@ -131,14 +131,17 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
   if (interior === 3 && zoneTop - t - floor < MIN_SHELF_GAP) {
     issues.push({
       paramKey: 'height',
-      message: `No caben la zona de colgar de ${HANG_MIN} mm y un espacio útil debajo. Aumenta el alto o elige Colgar.`,
+      message:
+        `No caben la zona de colgar de ${HANG_MIN} mm y un espacio útil debajo. ` +
+        (drawers > 0 ? 'Aumenta el alto, usa menos cajones o elige Colgar.' : 'Aumenta el alto o elige Colgar.'),
     });
   } else if (interior !== 1 && gap < MIN_SHELF_GAP) {
     issues.push({
       paramKey: 'shelfCount',
       message:
         `No caben ${N} entrepaños: quedarían espacios de ${Math.max(0, Math.round(gap))} mm ` +
-        `y el mínimo útil es ${MIN_SHELF_GAP} mm. Reduce los entrepaños o aumenta el alto.`,
+        `y el mínimo útil es ${MIN_SHELF_GAP} mm. ` +
+        (drawers > 0 ? 'Reduce los entrepaños, usa menos cajones o aumenta el alto.' : 'Reduce los entrepaños o aumenta el alto.'),
     });
   }
   if (doors === 1 && doorWidth(1, W) > MAX_SINGLE_DOOR) {
@@ -312,7 +315,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
         `${prepSentence(stock, mode)} ` + `Marca en los laterales la cara de abajo de cada pieza: ${marks.join(', ')}.`,
       panelRefs: ['side'],
     },
-    ...(mode === 'diy' ? [ironStep(panels.filter((pn) => pn.stock.id !== FIBRACEL_3.id).map((pn) => pn.id))] : []),
+    ...(mode === 'diy' ? [ironStep(panels.filter((pn) => Object.values(pn.edges).some(Boolean)).map((pn) => pn.id))] : []),
     {
       title: 'Arma la caja acostada',
       description:

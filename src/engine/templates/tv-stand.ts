@@ -27,6 +27,7 @@ import { mergeHardware } from '../parts/merge.ts';
 const PLINTH = 70; // mm, zoclo height
 const CABLE_SLOT = 100; // mm the back stops short of the top, so cables pass without a hole saw
 const BACK_SCREW_SPACING = 200; // mm between back screws
+const SHELF_STAGGER = 25; // mm each way when both bays hold a shelf, so the second shelf's divider screws clear the first's end
 
 const BAY_OPTIONS = [
   { value: 1, label: 'Cajones' },
@@ -79,6 +80,8 @@ export function generateTvStand(raw: TemplateParams): GenerateResult {
   const hasDrawers = bays.includes(1);
   const shelfBays = [0, 1].filter((i) => bays[i] === 2);
   const shelfBottom = PLINTH + t + (hd - t) / 2; // halfway up the bay
+  // Staggered ±25 mm when both bays hold a shelf, so the divider screws of one clear the other's end.
+  const shelfUndersides = shelfBays.map((i) => (shelfBays.length === 2 ? shelfBottom + (i === 0 ? -SHELF_STAGGER : SHELF_STAGGER) : shelfBottom));
   const hf = drawerFrontHeight(n, PLINTH, H);
 
   const issues: ValidationIssue[] = [];
@@ -136,7 +139,7 @@ export function generateTvStand(raw: TemplateParams): GenerateResult {
     flat('bottom', 0, 0, span, PLINTH),
     { panelId: 'plinth', instance: 0, position: [0, PLINTH / 2, D / 2 - t / 2], size: [span, PLINTH, t] },
     { panelId: 'divider', instance: 0, position: [0, PLINTH + t + hd / 2, zc], size: [t, hd, Dc] },
-    ...shelfBays.map((i, k) => flat('shelf', k, bayCenter[i]!, bay, shelfBottom)),
+    ...shelfBays.map((i, k) => flat('shelf', k, bayCenter[i]!, bay, shelfUndersides[k]!)),
     ...drawer.placements,
     {
       panelId: 'back',
@@ -147,8 +150,9 @@ export function generateTvStand(raw: TemplateParams): GenerateResult {
   ];
 
   const shelves = shelfBays.length;
+  // The back's top edge is free (100 mm below the Tapa), so only its bottom and two sides take screws.
   const backScrews =
-    Math.ceil((2 * (W + H - CABLE_SLOT)) / BACK_SCREW_SPACING) +
+    Math.ceil((W + 2 * (H - CABLE_SLOT)) / BACK_SCREW_SPACING) +
     Math.ceil((H - CABLE_SLOT) / BACK_SCREW_SPACING) + // up the divider
     shelves * Math.ceil(bay / BACK_SCREW_SPACING);
   const hardware = mergeHardware([
@@ -157,7 +161,21 @@ export function generateTvStand(raw: TemplateParams): GenerateResult {
     ...drawer.hardware,
   ]);
 
-  const marks = [`base a ${PLINTH} mm`, ...(shelves > 0 ? [`entrepaño a ${Math.round(shelfBottom)} mm`] : [])];
+  const marks = [
+    `base a ${PLINTH} mm`,
+    ...(shelves === 1 ? [`entrepaño a ${Math.round(shelfUndersides[0]!)} mm`] : []),
+    ...(shelves === 2
+      ? [`entrepaño izquierdo a ${Math.round(shelfUndersides[0]!)} mm`, `entrepaño derecho a ${Math.round(shelfUndersides[1]!)} mm`]
+      : []),
+  ];
+  // Divider marks, measured from the divider's own bottom edge (shelf underside − (P + t)).
+  const dividerMarks = shelfUndersides.map((y) => Math.round(y - (PLINTH + t)));
+  const divider =
+    shelves === 0
+      ? ''
+      : shelves === 1
+        ? ` En el divisor, marca el entrepaño a ${dividerMarks[0]} mm de su borde de abajo.`
+        : ` En el divisor, marca el entrepaño izquierdo a ${dividerMarks[0]} mm y el derecho a ${dividerMarks[1]} mm de su borde de abajo, cada uno en su cara.`;
   const backTo = [
     'a los laterales',
     `a la base (a ${Math.round(PLINTH + t / 2)} mm del borde de abajo)`,
@@ -169,7 +187,7 @@ export function generateTvStand(raw: TemplateParams): GenerateResult {
       ? [
           {
             title: shelves === 2 ? 'Instala los entrepaños' : 'Instala el entrepaño',
-            description: 'Coloca cada entrepaño en su marca y fíjalo con 2 confirmat por lado.',
+            description: 'Coloca cada entrepaño en su marca y fíjalo con 2 confirmat por lado, con las cabezas al ras.',
             panelRefs: ['shelf'],
             explodeOffsets: { shelf: [0, 0, 200] },
           },
@@ -180,17 +198,17 @@ export function generateTvStand(raw: TemplateParams): GenerateResult {
     {
       title: 'Prepara y marca',
       description:
-        `${prepSentence(stock, mode)} Marca en los laterales y en el divisor la cara de abajo de cada pieza: ` +
-        `${marks.join(', ')}. Marca también el centro de la tapa y de la base para el divisor.`,
+        `${prepSentence(stock, mode)} Marca en los laterales la cara de abajo de cada pieza: ${marks.join(', ')}.` +
+        `${divider} Marca también el centro de la tapa y de la base para el divisor.`,
       panelRefs: ['side', 'divider'],
     },
-    ...(mode === 'diy' ? [ironStep(panels.filter((pn) => pn.stock.id !== FIBRACEL_3.id).map((pn) => pn.id))] : []),
+    ...(mode === 'diy' ? [ironStep(panels.filter((pn) => Object.values(pn.edges).some(Boolean)).map((pn) => pn.id))] : []),
     {
       title: 'Arma la caja',
       description:
         'Fija la base y la tapa entre los laterales con tornillos confirmat, 2 por lado. Antes de poner el zoclo, ' +
-        'fija el divisor en las marcas del centro con 2 confirmat a través de la base y 2 a través de la tapa. ' +
-        'Luego fija el zoclo bajo la base, al frente, con 1 por lado.',
+        'fija el divisor en las marcas del centro con 2 confirmat a través de la base y 2 a través de la tapa; ' +
+        'cubre sus cabezas con tapones. Luego fija el zoclo bajo la base, al frente, con 1 por lado.',
       panelRefs: ['side', 'top', 'bottom', 'divider', 'plinth'],
       explodeOffsets: { top: [0, 150, 0], bottom: [0, -150, 0], divider: [0, 0, 150], plinth: [0, 0, 150] },
     },

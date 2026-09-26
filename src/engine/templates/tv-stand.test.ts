@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tvStand } from './tv-stand.ts';
-import { overlappingBoxes } from './testing.ts';
+import { drawerBoxClearance, overlappingBoxes } from './testing.ts';
 import { nest } from '../nesting.ts';
 import { FIBRACEL_3, MATERIAL_OPTIONS } from '../stock.ts';
 import type { Design, TemplateParams, ValidationIssue } from '../types.ts';
@@ -30,8 +30,8 @@ describe('tv stand', () => {
       ['divider', 'Divisor', 394, 397, 1],
       ['shelf', 'Entrepaño', 673, 397, 1],
       ['drawer-front', 'Frente de cajón', 696, 211, 2],
-      ['drawer-side', 'Costado de cajón', 356, 171, 4],
-      ['drawer-end', 'Frente y trasera de cajón', 611, 171, 4],
+      ['drawer-side', 'Costado de cajón', 356, 156, 4],
+      ['drawer-end', 'Frente y trasera de cajón', 611, 156, 4],
       ['drawer-bottom', 'Fondo de cajón', 356, 647, 2],
       ['back', 'Fondo', 1400, 400, 1],
     ]);
@@ -54,8 +54,9 @@ describe('tv stand', () => {
     ]);
     expect(d.hardware).toEqual([
       { type: 'confirmat', size: '5x50', qty: 34 }, // Tapa, Base, divider, shelf ·4 + zoclo 2 + 2 boxes·8
-      { type: 'screw', size: '3.5x16', qty: 52 }, // back 18 + divider 2 + shelf 4, and 2 drawer bottoms·14
+      { type: 'screw', size: '3.5x16', qty: 45 }, // back 17, and 2 drawer bottoms·14
       { type: 'screw', size: '3.5x25', qty: 8 },
+      { type: 'screw', size: 'M4x45', qty: 4 },
       { type: 'slide', size: '14" (356 mm)', qty: 2 },
       { type: 'handle', size: '128 mm', qty: 2 },
     ]);
@@ -73,12 +74,21 @@ describe('tv stand', () => {
     expect(ids(shelves).filter((id) => id.startsWith('drawer'))).toEqual([]);
     expect(shelves.panels.find((p) => p.id === 'shelf')!.qty).toBe(2);
     expect(shelves.fittings).toEqual([]);
+    // Staggered ±25 mm so the divider screws of one shelf clear the other's end.
+    expect(shelves.placements.filter((p) => p.panelId === 'shelf').map((p) => [p.position[0], p.position[1]])).toEqual([
+      [-345.5, 260],
+      [345.5, 310],
+    ]);
     expect(shelves.steps.map((s) => s.title)).toEqual([
       'Prepara y marca',
       'Arma la caja',
       'Instala los entrepaños',
       'Verifica la escuadra y coloca el fondo',
     ]);
+    expect(shelves.steps[0]!.description).toContain(
+      'base a 70 mm, entrepaño izquierdo a 251 mm, entrepaño derecho a 301 mm. En el divisor, marca el entrepaño ' +
+        'izquierdo a 163 mm y el derecho a 213 mm de su borde de abajo, cada uno en su cara.',
+    );
   });
 
   it('marks, assembles and backs the stand, leaving a cable slot', () => {
@@ -94,13 +104,16 @@ describe('tv stand', () => {
       'Pon los frentes',
       'Pon las jaladeras de los cajones',
     ]);
-    expect(steps[0]!.description).toContain('la cara de abajo de cada pieza: base a 70 mm, entrepaño a 276 mm.');
+    expect(steps[0]!.description).toContain(
+      'la cara de abajo de cada pieza: base a 70 mm, entrepaño a 276 mm. En el divisor, marca el entrepaño a 188 mm de su borde de abajo.',
+    );
     expect(steps[1]!.description).toContain('Antes de poner el zoclo, fija el divisor');
+    expect(steps[1]!.description).toContain('cubre sus cabezas con tapones');
     expect(steps[3]!.description).toContain(
       'desde el borde de abajo: a los laterales, a la base (a 79 mm del borde de abajo), al divisor y al entrepaño. ' +
         'Deja libres los 10 cm de arriba para pasar los cables.',
     );
-    expect(steps[5]!.description).toContain('centrada a 178 · 392 mm del piso');
+    expect(steps[5]!.description).toContain('centrada a 92 · 306 mm sobre la base');
   });
 });
 
@@ -141,6 +154,7 @@ describe('tv stand sheet fit', () => {
                   if (!result.ok) continue;
                   valid++;
                   expect(() => nest(result.design.panels)).not.toThrow();
+                  expect(drawerBoxClearance(result.design)).toBeGreaterThanOrEqual(5);
                   expect(overlappingBoxes(result.design)).toEqual([]);
                 }
     expect(valid).toBeGreaterThan(100);

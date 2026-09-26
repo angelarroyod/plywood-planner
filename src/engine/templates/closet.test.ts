@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { closet } from './closet.ts';
 import { nest } from '../nesting.ts';
 import { refLabels } from '../labels.ts';
-import { overlappingBoxes } from './testing.ts';
+import { drawerBoxClearance, overlappingBoxes } from './testing.ts';
 import { FIBRACEL_3, MATERIAL_OPTIONS } from '../stock.ts';
 import type { Design, TemplateParams, ValidationIssue } from '../types.ts';
 
@@ -247,6 +247,7 @@ function expectBuildable(d: Design) {
       }
     }
   }
+  expect(drawerBoxClearance(d)).toBeGreaterThanOrEqual(5);
   expect(overlappingBoxes(d)).toEqual([]);
 }
 
@@ -307,7 +308,8 @@ describe('closet drawers', () => {
     expect(issuesOf({ drawers: 2 })).toEqual([
       {
         paramKey: 'height',
-        message: 'No caben la zona de colgar de 1000 mm y un espacio útil debajo. Aumenta el alto o elige Colgar.',
+        message:
+          'No caben la zona de colgar de 1000 mm y un espacio útil debajo. Aumenta el alto, usa menos cajones o elige Colgar.',
       },
     ]);
   });
@@ -319,6 +321,7 @@ describe('closet drawers', () => {
       { type: 'rod', size: '15×30 mm', qty: 1, cutTo: 762 },
       { type: 'rod-support', size: '15×30 mm', qty: 2 },
       { type: 'screw', size: '3.5x25', qty: 8 },
+      { type: 'screw', size: 'M4x45', qty: 4 },
       { type: 'slide', size: '20" (508 mm)', qty: 2 },
       { type: 'handle', size: '128 mm', qty: 4 },
       { type: 'hinge', size: '35 mm recta', qty: 6 },
@@ -347,6 +350,6 @@ describe('closet drawers', () => {
     expect(steps[3]!.description).toContain(
       'a la base (a 79 mm del borde de abajo), al techo de los cajones y al maletero.',
     );
-    expect(steps[6]!.description).toContain('centrada a 172 · 375 mm del piso');
+    expect(steps[6]!.description).toContain('centrada a 87 · 290 mm sobre la base');
   });
 });
