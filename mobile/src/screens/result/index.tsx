@@ -36,7 +36,7 @@ export function Result() {
     return `${p.width} × ${p.height ?? p.depth} × ${p.depth} · ${getStock(p.material!).label}`;
   }, [design]);
 
-  const title = template.id === 'bookshelf' ? 'Librero sala' : 'Mesa auxiliar';
+  const title = template.name;
 
   if (!design) return <View style={styles.root} />;
 
