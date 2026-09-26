@@ -75,7 +75,7 @@ export function drawerSet(o: {
   - Width `wf = frontRight − frontLeft`.
 - **Slide and box:**
   - Slide `slideFor(depth)`; the box depth `L` is the slide's `mm`.
-  - Box outside width `wb = (openingRight − openingLeft) − 26` (12.7 mm slide clearance each side).
+  - Box outside width `wb = ⌊(openingRight − openingLeft) − 26⌋` (12.7 mm slide clearance each side, rounded down to whole mm).
   - Box height `hb = hf − 40`, centred on its front, so the box bottom is 20 mm above the front's bottom edge.
 
 **Panels.** "Largo" is always the grain direction, as the lumber yard reads it.
@@ -118,7 +118,7 @@ export function drawerSet(o: {
    - `panelRefs: ['drawer-side']`.
 4. **Pon los frentes.** Leave 3 mm between fronts and 2 mm around them (cardboard or coins as spacers). Hold each front with double-sided tape, open the drawer and screw it from inside with 4 screws of 3.5×25.
    - `panelRefs: ['drawer-front']`, `explodeOffsets: { 'drawer-front': [0, 0, 150] }`.
-5. **Pon las jaladeras.** Drill 2 holes of 5 mm, 128 mm apart and centred on each front, then screw on the handle.
+5. **Pon las jaladeras de los cajones.** (Named apart from the doors' step, since both can appear in one closet.) Drill 2 holes of 5 mm, 128 mm apart and centred on each front, then screw on the handle.
    - `panelRefs: ['drawer-front', 'drawer-handle']`.
 
 With `count = 0` or no stacks, every list is empty.
@@ -175,7 +175,7 @@ Example (plywood 18, 800 × 2000 × 550, 2 drawers, 2 doors):
 | `material` | Material | select | `MATERIAL_OPTIONS` | `DEFAULT_MATERIAL` |
 | `edgeBanding` | Cubrecanto | select | `EDGE_BANDING_OPTIONS` | `DEFAULT_EDGE_BANDING` |
 
-**Geometry.** Notation as in the closet: `P = 70`, `Dc = D − 3`, `zc = 1.5`, case centred on x. `bay = (W − 3t) / 2` is each bay's inside width, and `hd = H − P − 2t` is the height between the Base and the Tapa.
+**Geometry.** Notation as in the closet: `P = 70`, `Dc = D − 3`, `zc = 1.5`, case centred on x. `bay = ⌊(W − 3t) / 2⌋` is each bay's inside width (rounded down to whole mm), and `hd = H − P − 2t` is the height between the Base and the Tapa.
 
 | id | label | size (length × width) | qty | banded | placement |
 |---|---|---|---|---|---|
@@ -218,7 +218,7 @@ The shallowest depth (350) still fits 12" slides, so there is no depth rule.
    - Screw the Base and the Tapa between the sides with confirmat, 2 per side.
    - Screw the divider at their centre marks, 2 confirmat through each, before the zoclo, while the underside is still reachable.
    - Then fix the zoclo under the Base, at the front, with 1 per side.
-4. **Instala el entrepaño**, only when a bay is Entrepaño, with 2 confirmat per end.
+4. **Instala el entrepaño** (**Instala los entrepaños** when both bays are Entrepaño), only when a bay is Entrepaño, with 2 confirmat per end.
 5. **Verifica la escuadra y coloca el fondo.**
    - With the stand face down, check that the diagonals are equal.
    - Screw the Fibracel back, smooth face toward the front, every 20 cm, starting from the bottom edge: to the sides, the Base (`a {P + t/2} mm del borde de abajo`), the divider and the shelf.
