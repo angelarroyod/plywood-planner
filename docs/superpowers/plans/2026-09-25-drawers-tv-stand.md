@@ -699,7 +699,7 @@ describe('closet drawers', () => {
 
 Run: `pnpm vitest run src/engine/labels.test.ts src/engine/templates/closet.test.ts`
 
-Expected: FAIL. `spanishList` is not exported from `labels.ts`, and the closet has no `drawers` param, so `paramIssues` rejects the unknown input silently and the new drawer expectations fail.
+Expected: FAIL. `spanishList` is not exported from `labels.ts`, and the closet has no `drawers` param, so `resolveParams` drops the unknown input and the new drawer expectations fail.
 
 - [ ] **Step 3: Move `spanishList` into the engine's copy helpers**
 
