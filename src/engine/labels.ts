@@ -27,3 +27,8 @@ export function hardwareText(h: Hardware): string {
 export function refLabels(design: Design): Record<string, string> {
   return Object.fromEntries([...design.fittings, ...design.panels].map((p) => [p.id, p.label]));
 }
+
+/** A Spanish list: 'a', 'a y b', 'a, b y c'. */
+export function spanishList(items: string[]): string {
+  return items.length === 1 ? items[0]! : `${items.slice(0, -1).join(', ')} y ${items.at(-1)}`;
+}

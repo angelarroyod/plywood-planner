@@ -24,6 +24,9 @@ import {
 } from '../edge-banding.ts';
 import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
 import { MIN_DOOR_THICKNESS, doorSet, doorWidth } from '../parts/door.ts';
+import { drawerSet } from '../parts/drawer.ts';
+import { mergeHardware } from '../parts/merge.ts';
+import { spanishList } from '../labels.ts';
 
 const PLINTH = 70; // mm, zoclo height: keeps mop water off the base
 const LUGGAGE = 350; // mm clear between the Maletero and the Tapa
@@ -35,6 +38,7 @@ const MIN_SHELF_GAP = 100; // mm of clear space between shelves
 const BACK_SCREW_SPACING = 200; // mm between back screws
 const MAX_SINGLE_DOOR = 600; // mm; a wider single door sags and racks
 const MIN_DOOR = 200; // mm; a narrower door is useless
+const DRAWER_PITCH = 203; // mm per drawer: a 200 mm front plus the 3 mm gap to the next one
 
 const INTERIOR_OPTIONS = [
   { value: 1, label: 'Colgar' },
@@ -54,6 +58,7 @@ const params: ParamSpec[] = [
   { kind: 'number', key: 'depth', label: 'Profundidad', unit: 'mm', min: 400, max: 650, step: 10, default: 550 },
   { kind: 'select', key: 'interior', label: 'Interior', unit: '', options: INTERIOR_OPTIONS, default: 3 },
   { kind: 'number', key: 'shelfCount', label: 'Entrepaños', unit: '', min: 1, max: 8, step: 1, default: 3 },
+  { kind: 'number', key: 'drawers', label: 'Cajones', unit: '', min: 0, max: 3, step: 1, default: 0 },
   { kind: 'select', key: 'doors', label: 'Puertas', unit: '', options: DOOR_OPTIONS, default: 2 },
   { kind: 'select', key: 'material', label: 'Material', unit: '', options: MATERIAL_OPTIONS, default: DEFAULT_MATERIAL },
   {
@@ -66,16 +71,12 @@ const params: ParamSpec[] = [
   },
 ];
 
-/** 'a, b y c' */
-function spanishList(items: string[]): string {
-  return `${items.slice(0, -1).join(', ')} y ${items.at(-1)}`;
-}
-
 /**
  * One closet module on a zoclo: sides, Tapa, Base, a Fibracel back, and an interior that
  * hangs clothes (Colgar: Maletero + rod), holds shelves (Entrepaños) or both (Mixto: Maletero
- * + rod over a 1000 mm short-hanging zone, shelves below). A wall is several modules side by
- * side. `depth` is the overall depth, back included, doors excluded.
+ * + rod over a 1000 mm short-hanging zone, shelves below). Optional drawers stack on the zoclo
+ * under a fixed shelf, and the doors start above it. A wall is several modules side by side.
+ * `depth` is the overall depth, back included, doors excluded.
  */
 export function generateCloset(raw: TemplateParams): GenerateResult {
   const p = resolveParams(params, raw);
@@ -88,6 +89,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
   const D = p['depth']!;
   const interior = p['interior']!; // 1 Colgar, 2 Entrepaños, 3 Mixto
   const N = p['shelfCount']!;
+  const drawers = p['drawers']!;
   const doors = p['doors']! as 0 | 1 | 2;
   const stock = getStock(p['material']!);
   const mode = edgeBandingMode(p['edgeBanding']!);
@@ -98,7 +100,8 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
   const span = W - 2 * t;
   const hasRod = interior !== 2;
   const shelves = interior === 1 ? 0 : N;
-  const floor = PLINTH + t; // the Base's top face
+  const Z = PLINTH + DRAWER_PITCH * drawers + 1; // top of the drawer zone: every front comes out 200 mm
+  const floor = drawers > 0 ? Z + t / 2 : PLINTH + t; // lowest free surface: the drawer shelf's or the Base's top face
   const hatBottom = H - t - LUGGAGE - t; // the Maletero's underside
   const rodY = hatBottom - ROD_DROP;
   const zoneTop = rodY - HANG_MIN; // Mixto: top face of the shelf that closes the hanging zone
@@ -124,7 +127,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
   }
   // Entrepaños spread over the whole inside; Mixto spreads N − 1 shelves under the zone's shelf.
   const gap =
-    interior === 2 ? (H - PLINTH - 2 * t - N * t) / (N + 1) : (zoneTop - t - floor - (N - 1) * t) / N;
+    interior === 2 ? (H - t - floor - N * t) / (N + 1) : (zoneTop - t - floor - (N - 1) * t) / N;
   if (interior === 3 && zoneTop - t - floor < MIN_SHELF_GAP) {
     issues.push({
       paramKey: 'height',
@@ -171,12 +174,33 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
   }
 
   const flatRanges = [
-    { bottom: PLINTH, top: floor }, // Base
+    { bottom: PLINTH, top: PLINTH + t }, // Base
+    ...(drawers > 0 ? [{ bottom: Z - t / 2, top: Z + t / 2 }] : []), // drawer shelf
     { bottom: H - t, top: H }, // Tapa
     ...(hasRod ? [{ bottom: hatBottom, top: hatBottom + t }] : []),
     ...shelfBottoms.map((y) => ({ bottom: y, top: y + t })),
   ];
-  const door = doorSet({ count: doors, width: W, bottom: PLINTH, top: H, frontZ: D / 2, stock, mode, avoid: flatRanges });
+  const door = doorSet({
+    count: doors,
+    width: W,
+    bottom: drawers > 0 ? Z : PLINTH,
+    top: H,
+    frontZ: D / 2,
+    stock,
+    mode,
+    avoid: flatRanges,
+  });
+  // Fronts keep 2 mm to the case's outer edges; the boxes run between the sides.
+  const drawer = drawerSet({
+    count: drawers,
+    stacks: [{ frontLeft: -W / 2 + 2, frontRight: W / 2 - 2, openingLeft: -W / 2 + t, openingRight: W / 2 - t }],
+    bottom: PLINTH,
+    top: Z,
+    frontZ: D / 2,
+    depth: Dc,
+    stock,
+    mode,
+  });
   const rodLength = span - ROD_CLEARANCE;
 
   // Every panel fits a 1220 × 2440 sheet: H ≤ 2400, W ≤ 1000, Dc ≤ 647.
@@ -195,8 +219,10 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
     shelfPanel('top', 'Tapa', 1),
     shelfPanel('bottom', 'Base', 1),
     { id: 'plinth', label: 'Zoclo', length: span, width: PLINTH, stock, grain: 'length', edges: bandEdges(mode, 'L1'), qty: 1 },
+    ...(drawers > 0 ? [shelfPanel('drawer-shelf', 'Techo de cajones', 1)] : []),
     ...(hasRod ? [shelfPanel('hat-shelf', 'Maletero', 1)] : []),
     ...(shelves > 0 ? [shelfPanel('shelf', 'Entrepaño', shelves)] : []),
+    ...drawer.panels,
     ...door.panels,
     { id: 'back', label: 'Fondo', length: H, width: W, stock: FIBRACEL_3, grain: 'any', edges: NO_EDGES, qty: 1 },
   ];
@@ -213,8 +239,10 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
     flat('top', 0, H - t),
     flat('bottom', 0, PLINTH),
     { panelId: 'plinth', instance: 0, position: [0, PLINTH / 2, D / 2 - t / 2], size: [span, PLINTH, t] },
+    ...(drawers > 0 ? [flat('drawer-shelf', 0, Z - t / 2)] : []),
     ...(hasRod ? [flat('hat-shelf', 0, hatBottom)] : []),
     ...shelfBottoms.map((y, i) => flat('shelf', i, y)),
+    ...drawer.placements,
     ...door.placements,
     { panelId: 'back', instance: 0, position: [0, H / 2, -D / 2 + tb / 2], size: [W, H, tb] },
   ];
@@ -223,7 +251,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
     ? [{ id: 'rod', instance: 0, label: 'Tubo', position: [0, rodY, zc], size: [rodLength, 30, 15] }]
     : [];
 
-  const shelfLike = (hasRod ? 1 : 0) + shelves; // Maletero + Entrepaños
+  const shelfLike = (hasRod ? 1 : 0) + shelves + (drawers > 0 ? 1 : 0); // Maletero + Entrepaños + drawer shelf
   const backScrews =
     Math.ceil((2 * (W + H)) / BACK_SCREW_SPACING) + shelfLike * Math.ceil(span / BACK_SCREW_SPACING);
   const rodHardware: Hardware[] = hasRod
@@ -232,25 +260,35 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
         { type: 'rod-support', size: '15×30 mm', qty: 2 },
       ]
     : [];
-  const hardware: Hardware[] = [
+  const hardware = mergeHardware([
     { type: 'confirmat', size: '5x50', qty: (2 + shelfLike) * 4 + 2 },
     { type: 'screw', size: '3.5x16', qty: backScrews },
     ...rodHardware,
+    ...drawer.hardware,
     ...door.hardware,
-  ];
+  ]);
 
   const marks = [
     `base a ${PLINTH} mm`,
+    ...(drawers > 0 ? [`techo de cajones a ${Math.round(Z - t / 2)} mm`] : []),
     ...(shelfBottoms.length > 0 ? [`entrepaños a ${shelfBottoms.map((y) => Math.round(y)).join(' · ')} mm`] : []),
     ...(hasRod ? [`maletero a ${hatBottom} mm`] : []),
   ];
-  const interiorIds = [...(hasRod ? ['hat-shelf'] : []), ...(shelves > 0 ? ['shelf'] : [])];
-  const interiorTitle =
-    interior === 1 ? 'Instala el maletero' : interior === 2 ? 'Instala los entrepaños' : 'Instala el maletero y los entrepaños';
+  const interiorIds = [
+    ...(drawers > 0 ? ['drawer-shelf'] : []),
+    ...(hasRod ? ['hat-shelf'] : []),
+    ...(shelves > 0 ? ['shelf'] : []),
+  ];
+  const interiorTitle = `Instala ${spanishList([
+    ...(drawers > 0 ? ['el techo de los cajones'] : []),
+    ...(hasRod ? ['el maletero'] : []),
+    ...(shelves > 0 ? ['los entrepaños'] : []),
+  ])}`;
   const backTo = [
     'a los laterales',
     'a la tapa',
     `a la base (a ${Math.round(PLINTH + t / 2)} mm del borde de abajo)`,
+    ...(drawers > 0 ? ['al techo de los cajones'] : []),
     ...(hasRod ? ['al maletero'] : []),
     ...(shelves > 0 ? ['a cada entrepaño'] : []),
   ];
@@ -274,7 +312,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
         `${prepSentence(stock, mode)} ` + `Marca en los laterales la cara de abajo de cada pieza: ${marks.join(', ')}.`,
       panelRefs: ['side'],
     },
-    ...(mode === 'diy' ? [ironStep(panels.filter((pn) => pn.id !== 'back').map((pn) => pn.id))] : []),
+    ...(mode === 'diy' ? [ironStep(panels.filter((pn) => pn.stock.id !== FIBRACEL_3.id).map((pn) => pn.id))] : []),
     {
       title: 'Arma la caja acostada',
       description:
@@ -299,6 +337,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
       explodeOffsets: { back: [0, 0, -200] },
     },
     ...rodSteps,
+    ...drawer.steps,
     ...door.steps,
   ];
 
@@ -308,7 +347,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
     panels,
     placements,
     hardware,
-    fittings: [...rod, ...door.fittings],
+    fittings: [...rod, ...drawer.fittings, ...door.fittings],
     boring: door.boring,
     steps: steps.map((s, i) => ({ ...s, order: i + 1 })),
     edgeBanding: mode,
