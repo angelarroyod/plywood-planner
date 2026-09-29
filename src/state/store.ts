@@ -5,6 +5,16 @@ import { templates } from '../engine/index.ts';
 import { EMPTY_PRICES, normalizePrices, type Prices } from '../engine/cost.ts';
 
 export type View = 'design' | 'cuts' | 'steps' | 'order';
+export type Theme = 'dark' | 'light';
+
+// ponytail: its own key — `persist` below is named for prices and resets
+// everything else, and the theme has to be readable before React mounts.
+const THEME_KEY = 'planificador.theme';
+
+/** Screen default is the dark shop; the choice survives reloads. */
+function initialTheme(): Theme {
+  return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark';
+}
 
 interface AppState {
   templateId: string;
@@ -12,7 +22,8 @@ interface AppState {
   exploded: boolean;
   view: View;
   activeStep: number | null; // Step.order, null = no highlight
-  prices: Prices; // user-entered MXN prices; the only state saved across visits
+  prices: Prices; // user-entered MXN prices, saved across visits
+  theme: Theme; // saved across visits under its own key
   setTemplate: (id: string) => void;
   setParam: (key: string, value: number) => void;
   toggleExploded: () => void;
@@ -24,6 +35,7 @@ interface AppState {
   setBandPrice: (label: string, price: number) => void;
   setHardwarePrice: (key: string, price: number) => void;
   setBoringPrice: (price: number) => void;
+  toggleTheme: () => void;
 }
 
 const clamp = (price: number) => Math.max(0, price);
@@ -37,6 +49,7 @@ export const useAppStore = create<AppState>()(
       view: 'design',
       activeStep: null,
       prices: EMPTY_PRICES,
+      theme: initialTheme(),
       setTemplate: (id) => set({ templateId: id, activeStep: null }),
       setParam: (key, value) =>
         set((s) => ({
@@ -59,6 +72,12 @@ export const useAppStore = create<AppState>()(
       setHardwarePrice: (key, price) =>
         set((s) => ({ prices: { ...s.prices, hardware: { ...s.prices.hardware, [key]: clamp(price) } } })),
       setBoringPrice: (price) => set((s) => ({ prices: { ...s.prices, boring: clamp(price) } })),
+      toggleTheme: () =>
+        set((s) => {
+          const theme: Theme = s.theme === 'dark' ? 'light' : 'dark';
+          localStorage.setItem(THEME_KEY, theme);
+          return { theme };
+        }),
     }),
     {
       // ponytail: only prices persist; designs stay derived and params stay per-session

@@ -30,6 +30,14 @@ The engine encodes the constraints that actually bite when you cut a real sheet:
 
 Standard sheet: 1220 × 2440 mm, grain along the long axis.
 
+## Two themes, one palette per medium
+
+The app ships a dark shop view and a paper view, switched from the nav bar and remembered across reloads.
+
+They are not two stylesheets. The paper palette is the base set of `@theme` tokens; the dark shop is a screen-only override, so **print inherits paper for free** and only re-binds the page stock to true white. Components never branch on theme or on medium — they read tokens, which is why the cut diagram fills are `var(--color-piece)` rather than hex, and why one SVG component serves the screen and the PDF.
+
+The 3D viewer is the sole exception: WebGL materials take hex strings, not CSS variables, so `Viewer3D` mirrors the palette in one `PALETTE` record.
+
 ## Status
 
 | Phase | State |
@@ -63,11 +71,13 @@ pnpm demo        # prints an ASCII cut diagram to the terminal, no browser neede
 src/engine/     pure TypeScript — templates, nesting, validation, ASCII renderer
                 zero imports from React, DOM, or three.js (it must port to React Native as-is)
 src/components/ 3D viewer, param form, cut diagram, steps panel, print report
-src/index.css   Tailwind v4 @theme tokens — the entire design system lives here
+src/index.css   Tailwind v4 @theme tokens — the entire design system, both themes
+                and the print palette live here (there is no tailwind.config.js)
 scripts/        Node-only entry points (the demo)
+mobile/         Expo iOS client — imports the same src/engine/, never a copy
 ```
 
-The engine boundary is enforced by convention and worth keeping: it is what lets the same planner run in a mobile app later without a rewrite.
+The engine boundary is enforced by convention and worth keeping: it is what already lets the Expo client in `mobile/` run the same planner with no rewrite and no forked copy.
 
 ## Stack
 

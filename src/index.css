@@ -1,57 +1,101 @@
 @import "tailwindcss";
 
-/* "Taller Nocturno" — dark industrial shop drawing: graphite panels, plywood
-   amber, one signal-red cut line. Screen is dark; print re-binds the same
-   tokens to ink-on-paper further down, so components never branch on medium. */
+/* "Taller" in two lights. The paper palette is the base — print inherits it
+   untouched — and the dark shop is a screen-only override further down, so
+   there is exactly one palette per medium and components never branch. */
 @theme {
   --font-display: "Barlow Condensed", "Archivo", ui-sans-serif, sans-serif;
   --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Roboto Mono", ui-monospace, "SFMono-Regular", monospace;
 
-  --color-paper: #0e0f11;
-  --color-panel: #14161a;
-  --color-raised: #23262b;
-  --color-ink: #f5f6f7;
-  --color-ink-soft: #9ba0a6;
-  --color-ink-faint: #6e747c;
-  --color-rule: #2e3238;
-  --color-rule-strong: #3a3f45;
-  --color-ply: #c08a4e;
-  --color-ply-tint: #23262b;
-  --color-ply-deep: #c08a4e;
-  --color-cut: #db011c;
-  --color-cut-tint: #2a0f14;
+  --color-paper: #f1ebdf;
+  --color-panel: #fbf8f2;
+  --color-raised: #f4e5cd;
+  --color-ink: #1d1913;
+  --color-ink-soft: #5f564a;
+  --color-ink-faint: #75695a;
+  --color-rule: #ded3c1;
+  --color-rule-strong: #b9ab93;
+  --color-ply: #8a5a25;
+  --color-ply-tint: #f4e5cd;
+  --color-ply-deep: #8a5a25;
+  --color-cut: #b03410;
+  --color-cut-tint: #f8e2d9;
 
-  /* Cut-diagram SVG. Kept as tokens so the print block below re-skins the
-     same markup for paper without a second component. */
-  --color-sheet: #1a1c20;
-  --color-sheet-edge: #3a3f45;
-  --color-piece: #c08a4e;
-  --color-piece-edge: #8a5f2c;
-  --color-piece-label: #1a1206;
-  --color-piece-dims: #f5f6f7;
-  --color-grain: #6b4b22;
-  --color-mark: #db011c;
+  /* Cut-diagram SVG. Kept as tokens so a theme re-skins the same markup
+     without a second component. */
+  --color-sheet: #faf6ef;
+  --color-sheet-edge: #c9bda6;
+  --color-piece: #e9c186;
+  --color-piece-edge: #8a5a25;
+  --color-piece-label: #3d2a11;
+  --color-piece-dims: #6b4b22;
+  --color-grain: #8a5a25;
+  --color-mark: #1d1913;
+
+  /* 3D viewer ground, read by Viewer3D for its backdrop. */
+  --color-stage-near: #fbf7ef;
+  --color-stage-far: #e8e0d0;
+
+  --grain-opacity: 0.2;
+  --grain-blend: multiply;
+}
+
+/* Unlayered so it beats @theme's own layer. Screen-only: print never sees it. */
+@media screen {
+  :root:not([data-theme="light"]) {
+    --color-paper: #0e0f11;
+    --color-panel: #14161a;
+    --color-raised: #23262b;
+    --color-ink: #f5f6f7;
+    --color-ink-soft: #9ba0a6;
+    --color-ink-faint: #6e747c;
+    --color-rule: #2e3238;
+    --color-rule-strong: #3a3f45;
+    --color-ply: #c08a4e;
+    --color-ply-tint: #23262b;
+    --color-ply-deep: #c08a4e;
+    --color-cut: #db011c;
+    --color-cut-tint: #2a0f14;
+
+    --color-sheet: #1a1c20;
+    --color-sheet-edge: #3a3f45;
+    --color-piece: #c08a4e;
+    --color-piece-edge: #8a5f2c;
+    --color-piece-label: #1a1206;
+    --color-piece-dims: #f5f6f7;
+    --color-grain: #6b4b22;
+    --color-mark: #db011c;
+
+    --color-stage-near: #23262b;
+    --color-stage-far: #0e0f11;
+
+    /* Noise reads as sensor grain on graphite, as paper tooth on white. */
+    --grain-opacity: 0.07;
+    --grain-blend: overlay;
+
+    color-scheme: dark;
+  }
 }
 
 @layer base {
   html {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   body {
     @apply bg-paper font-sans text-ink antialiased;
   }
 
-  /* Sensor grain. Sits above everything, passes clicks through, never prints. */
+  /* Grain. Sits above everything, passes clicks through, never prints. */
   body::after {
     content: "";
     position: fixed;
     inset: 0;
     z-index: 60;
     pointer-events: none;
-    opacity: 0.07;
-    mix-blend-mode: overlay;
+    opacity: var(--grain-opacity);
+    mix-blend-mode: var(--grain-blend);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
@@ -91,11 +135,11 @@
     border-radius: 1px;
     border: 3px solid var(--color-cut);
     background: var(--color-ink);
-    box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
     transition: background 0.15s ease, height 0.15s ease, margin-top 0.15s ease;
   }
   input[type="range"]:hover::-webkit-slider-thumb {
-    background: #fff;
+    background: var(--color-cut);
     height: 22px;
     margin-top: -10px;
   }
@@ -165,35 +209,11 @@
   margin: 16mm;
 }
 
-/* Paper is not a screen: re-bind the palette to ink-on-white so the build
-   report stays legible and does not flood a sheet with graphite. */
+/* Print already inherits the paper palette; it only wants true white stock. */
 @media print {
   :root {
     --color-paper: #ffffff;
     --color-panel: #ffffff;
-    --color-raised: #f4e5cd;
-    --color-ink: #1d1913;
-    --color-ink-soft: #5f564a;
-    --color-ink-faint: #75695a;
-    --color-rule: #ded3c1;
-    --color-rule-strong: #b9ab93;
-    --color-ply-tint: #f4e5cd;
-    --color-ply-deep: #8a5a25;
-    --color-cut: #b03410;
-    --color-cut-tint: #f8e2d9;
-
-    --color-sheet: #faf6ef;
-    --color-sheet-edge: #c9bda6;
-    --color-piece: #e9c186;
-    --color-piece-edge: #8a5a25;
-    --color-piece-label: #3d2a11;
-    --color-piece-dims: #6b4b22;
-    --color-grain: #8a5a25;
-    --color-mark: #1d1913;
-  }
-
-  html {
-    color-scheme: light;
   }
 
   body {
