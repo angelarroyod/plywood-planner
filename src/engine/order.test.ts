@@ -5,6 +5,7 @@ import { nest } from './nesting.ts';
 import { bookshelf } from './templates/bookshelf.ts';
 import { sideTable } from './templates/side-table.ts';
 import { closet } from './templates/closet.ts';
+import { tvStand } from './templates/tv-stand.ts';
 import type { Boring, Template } from './types.ts';
 
 function orderFor(template: Template, params = {}, title = 'Librero') {
@@ -149,5 +150,11 @@ describe('closet order', () => {
     expect(text).toContain('Total de perforaciones: 8.\n' + BORING_NOTE);
     expect(text).toContain('Tubo oval para clóset 15×30 mm, cortado a 762 mm × 1');
     expect(text).toContain('Bisagra de cazoleta 35 mm recta × 8');
+  });
+});
+
+describe('tv stand order', () => {
+  it('lists the slides as pairs with their length', () => {
+    expect(orderText(orderFor(tvStand, {}, 'Mueble para TV'))).toContain('Corredera telescópica (par) 14" (356 mm) × 2');
   });
 });

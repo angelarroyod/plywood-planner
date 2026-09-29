@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { closet } from './closet.ts';
 import { nest } from '../nesting.ts';
 import { refLabels } from '../labels.ts';
+import { drawerBoxClearance, overlappingBoxes } from './testing.ts';
 import { FIBRACEL_3, MATERIAL_OPTIONS } from '../stock.ts';
 import type { Design, TemplateParams, ValidationIssue } from '../types.ts';
 
@@ -233,7 +234,7 @@ describe('closet validation', () => {
 
 /** Every hinge plate (cup height ± 25 mm) clears every horizontal panel, and no two 3D boxes overlap. */
 function expectBuildable(d: Design) {
-  const flats = d.placements.filter((p) => ['top', 'bottom', 'hat-shelf', 'shelf'].includes(p.panelId));
+  const flats = d.placements.filter((p) => ['top', 'bottom', 'drawer-shelf', 'hat-shelf', 'shelf'].includes(p.panelId));
   const door = d.placements.find((p) => p.panelId === 'door');
   if (door) {
     const doorTop = door.position[1] + door.size[1] / 2;
@@ -246,16 +247,8 @@ function expectBuildable(d: Design) {
       }
     }
   }
-  const boxes = [...d.placements, ...d.fittings];
-  for (let i = 0; i < boxes.length; i++)
-    for (let j = i + 1; j < boxes.length; j++) {
-      const a = boxes[i]!;
-      const b = boxes[j]!;
-      const overlaps = [0, 1, 2].every(
-        (k) => Math.abs(a.position[k]! - b.position[k]!) < (a.size[k]! + b.size[k]!) / 2 - 0.001,
-      );
-      expect(overlaps).toBe(false);
-    }
+  expect(drawerBoxClearance(d)).toBeGreaterThanOrEqual(5);
+  expect(overlappingBoxes(d)).toEqual([]);
 }
 
 describe('closet sheet fit', () => {
@@ -267,13 +260,96 @@ describe('closet sheet fit', () => {
           for (const depth of [400, 650])
             for (const interior of [1, 2, 3])
               for (const shelfCount of [1, 8])
-                for (const doors of [0, 1, 2]) {
-                  const result = closet.generate({ material, width, height, depth, interior, shelfCount, doors });
-                  if (!result.ok) continue;
-                  valid++;
-                  expect(() => nest(result.design.panels)).not.toThrow();
-                  expectBuildable(result.design);
-                }
+                for (const doors of [0, 1, 2])
+                  for (const drawers of [0, 3]) {
+                    const result = closet.generate({
+                      material,
+                      width,
+                      height,
+                      depth,
+                      interior,
+                      shelfCount,
+                      doors,
+                      drawers,
+                    });
+                    if (!result.ok) continue;
+                    valid++;
+                    expect(() => nest(result.design.panels)).not.toThrow();
+                    expectBuildable(result.design);
+                  }
     expect(valid).toBeGreaterThan(100);
+  });
+});
+
+describe('closet drawers', () => {
+  const colgar = { interior: 1, drawers: 2 }; // Colgar, 2 drawers, 2 doors
+
+  it('stacks 200 mm fronts under a drawer shelf and starts the doors above it', () => {
+    const d = designOf(colgar);
+    expect(d.panels.find((p) => p.id === 'drawer-shelf')).toMatchObject({
+      label: 'Techo de cajones',
+      length: 764,
+      width: 547,
+      qty: 1,
+    });
+    expect(d.placements.find((p) => p.panelId === 'drawer-shelf')!.position[1]).toBe(477);
+    expect(d.panels.find((p) => p.id === 'drawer-front')).toMatchObject({ length: 796, width: 200, qty: 2 });
+    expect(d.placements.filter((p) => p.panelId === 'drawer-front').map((p) => p.position[1])).toEqual([172, 375]);
+    expect(d.panels.find((p) => p.id === 'door')).toMatchObject({ length: 1519, width: 396, qty: 2 });
+    expect(d.boring[0]!.along).toEqual([100, 760, 1419]);
+  });
+
+  it('measures the space above from the drawer shelf', () => {
+    // Colgar: the rod stays at 1564, 1078 mm above the drawer shelf's top face (486)
+    expect(designOf(colgar).fittings.find((f) => f.id === 'rod')!.position[1]).toBe(1564);
+    // Entrepaños: 4 gaps of 360.5 above 486
+    expect(shelfYs(designOf({ interior: 2, drawers: 2 }))).toEqual([855.5, 1234, 1612.5]);
+    // Mixto: only 60 mm would be left between the drawer shelf and the hanging zone
+    expect(issuesOf({ drawers: 2 })).toEqual([
+      {
+        paramKey: 'height',
+        message:
+          'No caben la zona de colgar de 1000 mm y un espacio útil debajo. Aumenta el alto, usa menos cajones o elige Colgar.',
+      },
+    ]);
+  });
+
+  it('adds the drawer shelf and drawer hardware, merged with the case and the doors', () => {
+    expect(designOf(colgar).hardware).toEqual([
+      { type: 'confirmat', size: '5x50', qty: 34 }, // (Tapa, Base, Maletero, techo de cajones)·4 + zoclo 2 + 2 boxes·8
+      { type: 'screw', size: '3.5x16', qty: 70 }, // back 28 + 2 runs·4, and 2 drawer bottoms·17
+      { type: 'rod', size: '15×30 mm', qty: 1, cutTo: 762 },
+      { type: 'rod-support', size: '15×30 mm', qty: 2 },
+      { type: 'screw', size: '3.5x25', qty: 8 },
+      { type: 'screw', size: 'M4x45', qty: 4 },
+      { type: 'slide', size: '20" (508 mm)', qty: 2 },
+      { type: 'handle', size: '128 mm', qty: 4 },
+      { type: 'hinge', size: '35 mm recta', qty: 6 },
+    ]);
+  });
+
+  it('installs the drawer shelf with the interior and adds the drawer steps before the doors', () => {
+    const steps = designOf(colgar).steps;
+    expect(steps.map((s) => s.title)).toEqual([
+      'Prepara y marca',
+      'Arma la caja acostada',
+      'Instala el techo de los cajones y el maletero',
+      'Verifica la escuadra y coloca el fondo',
+      'Pon el tubo',
+      'Arma las cajas',
+      'Monta las correderas',
+      'Mete los cajones',
+      'Pon los frentes',
+      'Pon las jaladeras de los cajones',
+      'Monta las placas',
+      'Cuelga las puertas',
+      'Pon las jaladeras',
+    ]);
+    expect(steps[0]!.description).toContain('base a 70 mm, techo de cajones a 468 mm, maletero a 1614 mm.');
+    expect(steps[2]!.panelRefs).toEqual(['drawer-shelf', 'hat-shelf']);
+    expect(steps[3]!.description).toContain(
+      'a la base (a 79 mm del borde de abajo), al techo de los cajones y al maletero.',
+    );
+    expect(steps[6]!.description).toContain('centrada a 87 · 290 mm sobre la base');
   });
 });

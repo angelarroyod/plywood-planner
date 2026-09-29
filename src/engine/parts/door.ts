@@ -1,15 +1,6 @@
 import { bandEdges } from '../edge-banding.ts';
-import type {
-  Boring,
-  EdgeBandingMode,
-  Fitting,
-  Hardware,
-  Panel,
-  Placement,
-  Step,
-  Stock,
-  Vec3,
-} from '../types.ts';
+import type { EdgeBandingMode, Fitting, Placement, Step, Stock, Vec3 } from '../types.ts';
+import type { PartSet } from './merge.ts';
 
 const GAP = 2; // mm around a door's outer edges
 const PAIR_GAP = 3; // mm between the two doors of a pair
@@ -33,16 +24,6 @@ export interface DoorSetOptions {
   stock: Stock;
   mode: EdgeBandingMode;
   avoid?: { bottom: number; top: number }[]; // floor-y ranges of the case's fixed horizontal panels the hinge plates must clear
-}
-
-/** A design fragment a template merges with its own parts. */
-export interface DoorSet {
-  panels: Panel[];
-  placements: Placement[];
-  hardware: Hardware[];
-  fittings: Fitting[];
-  boring: Boring[];
-  steps: Omit<Step, 'order'>[];
 }
 
 /** Cup hinges per door by its height, the usual rule for 35 mm hinges. */
@@ -73,7 +54,7 @@ function clearHeight(y: number, avoid: { bottom: number; top: number }[], middle
  * open 90° so the interior stays visible: each stands in front of its side, sticking out
  * forward. A single door hinges on the left. The block does not validate — templates do.
  */
-export function doorSet(o: DoorSetOptions): DoorSet {
+export function doorSet(o: DoorSetOptions): PartSet {
   if (o.count === 0) return { panels: [], placements: [], hardware: [], fittings: [], boring: [], steps: [] };
 
   const t = o.stock.thickness;

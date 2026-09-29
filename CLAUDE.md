@@ -35,12 +35,20 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - `orderCost` prices an `Order` line by line — sheets, cutting (per meter or per cut), hinge drilling per hole, bands per meter, hardware per piece; `total` sums the priced lines and `missing` counts unpriced ones. Prices come only from the user; the web saves them (and nothing else) to `localStorage` under `planificador.prices`. `spanIssue` throws for a stock with `maxSpan: null` (templates only offer shelf-capable stocks, so it is unreachable from valid params).
 - Cuts come from `sheetCuts`, in saw order and numbered per sheet: row by row from the top, a crosscut under the row (measured from the top) unless the row reaches the sheet bottom, then per run of equal-length pieces either rips piece by piece (full-height runs) or one rip at the run's end, one shared trim and short rips between its pieces (short runs) — rips are only made where a piece or run stops short of the sheet's right edge — each measured from the left or top edge of the board at that moment. `cutTotals` sums that sequence (meters round up to 0.1), so the order, the cost and the saw steps always agree. `cutText`, `CUT_TIP` and `cutBadge` give both clients the same copy and badge placement. A cut that leaves less than the kerf past its line carries `sliver`, which `cutText` spells out ("solo rebaja 2 mm"); `cutBadge` keeps each badge inside the sheet for the radius the client draws (web `BADGE_RADIUS` 34 mm, iOS 9 pt on screen). `orderText` is the order sent to the lumber yard and never contains prices.
 - Edge banding: `Panel.edges` flags `L1/L2` (along the length) and `A1/A2` (along the width), the columns of a Mexican parts list. Templates set them for visible edges via `bandEdges(mode, …)`, with L1 the most visible long edge. Banding is 0.45 mm and never changes cut size or nesting. `edgeBandTotals` adds `EDGE_TRIM` (30 mm) per banded edge and rounds up to 0.1 m; stocks with `edgeBand: null` are never banded. Drawing banded edges goes through `bandSegments`, so both clients map rotation the same way.
-- Building blocks live in `src/engine/parts/`. A block such as `doorSet` returns a fragment `{ panels, placements, hardware, fittings, boring, steps }` that a template merges with its own parts. Blocks never validate; templates do, using the block's helpers (e.g. `doorWidth`). Doors are full overlay:
+- Building blocks live in `src/engine/parts/`. A block (`doorSet`, `drawerSet`) returns a `PartSet` — `{ panels, placements, hardware, fittings, boring, steps }` — that a template merges with its own parts, passing all hardware through `mergeHardware` so equal items become one line. Blocks never validate; templates do, using the block's helpers (e.g. `doorWidth`, `drawerFrontHeight`, `MIN_DRAWER_FRONT`). Doors are full overlay:
   - 2 mm gaps, 3 mm between a pair;
   - 35 mm cup hinges counted by door height (≤900: 2, ≤1600: 3, ≤2000: 4, else 5), cups 100 mm from each end and evenly spaced;
   - drawn swung open 90° so the interior stays visible.
   - hinge cups move off fixed shelves: `doorSet` takes the floor ranges of the case's horizontal panels (`avoid`) and moves a cup whose plate (±25 mm) would hit one to the nearest clear height, so a pattern may be asymmetric — `BORING_NOTE` tells the yard to drill a pair in mirror and mark ARRIBA;
   - doors need a board of at least `MIN_DOOR_THICKNESS` (15 mm) behind the 12 mm cup; templates validate it.
+- Drawers (`drawerSet`) stack in 1–2 side-by-side columns (`stacks`), with 3 mm between fronts and 2 mm at the ends. Each drawer is:
+  - a screwed box: 2 sides, 2 ends, and a Fibracel bottom screwed underneath;
+  - running on telescopic slides: `slideFor` picks the longest 10"–22" pair that leaves 10 mm behind it;
+  - sized from the slide: the box is the slide's length, 26 mm narrower than its opening and 55 mm lower than its front (it starts 30 mm above the front's bottom edge, so it clears the Base);
+  - finished with a separate front banded all round, fixed last so the fronts line up after the boxes run.
+  - screwed on from inside with 3.5×25 (3.5×19 on 12 mm boards); its handle bolts through front and box with M4 screws sized by thickness (45 / 40 / 35 mm), since the handle's own screws don't reach.
+
+  Drawers are drawn pulled out a third of their slide. Every front keeps 2 mm to the edge of the area it covers, so neighbouring blocks (closet drawers and doors, TV stand bays) sit 4 mm apart. `spanishList` in `labels.ts` builds every "a, b y c" in step copy.
 - Fittings, boring and hardware text:
   - `Design.fittings` are non-cut parts drawn in steel in 3D (rod, handles), and `Step.panelRefs` may name a fitting id.
   - `Design.boring` lists the holes the lumber yard drills (hinge cups). `Order.boring` points at the drilled piece's order line, and `Prices.boring` prices each hole.
@@ -93,7 +101,11 @@ A furniture template is NOT a static 3D model. It is a pure function:
     - `Design.fittings` draws the rod and handles in 3D; `Design.boring` becomes Barrenado in the order and cost.
     - "Herrajes" replaces "Tornillería".
     - *Implemented; awaiting user approval.*
-  - **5.2 Drawers**: a drawer-box block and slides (new `Hardware` type), a drawer option on the closet, and a TV stand.
+  - **5.2 Drawers + TV stand** — spec: `docs/superpowers/specs/2026-09-25-drawers-tv-stand-design.md`.
+    - `drawerSet` building block: telescopic slides, a screwed box plus a separate front, drawn pulled out. `mergeHardware` keeps one line per hardware item.
+    - Closet "Cajones" 0–3 under a drawer shelf, with the doors above it.
+    - "Mueble para TV": two bays split by a divider, each Cajones or Entrepaño; the back stops 100 mm short of the top as a cable slot.
+    - *Implemented; awaiting user approval.*
   - **5.3 More templates**, in priority order: kitchen pantry cabinet, home-office desk, bed base with drawers, shoe rack, floating shelves.
   - **5.4 Fit this space**: enter a niche W × H × D (the mobile measure screen feeds it) and the template sizes itself with clearance.
   - **5.5 Tool-aware steps**: ask what tools the user owns. With only a screwdriver, every cut goes to the lumber yard, holes are pre-drilled (the yard/me drilling choice lives here), and joinery switches to confirmat.
