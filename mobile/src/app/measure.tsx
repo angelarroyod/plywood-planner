@@ -12,6 +12,7 @@ import {
   Mono,
   PrimaryButton,
   ScreenHeader,
+  Toast,
 } from '@/components/ui';
 import { Slider } from '@/components/slider';
 import { nest, resolveParams, templates } from '@/lib/engine';
@@ -20,7 +21,7 @@ import { color, font, radius, space } from '@/theme';
 
 export default function Measure() {
   const insets = useSafeAreaInsets();
-  const { templateId, paramsByTemplate, setParam, setTab, design, issues, stale } = useApp();
+  const { templateId, paramsByTemplate, setParam, setTab, design, issues, stale, toast } = useApp();
   const template = templates.find((t) => t.id === templateId) ?? templates[0]!;
   const raw = paramsByTemplate[templateId] ?? {};
   const params = resolveParams(template.params, raw);
@@ -160,6 +161,8 @@ export default function Measure() {
           }}
         />
       </View>
+
+      <Toast message={toast} />
     </View>
   );
 }
