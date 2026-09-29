@@ -10,7 +10,7 @@ export interface AppState {
   exploded: boolean;
   tab: ResultTab;
   activeStep: number | null;
-  /** `${panelId}#${instance}` for every cut ticked off in the checklist. */
+  /** `"{sheet}:{n}"` for every saw cut ticked off in the checklist (sheet 1-based). */
   checked: string[];
   /** Step.order values marked done. */
   doneSteps: number[];

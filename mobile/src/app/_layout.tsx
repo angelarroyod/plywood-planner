@@ -50,7 +50,7 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="index" options={{ animation: 'fade' }} />
-          <Stack.Screen name="camera" options={{ animation: 'fade' }} />
+          <Stack.Screen name="camera" options={{ presentation: 'fullScreenModal' }} />
         </Stack>
       </AppProvider>
     </SafeAreaProvider>

@@ -2,6 +2,8 @@
 // Lives outside src/engine/ so the engine stays free of Node-specific entry points.
 import { nest } from '../src/engine/nesting.ts';
 import { renderAscii } from '../src/engine/ascii.ts';
+import { edgeBandTotals } from '../src/engine/edge-banding.ts';
+import { cutTotals } from '../src/engine/cuts.ts';
 import { bookshelf } from '../src/engine/templates/bookshelf.ts';
 
 const result = bookshelf.generate({});
@@ -15,9 +17,16 @@ console.log(renderAscii(layout));
 console.log(
   JSON.stringify(
     {
-      panels: result.design.panels.map((p) => `${p.id} ${p.length}x${p.width}x${p.thickness} x${p.qty}`),
-      sheets: layout.sheets.length,
-      wastePercent: Number(layout.wastePercent.toFixed(1)),
+      panels: result.design.panels.map(
+        (p) => `${p.id} ${p.length}x${p.width}x${p.stock.thickness} ${p.stock.label} x${p.qty}`,
+      ),
+      byStock: layout.byStock.map((g) => ({
+        stock: g.stock.label,
+        sheets: g.sheets,
+        wastePercent: Number(g.wastePercent.toFixed(1)),
+      })),
+      edgeBanding: edgeBandTotals(result.design.panels),
+      cuts: cutTotals(layout),
     },
     null,
     2,

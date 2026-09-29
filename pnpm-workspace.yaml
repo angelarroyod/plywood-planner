@@ -7,3 +7,5 @@ overrides:
   "@types/react-dom": ^18.3.7
   # transitive dev dep; 8.5.23 fixes the sourceMappingURL arbitrary-file read
   postcss: ^8.5.23
+  # drei > three-stdlib; 0.6.11 fixes the unzipSync ZIP64 infinite loop
+  fflate: ^0.6.11

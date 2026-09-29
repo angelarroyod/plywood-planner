@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Body, Display, Kicker, Mono, SecondaryButton } from '@/components/ui';
-import { templates } from '@/lib/engine';
+import { Body, Display, Kicker, Mono, SecondaryButton, Toast } from '@/components/ui';
+import { buildOrder, getStock, nest, orderText, templates } from '@/lib/engine';
 import { useApp, type ResultTab } from '@/lib/store';
 import { color, font, radius, space } from '@/theme';
 import { CutsPane } from './cuts';
@@ -19,7 +19,7 @@ const TABS: { id: ResultTab; label: string }[] = [
 
 const EXPORTS = [
   { tag: 'PDF', label: 'Plan de corte', sub: 'Hojas, lista de piezas y pasos' },
-  { tag: 'TXT', label: 'Lista de compras', sub: 'Para el mostrador de la maderería' },
+  { tag: 'TXT', label: 'Pedido para maderería', sub: 'Compártelo por WhatsApp o correo' },
   { tag: '↗', label: 'Compartir enlace', sub: 'Vista 3D en el navegador' },
   { tag: 'AD', label: 'AirDrop al carpintero', sub: 'Dispositivos cerca' },
 ];
@@ -33,12 +33,18 @@ export function Result() {
   const meta = useMemo(() => {
     if (!design) return '';
     const p = design.params;
-    return `${p.width} × ${p.height ?? p.depth} × ${p.depth} · ${p.thickness} mm`;
+    return `${p.width} × ${p.height ?? p.depth} × ${p.depth} · ${getStock(p.material!).label}`;
   }, [design]);
 
-  const title = template.id === 'bookshelf' ? 'Librero sala' : 'Mesa auxiliar';
+  const title = template.name;
 
   if (!design) return <View style={styles.root} />;
+
+  const shareOrder = () => {
+    return Share.share({ message: orderText(buildOrder(design, nest(design.panels), template.name)) }).catch(() =>
+      flash('No se pudo compartir'),
+    );
+  };
 
   return (
     <View style={styles.root}>
@@ -115,13 +121,7 @@ export function Result() {
         })}
       </View>
 
-      {toast && (
-        <View pointerEvents="none" style={[styles.toastWrap, { bottom: insets.bottom + 92 }]}>
-          <View style={styles.toast}>
-            <Body tone={color.text}>{toast}</Body>
-          </View>
-        </View>
-      )}
+      <Toast message={toast} />
 
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
         <Pressable style={styles.scrim} onPress={() => setSheetOpen(false)} accessibilityLabel="Cerrar" />
@@ -136,8 +136,13 @@ export function Result() {
               <Pressable
                 key={e.label}
                 onPress={() => {
-                  setSheetOpen(false);
-                  flash(`${e.label} listo`);
+                  if (e.tag === 'TXT') {
+                    // present the share sheet before the modal finishes dismissing (iOS drops it otherwise)
+                    shareOrder().finally(() => setSheetOpen(false));
+                  } else {
+                    setSheetOpen(false);
+                    flash(`${e.label} listo`); // the other exports are still fixtures
+                  }
                 }}
                 style={({ pressed }) => [styles.exportRow, pressed && { borderColor: color.borderStrong }]}
                 accessibilityRole="button"
@@ -273,15 +278,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 0.78,
     textTransform: 'uppercase',
-  },
-  toastWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
-  toast: {
-    borderRadius: radius.sm,
-    borderLeftWidth: 3,
-    borderLeftColor: color.red,
-    backgroundColor: color.raised,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
   },
   scrim: { flex: 1, backgroundColor: 'rgba(8,9,11,0.6)' },
   sheet: {

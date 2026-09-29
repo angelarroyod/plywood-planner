@@ -24,8 +24,8 @@ The engine encodes the constraints that actually bite when you cut a real sheet:
 
 - **Grain direction matters.** A panel marked `'length'` must run along the sheet's 2440 mm axis; the nester will not rotate it to save space. `'any'` panels rotate freely.
 - **Kerf is waste.** The 3 mm the blade removes is counted between adjacent pieces (not at sheet edges) and shows up in the waste percentage.
-- **Shelves sag.** Maximum unsupported span is capped by thickness — 500 mm at 12 mm, 650 at 15, 800 at 18. Exceed it and you get a Spanish-language issue under the offending field, not a silently bad design.
-- **Mixed thicknesses never share a sheet.** You cannot cut 12 mm and 18 mm from the same board.
+- **Shelves sag.** Maximum unsupported span is capped per material — 500 mm for 12 mm pine plywood, 650 for 15 mm, 800 for 18 mm, 550 for 16 mm melamine. Exceed it and you get a Spanish-language issue under the offending field, not a silently bad design.
+- **Panels of different stock never share a sheet.** You cannot cut two materials, or two thicknesses of the same material, from the same board.
 - **Cuts must be makeable.** Nesting is FFDH shelf packing, which is guillotine-cuttable by construction — every cut runs edge to edge, which is the only kind a track saw or table saw can do.
 
 Standard sheet: 1220 × 2440 mm, grain along the long axis.

@@ -11,6 +11,7 @@ const PALETTE: Record<Theme, {
   base: string;
   highlight: string;
   dimmed: string;
+  steel: string;
   edge: string;
   sky: string;
   ground: string;
@@ -23,6 +24,7 @@ const PALETTE: Record<Theme, {
     base: '#c08a4e', // plywood amber
     highlight: '#db011c', // signal red — the step being explained
     dimmed: '#4a5057', // graphite — everything else in that step
+    steel: '#9aa3ad', // brushed steel — rod and handles
     edge: '#1a1c20',
     sky: '#dfe4ea',
     ground: '#14161a',
@@ -35,6 +37,7 @@ const PALETTE: Record<Theme, {
     base: '#c08a4e',
     highlight: '#b03410',
     dimmed: '#cfc6b5',
+    steel: '#8a919a',
     edge: '#8a5f2c',
     sky: '#ffffff',
     ground: '#c9bda6',
@@ -71,6 +74,27 @@ export function Viewer3D({
   const highlightIds = highlightStep ? new Set(highlightStep.panelRefs) : null;
   const stepOffsets = highlightStep?.explodeOffsets ?? {};
 
+  // Panels and fittings render alike; fittings are steel and never cut. The centroid stays the panels'.
+  const boxes = useMemo(
+    () => [
+      ...design.placements.map((p) => ({
+        key: `${p.panelId}-${p.instance}`,
+        id: p.panelId,
+        position: p.position,
+        size: p.size,
+        steel: false,
+      })),
+      ...design.fittings.map((f) => ({
+        key: `fitting-${f.id}-${f.instance}`,
+        id: f.id,
+        position: f.position,
+        size: f.size,
+        steel: true,
+      })),
+    ],
+    [design],
+  );
+
   return (
     <div
       className={`relative h-full bg-[radial-gradient(circle_at_50%_32%,var(--color-stage-near)_0%,var(--color-stage-far)_100%)] transition-opacity duration-300 ${
@@ -100,27 +124,33 @@ export function Viewer3D({
         {/* Bounce so the shadow side picks up the accent, not mud. */}
         <directionalLight position={[-2000, 1200, -1500]} intensity={0.22} color={c.bounce} />
 
-        {design.placements.map((p) => {
+        {boxes.map((b) => {
           let pos: Vec3 = exploded
             ? [
-                centroid[0] + (p.position[0] - centroid[0]) * EXPLODE_FACTOR,
-                centroid[1] + (p.position[1] - centroid[1]) * EXPLODE_FACTOR,
-                centroid[2] + (p.position[2] - centroid[2]) * EXPLODE_FACTOR,
+                centroid[0] + (b.position[0] - centroid[0]) * EXPLODE_FACTOR,
+                centroid[1] + (b.position[1] - centroid[1]) * EXPLODE_FACTOR,
+                centroid[2] + (b.position[2] - centroid[2]) * EXPLODE_FACTOR,
               ]
-            : p.position;
-          const stepOffset = highlightIds ? stepOffsets[p.panelId] : undefined;
+            : b.position;
+          const stepOffset = highlightIds ? stepOffsets[b.id] : undefined;
           if (stepOffset) {
             pos = [pos[0] + stepOffset[0], pos[1] + stepOffset[1], pos[2] + stepOffset[2]];
           }
           const color = !highlightIds
-            ? c.base
-            : highlightIds.has(p.panelId)
+            ? b.steel
+              ? c.steel
+              : c.base
+            : highlightIds.has(b.id)
               ? c.highlight
               : c.dimmed;
           return (
-            <mesh key={`${p.panelId}-${p.instance}`} position={pos} castShadow>
-              <boxGeometry args={p.size} />
-              <meshStandardMaterial color={color} roughness={0.68} metalness={0} />
+            <mesh key={b.key} position={pos} castShadow>
+              <boxGeometry args={b.size} />
+              <meshStandardMaterial
+                color={color}
+                roughness={b.steel ? 0.35 : 0.68}
+                metalness={b.steel ? 0.6 : 0}
+              />
               <Edges color={c.edge} />
             </mesh>
           );
