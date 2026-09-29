@@ -1,10 +1,4 @@
-import type {
-  EngineConfig,
-  ParamSpec,
-  PlywoodThickness,
-  TemplateParams,
-  ValidationIssue,
-} from './types.ts';
+import type { ParamSpec, Stock, TemplateParams, ValidationIssue } from './types.ts';
 
 /** Merge user params over spec defaults. Unknown keys are dropped. */
 export function resolveParams(specs: ParamSpec[], params: TemplateParams): TemplateParams {
@@ -20,18 +14,18 @@ export function paramIssues(specs: ParamSpec[], params: TemplateParams): Validat
   const issues: ValidationIssue[] = [];
   for (const spec of specs) {
     const value = params[spec.key] ?? spec.default;
-    const unit = spec.unit ? ` ${spec.unit}` : '';
     if (spec.kind === 'number') {
+      const unit = spec.unit ? ` ${spec.unit}` : '';
       if (!Number.isFinite(value) || value < spec.min || value > spec.max) {
         issues.push({
           paramKey: spec.key,
           message: `«${spec.label}» debe estar entre ${spec.min} y ${spec.max}${unit}.`,
         });
       }
-    } else if (!spec.options.includes(value)) {
+    } else if (!spec.options.some((o) => o.value === value)) {
       issues.push({
         paramKey: spec.key,
-        message: `«${spec.label}» debe ser uno de: ${spec.options.join(', ')}${unit}.`,
+        message: `«${spec.label}» debe ser uno de: ${spec.options.map((o) => o.label).join(', ')}.`,
       });
     }
   }
@@ -39,16 +33,12 @@ export function paramIssues(specs: ParamSpec[], params: TemplateParams): Validat
 }
 
 /** Max unsupported span check for a horizontal panel. Null when safe. */
-export function spanIssue(
-  span: number,
-  thickness: PlywoodThickness,
-  config: EngineConfig,
-): ValidationIssue | null {
-  const max = config.spanLimits[thickness];
-  if (span <= max) return null;
+export function spanIssue(span: number, stock: Stock): ValidationIssue | null {
+  if (stock.maxSpan === null) throw new Error(`${stock.label} can never be a shelf`);
+  if (span <= stock.maxSpan) return null;
   return {
     message:
-      `El claro de ${span} mm supera el máximo seguro de ${max} mm ` +
-      `para triplay de ${thickness} mm. Reduce el ancho o usa triplay más grueso.`,
+      `El claro de ${span} mm supera el máximo seguro de ${stock.maxSpan} mm ` +
+      `para ${stock.label.toLowerCase()}. Reduce el ancho o elige un material más grueso.`,
   };
 }

@@ -202,6 +202,20 @@ export function IssueNote({ message }: { message: string }) {
   );
 }
 
+/** Transient confirmation from `flash`, floated above the screen's bottom bar. */
+export function Toast({ message }: { message: string | null }) {
+  const insets = useSafeAreaInsets();
+  if (!message) return null;
+  // 92 clears both bottom bars that host it: the result tabs and the 82 pt measure CTA
+  return (
+    <View pointerEvents="none" style={[styles.toastWrap, { bottom: insets.bottom + 92 }]}>
+      <View style={styles.toast}>
+        <Body tone={color.text}>{message}</Body>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   primary: {
     minHeight: 56,
@@ -250,6 +264,15 @@ const styles = StyleSheet.create({
     backgroundColor: color.errBg,
     padding: space.md,
     marginTop: 10,
+  },
+  toastWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  toast: {
+    borderRadius: radius.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: color.red,
+    backgroundColor: color.raised,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
   },
 });
 
