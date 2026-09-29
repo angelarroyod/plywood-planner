@@ -26,7 +26,7 @@ export function ModelPane() {
       <View style={styles.card}>
         <View style={styles.cardTop}>
           <View>
-            <Kicker tone={color.red}>Vista 3D / model</Kicker>
+            <Kicker tone={color.red}>Vista 3D</Kicker>
             <Mono size={19} style={{ fontFamily: font.monoMed, marginTop: 3 }}>
               {`${p.width} × ${p.height ?? p.depth} × ${p.depth} mm`}
             </Mono>
