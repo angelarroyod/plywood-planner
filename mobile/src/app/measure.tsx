@@ -60,7 +60,7 @@ export default function Measure() {
           Medidas
         </Display>
         <Kicker tone={color.textFaint} style={{ marginTop: 2 }}>
-          Measurements · mm
+          Medidas · mm
         </Kicker>
       </ScreenHeader>
 
