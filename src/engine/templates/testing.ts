@@ -1,10 +1,10 @@
 import type { Design } from '../types.ts';
 
 /** Pairs of 3D boxes (placements and fittings) whose volumes overlap; touching faces don't count. */
-export function overlappingBoxes(d: Design): string[] {
+export function overlappingBoxes(d: Pick<Design, 'placements'> & { fittings?: Design['fittings'] }): string[] {
   const boxes = [
     ...d.placements.map((p) => ({ name: `${p.panelId}#${p.instance}`, position: p.position, size: p.size })),
-    ...d.fittings.map((f) => ({ name: `${f.id}#${f.instance}`, position: f.position, size: f.size })),
+    ...(d.fittings ?? []).map((f) => ({ name: `${f.id}#${f.instance}`, position: f.position, size: f.size })),
   ];
   const out: string[] = [];
   for (let i = 0; i < boxes.length; i++)
