@@ -47,7 +47,7 @@ export function PrintReport({ design }: { design: Design | null }) {
             </h2>
             <table className="mt-2 w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-ink/40 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                <tr className="border-b border-ink/40 text-left text-[10px] text-ink-soft">
                   <th className="py-1">#</th>
                   <th>Pieza</th>
                   <th>Largo</th>
@@ -80,7 +80,7 @@ export function PrintReport({ design }: { design: Design | null }) {
             <h2 className="mt-6 border-b border-ink pb-1 display text-lg font-bold">Barrenado para bisagra</h2>
             <table className="mt-2 w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-ink/40 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                <tr className="border-b border-ink/40 text-left text-[10px] text-ink-soft">
                   <th className="py-1">#</th>
                   <th>Pieza</th>
                   <th>Cant.</th>
@@ -136,7 +136,7 @@ export function PrintReport({ design }: { design: Design | null }) {
       <h2 className="mt-7 border-b border-ink pb-1 display text-lg font-bold">Piezas</h2>
       <table className="mt-2 w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-ink/40 text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+          <tr className="border-b border-ink/40 text-left text-[10px] text-ink-soft">
             <th className="py-1">Pieza</th>
             <th>Largo × ancho × grosor (mm)</th>
             {banded && <th>Cubrecanto</th>}

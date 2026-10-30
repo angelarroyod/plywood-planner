@@ -52,21 +52,21 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
 
   return (
     <div
-      className={`relative h-full overflow-y-auto bg-panel px-8 py-7 transition-opacity duration-300 ${
+      className={`relative bg-paper px-4 py-5 transition-opacity lg:h-full lg:overflow-y-auto lg:px-8 lg:py-7 duration-300 ${
         stale ? 'opacity-40' : ''
       }`}
     >
       <div className="mx-auto max-w-[1200px]">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="display text-2xl font-extrabold">Pedido para maderería</h2>
-            <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+            <h2 className="display text-2xl">Pedido para maderería</h2>
+            <p className="mt-1 text-sm text-ink-soft">
               {title} · medidas en mm, largo × ancho
             </p>
           </div>
           <div className="flex items-center gap-2">
             {status && (
-              <span role="status" className="font-mono text-[11px] text-ink-soft">
+              <span role="status" className="text-[13px] font-semibold text-ink-soft">
                 {status}
               </span>
             )}
@@ -74,7 +74,7 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
               <button
                 onClick={share}
                 disabled={stale}
-                className="rounded-md bg-cut px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-white transition-[filter] hover:brightness-110 disabled:pointer-events-none disabled:opacity-50"
+                className="h-10 rounded-lg bg-accent px-4 text-sm font-bold text-white transition-[filter] hover:brightness-110 disabled:pointer-events-none disabled:opacity-50"
               >
                 Compartir
               </button>
@@ -82,23 +82,23 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
             <button
               onClick={copy}
               disabled={stale}
-              className="rounded-md border border-rule bg-raised px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-ink transition-colors hover:border-ink-soft disabled:pointer-events-none disabled:opacity-50"
+              className="h-10 rounded-lg border border-rule bg-panel px-4 text-sm font-bold text-ink transition-colors hover:border-ink-soft disabled:pointer-events-none disabled:opacity-50"
             >
               Copiar
             </button>
           </div>
         </header>
 
-        <div className="mt-8 flex flex-wrap items-start gap-10">
+        <div className="mt-8 flex flex-col gap-10 lg:flex-row lg:items-start">
           <section className="min-w-0 flex-1 space-y-8">
             {order.groups.map((g) => (
               <div key={g.stock.id}>
                 <h3 className="rule-label">
                   {g.stock.label} — {g.sheets} {g.sheets === 1 ? 'hoja' : 'hojas'}
                 </h3>
-                <table className="mt-3 w-full text-sm">
+                <div className="overflow-x-auto"><table className="mt-3 w-full text-sm">
                   <thead>
-                    <tr className="border-b border-rule-strong text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                    <tr className="border-b border-rule-strong text-left text-xs text-ink-soft">
                       <th className="pb-1.5 font-medium">#</th>
                       <th className="pb-1.5 font-medium">Pieza</th>
                       <th className="pb-1.5 text-right font-medium">Largo</th>
@@ -110,29 +110,29 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
                   </thead>
                   <tbody>
                     {g.lines.map((l) => (
-                      <tr key={l.n} className="border-b border-rule/70">
+                      <tr key={l.n} className="border-b border-rule">
                         <td className="py-1.5 pr-2 font-mono text-xs tabular-nums text-ink-soft">{l.n}</td>
                         <td className="py-1.5 pr-2">{l.label}</td>
                         <td className="py-1.5 text-right font-mono text-xs tabular-nums">{l.length}</td>
                         <td className="py-1.5 text-right font-mono text-xs tabular-nums">{l.width}</td>
                         <td className="py-1.5 text-right font-mono text-xs tabular-nums">{l.qty}</td>
-                        <td className="py-1.5 pl-4 font-mono text-xs text-ink-soft">
+                        <td className="py-1.5 pl-4 text-[13px] text-ink-soft">
                           {l.grain ? GRAIN_LABEL[l.grain] : '—'}
                         </td>
                         <td className="py-1.5 font-mono text-xs text-ink-soft">{edgeCodes(l.edges)}</td>
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               </div>
             ))}
 
             {order.boring.length > 0 && (
               <div>
                 <h3 className="rule-label">Barrenado para bisagra</h3>
-                <table className="mt-3 w-full text-sm">
+                <div className="overflow-x-auto"><table className="mt-3 w-full text-sm">
                   <thead>
-                    <tr className="border-b border-rule-strong text-left font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                    <tr className="border-b border-rule-strong text-left text-xs text-ink-soft">
                       <th className="pb-1.5 font-medium">#</th>
                       <th className="pb-1.5 font-medium">Pieza</th>
                       <th className="pb-1.5 text-right font-medium">Cant.</th>
@@ -142,7 +142,7 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
                   </thead>
                   <tbody>
                     {order.boring.map((b) => (
-                      <tr key={b.n} className="border-b border-rule/70">
+                      <tr key={b.n} className="border-b border-rule">
                         <td className="py-1.5 pr-2 font-mono text-xs tabular-nums text-ink-soft">{b.n}</td>
                         <td className="py-1.5 pr-2">{b.label}</td>
                         <td className="py-1.5 text-right font-mono text-xs tabular-nums">{b.qty}</td>
@@ -151,8 +151,8 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
                       </tr>
                     ))}
                   </tbody>
-                </table>
-                <p className="mt-2 font-mono text-[11px] text-ink-soft">
+                </table></div>
+                <p className="mt-2 text-[13px] text-ink-soft">
                   Cazoleta Ø{order.boring[0]!.diameter} mm, {order.boring[0]!.depth} mm de profundidad, centro a{' '}
                   {order.boring[0]!.fromEdge} mm del canto.{' '}
                   {BORING_NOTE}
@@ -186,7 +186,7 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
             </div>
           </section>
 
-          <section className="w-96 shrink-0">
+          <section className="w-full lg:w-96 lg:shrink-0">
             <h3 className="rule-label">Costo</h3>
             <p className="mt-2 text-xs text-ink-soft">Precios de tu maderería en MXN. Se guardan en este navegador.</p>
             <ul className="mt-4 space-y-3">
@@ -203,9 +203,9 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
                             key={u}
                             onClick={() => setCutUnit(u)}
                             aria-pressed={prices.cut.unit === u}
-                            className={`rounded border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
+                            className={`h-8 rounded-md border px-2.5 text-xs font-semibold transition-colors ${
                               prices.cut.unit === u
-                                ? 'border-cut bg-cut text-white'
+                                ? 'border-accent bg-accent-tint text-accent-ink'
                                 : 'border-rule bg-panel text-ink-soft hover:border-ink-soft'
                             }`}
                           >
@@ -226,9 +226,9 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
                       defaultValue={l.price ?? ''}
                       onChange={(e) => setPriceByKey(l.key, Number(e.target.value) || 0)}
                       placeholder="0"
-                      className="w-28 rounded-md border border-rule bg-panel px-2.5 py-1.5 font-mono text-sm tabular-nums transition-colors focus:border-cut focus:outline-none"
+                      className="w-28 rounded-md border border-rule bg-panel px-2.5 py-1.5 font-mono text-sm tabular-nums transition-colors focus:border-accent focus:outline-none"
                     />
-                    <span className="font-mono text-xs text-ink-soft">por {l.unit}</span>
+                    <span className="text-[13px] text-ink-soft">por {l.unit}</span>
                     <span className="ml-auto font-mono text-xs tabular-nums text-ink-soft">
                       × {l.qty}
                       {l.subtotal !== null && <> = ${l.subtotal.toFixed(2)}</>}
@@ -247,7 +247,7 @@ export function OrderPanel({ design, title, stale }: { design: Design; title: st
 
       {stale && (
         <div className="pointer-events-none absolute inset-x-0 top-5 flex justify-center">
-          <span className="rounded-full border border-cut bg-cut-tint px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-cut">
+          <span className="rounded-full border border-cut bg-cut-tint px-3 py-1 text-xs text-cut-ink">
             Corrige los errores para actualizar el modelo
           </span>
         </div>
