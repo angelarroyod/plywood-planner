@@ -1,4 +1,4 @@
-import type { ParamSpec, Placement, TemplateParams, ValidationIssue, Vec3 } from '../types.ts';
+import type { ParamSpec, TemplateParams, ValidationIssue, Vec3 } from '../types.ts';
 import { paramIssues, resolveParams } from '../validation.ts';
 import {
   FINISH_OPTIONS,
@@ -14,7 +14,17 @@ import {
   type ToolId,
   type Tube,
 } from './catalog.ts';
-import type { Member, Suggestion, WeldDesign, WeldResult, WeldStep, WeldTemplate } from './types.ts';
+import {
+  WELD_REF,
+  type Member,
+  type Suggestion,
+  type TubeEnd,
+  type TubePlacement,
+  type WeldDesign,
+  type WeldResult,
+  type WeldStep,
+  type WeldTemplate,
+} from './types.ts';
 
 const LOW_RAIL_HEIGHT = 150; // mm, bottom of a table's lower frame
 const SHELF_CLEARANCE = 100; // mm, bottom of a shelving unit's first frame
@@ -72,21 +82,43 @@ function frameDesign(spec: FrameSpec, t: Tube, extra: Suggestion[]): WeldDesign 
   // Assembly space: x = width, y = up, z = depth with +z the front; floor at y = 0.
   const xL = W / 2 - s / 2;
   const zL = D / 2 - s / 2;
-  const placements: Placement[] = [];
-  const corners: [number, number][] = [[-xL, -zL], [xL, -zL], [-xL, zL], [xL, zL]];
-  corners.forEach(([x, z], i) => placements.push({ panelId: 'leg', instance: i, position: [x, legLength / 2, z], size: [s, legLength, s] }));
-  const ring = (id: string, y: number, first: number, longLen: number) => {
-    [-zL, zL].forEach((z, i) => placements.push({ panelId: `${id}-long`, instance: first + i, position: [0, y, z], size: [longLen, s, s] }));
-    // ponytail: a mitered short rail is drawn at its between-the-long-rails length; boxes can't show a 45° end
-    [-xL, xL].forEach((x, i) => placements.push({ panelId: `${id}-short`, instance: first + i, position: [x, y, 0], size: [s, s, between(D)] }));
-  };
-  if (cap) ring('top', H - s / 2, 0, W);
-  levels.bottoms.forEach((b, i) => ring(levels.id, b + s / 2, 2 * i, between(W)));
+  const placements: TubePlacement[] = [];
+  const welds: TubeEnd[] = [];
+  const caps: TubeEnd[] = [];
+  const both = (panelId: string, instance: number, into: TubeEnd[]) => into.push({ panelId, instance, end: 0 }, { panelId, instance, end: 1 });
 
-  // Every joint is welded all round the tube; a 45° seam runs √2 longer on each face.
-  const capJoints = cap ? 8 : 0;
-  const joints = capJoints + 8 * nLevels;
-  const weldLength = Math.round(4 * s * (joints + (cap === 'miter' ? 4 * (Math.SQRT2 - 1) : 0)));
+  const corners: [number, number][] = [[-xL, -zL], [xL, -zL], [-xL, zL], [xL, zL]];
+  corners.forEach(([x, z], i) => {
+    placements.push({ panelId: 'leg', instance: i, position: [x, legLength / 2, z], size: [s, legLength, s], axis: 1, ends: 'square' });
+    caps.push({ panelId: 'leg', instance: i, end: 0 }); // the foot
+    // under a top frame the leg's top is welded to it; otherwise it stays open
+    (cap ? welds : caps).push({ panelId: 'leg', instance: i, end: 1 });
+  });
+
+  // A top frame sits on the legs: its long rails run full length and the short rails either butt
+  // between them or meet them at 45°. A frame between the legs butts every rail against a leg.
+  const ring = (id: string, y: number, first: number, ends: 'square' | 'miter', onLegs: boolean) => {
+    const longLen = onLegs ? W : between(W);
+    const shortLen = ends === 'miter' ? D : between(D);
+    [-zL, zL].forEach((z, i) => {
+      placements.push({ panelId: `${id}-long`, instance: first + i, position: [0, y, z], size: [longLen, s, s], axis: 0, ends, ...(ends === 'miter' && { outer: [0, 0, Math.sign(z)] as Vec3 }) });
+      // on the legs, a square-cut long rail shows its open ends at the corners; a miter is welded to its partner
+      both(`${id}-long`, first + i, onLegs && ends === 'square' ? caps : welds);
+    });
+    [-xL, xL].forEach((x, i) => {
+      placements.push({ panelId: `${id}-short`, instance: first + i, position: [x, y, 0], size: [s, s, shortLen], axis: 2, ends, ...(ends === 'miter' && { outer: [Math.sign(x), 0, 0] as Vec3 }) });
+      if (ends === 'square') both(`${id}-short`, first + i, welds); // a miter's bead is counted on its long rail
+    });
+  };
+  if (cap) ring('top', H - s / 2, 0, cap, true);
+  levels.bottoms.forEach((b, i) => ring(levels.id, b + s / 2, 2 * i, 'square', false));
+
+  // Every joint is welded all round the tube. A 45° seam crosses the two faces it leans across
+  // diagonally (√2 × side) and the other two square.
+  // ponytail: flat-sided perimeter; the rounded corners make the real bead a few percent shorter
+  const endsOf = (id: string) => members.find((m) => m.id === id)!.ends;
+  const joints = welds.length;
+  const weldLength = Math.round(welds.reduce((sum, w) => sum + (endsOf(w.panelId) === 'miter' ? (2 + 2 * Math.SQRT2) * s : 4 * s), 0));
 
   const kg = members.reduce((sum, m) => sum + (m.length * m.qty * t.kgPerM) / 1000, 0);
   const steps = frameSteps(settings.start);
@@ -101,6 +133,8 @@ function frameDesign(spec: FrameSpec, t: Tube, extra: Suggestion[]): WeldDesign 
     settings,
     members,
     placements,
+    welds,
+    caps,
     joints,
     weldLength,
     weight: Math.round(kg * 10) / 10,
@@ -128,7 +162,11 @@ function frameDesign(spec: FrameSpec, t: Tube, extra: Suggestion[]): WeldDesign 
           `del lado del desperdicio; sujeta el tubo con prensa, nunca con la mano.${miterNote}`,
         panelRefs: members.map((m) => m.id),
         tools: ['tape', 'square', 'marker', 'clamp', 'saw'],
-        action: { kind: 'cut', from: [heroEnd - 60, H + 70, zL], to: [heroEnd - 60, H - s - 5, zL], normal: [1, 0, 0] },
+        // a miter is shown on its real 45° plane at the rail's end; a square cut, a little in from it
+        action:
+          cap === 'miter'
+            ? { kind: 'cut', from: [heroEnd - s / 2, H + 70, zL], to: [heroEnd - s / 2, H - s - 5, zL], normal: [Math.SQRT1_2, 0, -Math.SQRT1_2] }
+            : { kind: 'cut', from: [heroEnd - 60, H + 70, zL], to: [heroEnd - 60, H - s - 5, zL], normal: [1, 0, 0] },
       },
       {
         title: 'Limpia las puntas',
@@ -156,8 +194,8 @@ function frameDesign(spec: FrameSpec, t: Tube, extra: Suggestion[]): WeldDesign 
         {
           title: 'Puntea las patas',
           description:
-            'Con el marco boca abajo, para cada pata en una esquina por dentro del marco, revísala a escuadra en dos caras ' +
-            'y puntéala por dos lados.',
+            'Con el marco boca abajo, para cada pata sobre una esquina, al ras de las dos caras de afuera; revísala a escuadra ' +
+            'en dos caras y puntéala por dos lados.',
           panelRefs: ['leg'],
           tools: ['welder', 'magnet', 'square'],
           action: { kind: 'tack', from: [xL, H - s, D / 2], to: [xL, H - s, D / 2], normal: [0, 0, 1] },
@@ -202,7 +240,7 @@ function frameDesign(spec: FrameSpec, t: Tube, extra: Suggestion[]): WeldDesign 
           'Mide las diagonales de arriba (deben variar menos de 2 mm) y apoya la pieza en el piso: no debe cojear. ' +
           'Corrige con golpes de mazo ahora; después de soldar ya no se puede.',
         panelRefs: [],
-        tools: ['tape', 'level'],
+        tools: ['tape', 'level', 'mallet'],
         action: { kind: 'measure', from: [-W / 2, H + 2, -D / 2], to: [W / 2, H + 2, D / 2], normal: [0, 1, 0] },
       },
       {
@@ -210,7 +248,7 @@ function frameDesign(spec: FrameSpec, t: Tube, extra: Suggestion[]): WeldDesign 
         description:
           `${settings.technique} Empieza en ${amps} A y ajusta entre ${settings.amps[0]} y ${settings.amps[1]} A ` +
           `según se vea el charco. Suelda tramos de 2–3 cm alternando esquinas opuestas para que no se tuerza.${slag}`,
-        panelRefs: [],
+        panelRefs: [WELD_REF],
         tools: ['welder', ...(process.slag ? (['chipper'] as ToolId[]) : [])],
         action: cap
           ? { kind: 'weld', from: [W / 2 - s, H - s, D / 2], to: [W / 2, H - s, D / 2], normal: [0, 0, 1] }
@@ -219,18 +257,20 @@ function frameDesign(spec: FrameSpec, t: Tube, extra: Suggestion[]): WeldDesign 
       {
         title: 'Esmerila las uniones',
         description: 'Empareja los cordones con el disco de láminas sin adelgazar el tubo, y sopla o limpia el polvo.',
-        panelRefs: [],
+        panelRefs: [WELD_REF],
         tools: ['grinder'],
         action: { kind: 'grind', from: [W / 2 - s - 10, H - s, D / 2], to: [W / 2 + 10, H - s, D / 2], normal: [0, 0, 1] },
       },
       {
         title: finish.painted ? `Pinta de ${finish.label.toLowerCase()}` : 'Protege el acero',
-        description: finish.painted
+        description:
+          (finish.painted
           ? `Desengrasa con thinner, da una mano de primario anticorrosivo y, ya seco, dos manos delgadas de esmalte ${finish.label.toLowerCase()}. ` +
             'Pinta en un lugar ventilado y con mascarilla.'
-          : 'Pule con fibra hasta dejar el acero parejo, desengrasa y aplica dos manos de barniz transparente para metal: sin protección se oxida en días.',
+          : 'Pule con fibra hasta dejar el acero parejo, desengrasa y aplica dos manos de barniz transparente para metal: sin protección se oxida en días.') +
+          ` Ya seco, mete a golpe de mazo de goma los ${caps.length} tapones plásticos en las bocas abiertas del tubo.`,
         panelRefs: members.map((m) => m.id),
-        tools: ['brush'],
+        tools: ['brush', 'mallet'],
         action: { kind: 'paint', from: [-W / 2 + 40, topY, D / 2 + 260], to: [W / 2 - 40, topY, D / 2 + 260], normal: [0, 0, 1] },
       },
       {

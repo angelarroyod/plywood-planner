@@ -10,6 +10,26 @@ export interface Member {
   qty: number;
 }
 
+/**
+ * A placed piece of tube: the box it fills, the way it runs and how its ends are cut.
+ * The box is as long as the member's cut length, so a mitered piece's box reaches its long points.
+ */
+export interface TubePlacement extends Placement {
+  axis: 0 | 1 | 2; // the box side that is the member's length: x, y or z
+  ends: Member['ends'];
+  outer?: Vec3; // miter only: unit vector to the face that carries the long points (the frame's outside)
+}
+
+/** One end of one placed piece; end 0 is the low end along its axis. */
+export interface TubeEnd {
+  panelId: string;
+  instance: number;
+  end: 0 | 1;
+}
+
+/** Step panelRefs entry that names the weld beads, so the viewer lights them instead of a member. */
+export const WELD_REF = 'cordones';
+
 /** What the 3D tool demo does: a tool tip travelling from → to, in assembly space (mm). */
 export interface ToolAction {
   kind: 'cut' | 'grind' | 'tack' | 'weld' | 'measure' | 'paint';
@@ -38,8 +58,10 @@ export interface WeldDesign {
   finish: PaintFinish;
   settings: WeldSettings;
   members: Member[];
-  placements: Placement[]; // panelId = Member.id
-  joints: number; // tube-to-tube joints, each welded all round
+  placements: TubePlacement[]; // panelId = Member.id
+  welds: TubeEnd[]; // a bead all round each of these ends, where it meets the part it is welded to
+  caps: TubeEnd[]; // open ends, each closed with a plastic plug after painting
+  joints: number; // tube-to-tube joints, each welded all round (= welds.length)
   weldLength: number; // mm of bead
   weight: number; // kg of tube in the finished piece
   steps: WeldStep[];

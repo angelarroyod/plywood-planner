@@ -1,8 +1,11 @@
 import { Canvas, useThree } from '@react-three/fiber';
 import { Edges, Html, Line, OrbitControls } from '@react-three/drei';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { BufferGeometry } from 'three';
+import { WELD_REF, type Tube, type TubeEnd, type TubePlacement } from '../engine/index.ts';
 import type { Fitting, Placement, Step, Vec3 } from '../engine/types.ts';
 import { useAppStore, type Theme } from '../state/store.ts';
+import { beadGeometry, capGeometry, tubeGeometry } from './weld/tubeMesh.ts';
 
 const EXPLODE_FACTOR = 1.6; // panels move away from the centroid by this factor
 const HOME: Vec3 = [1600, 1400, 2000]; // camera start, front-right and above
@@ -21,6 +24,7 @@ const PALETTE: Record<Theme, {
   ghostEdge: string;
   ghostOpacity: number;
   steel: string; // rod, handles, and the outline on painted tube
+  plug: string; // plastic caps in open tube ends
   sky: string;
   ground: string;
   rim: string; // back light that separates dark tube from the night page
@@ -37,6 +41,7 @@ const PALETTE: Record<Theme, {
     ghostEdge: '#6f9fcb',
     ghostOpacity: 0.35,
     steel: '#6c7685',
+    plug: '#2a2d33',
     sky: '#ffffff',
     ground: '#c9d6e6',
     rim: '#ffffff',
@@ -53,6 +58,7 @@ const PALETTE: Record<Theme, {
     ghostEdge: '#7f97e0',
     ghostOpacity: 0.3,
     steel: '#b6c0d2',
+    plug: '#454b58',
     sky: '#e3e9ff',
     ground: '#0c1226',
     rim: '#9fb0ff',
@@ -75,13 +81,18 @@ export function Viewer3D({
   highlightStep = null,
   finish,
   dimensions = false,
+  showWelds = true,
+  showCaps = true,
   children,
 }: {
-  design: { placements: Placement[]; fittings?: Fitting[] };
+  // a welded design adds its tube, so placements draw as real tube with beads and plugs
+  design: { placements: Placement[]; fittings?: Fitting[]; tube?: Tube; welds?: TubeEnd[]; caps?: TubeEnd[] };
   stale: boolean;
   highlightStep?: Step | null;
   finish?: Finish;
   dimensions?: boolean; // ballpoint width/height/depth lines on the model (Diseño)
+  showWelds?: boolean; // false in steps before the beads are laid
+  showCaps?: boolean; // false in steps before the plugs go in
   children?: ReactNode; // extra scene content, e.g. a tool demo
 }) {
   const exploded = useAppStore((s) => s.exploded);
@@ -104,25 +115,44 @@ export function Viewer3D({
   const stepOffsets = highlightStep?.explodeOffsets ?? {};
 
   // Panels and fittings render alike; fittings are steel and never cut. The centroid stays the panels'.
-  const boxes = useMemo(
-    () => [
-      ...design.placements.map((p) => ({
-        key: `${p.panelId}-${p.instance}`,
-        id: p.panelId,
-        position: p.position,
-        size: p.size,
-        steel: false,
-      })),
+  // A placed piece of tube carries its own geometry, with the beads and plugs at its ends.
+  const boxes = useMemo(() => {
+    const { tube, welds = [], caps = [] } = design;
+    const at = (p: Placement, list: TubeEnd[]) => list.filter((e) => e.panelId === p.panelId && e.instance === p.instance);
+    return [
+      ...design.placements.map((p) => {
+        const piece = tube && 'axis' in p ? (p as TubePlacement) : null;
+        return {
+          key: `${p.panelId}-${p.instance}`,
+          id: p.panelId,
+          position: p.position,
+          size: p.size,
+          steel: false,
+          tube: piece && {
+            body: tubeGeometry(piece, tube!),
+            beads: at(p, welds).map((e) => beadGeometry(piece, tube!, e.end)),
+            caps: at(p, caps).map((e) => capGeometry(piece, tube!, e.end)),
+          },
+        };
+      }),
       ...(design.fittings ?? []).map((f) => ({
         key: `fitting-${f.id}-${f.instance}`,
         id: f.id,
         position: f.position,
         size: f.size,
         steel: true,
+        tube: null as { body: BufferGeometry; beads: BufferGeometry[]; caps: BufferGeometry[] } | null,
       })),
-    ],
-    [design],
+    ];
+  }, [design]);
+  useEffect(
+    () => () => {
+      for (const b of boxes) if (b.tube) [b.tube.body, ...b.tube.beads, ...b.tube.caps].forEach((g) => g.dispose());
+    },
+    [boxes],
   );
+  const beadsLit = highlightIds?.has(WELD_REF) ?? false;
+  const beadsGhost = highlightIds !== null && !beadsLit;
 
   return (
     <div
@@ -168,6 +198,41 @@ export function Viewer3D({
           const lit = highlightIds?.has(b.id) ?? false;
           const color = ghost ? c.ghost : lit ? c.highlight : b.steel ? c.steel : (finish?.color ?? c.base);
           const edge = ghost ? c.ghostEdge : b.steel || finish ? c.steel : c.edge;
+          if (b.tube) {
+            const ghostMat = { transparent: true, opacity: c.ghostOpacity, depthWrite: false };
+            return (
+              <group key={b.key} position={pos}>
+                <mesh geometry={b.tube.body} castShadow={!ghost}>
+                  <meshStandardMaterial
+                    color={color}
+                    {...(ghost && ghostMat)}
+                    roughness={lit ? 0.6 : (finish?.roughness ?? 0.5)}
+                    metalness={lit ? 0 : (finish?.metalness ?? 0.4)}
+                  />
+                  <Edges threshold={20}>
+                    <lineBasicMaterial color={edge} transparent={ghost} opacity={ghost ? 0.7 : 1} />
+                  </Edges>
+                </mesh>
+                {showWelds &&
+                  b.tube.beads.map((g, i) => (
+                    <mesh key={`bead-${i}`} geometry={g} castShadow={!beadsGhost}>
+                      <meshStandardMaterial
+                        color={beadsGhost ? c.ghost : beadsLit ? c.highlight : (finish?.color ?? c.steel)}
+                        {...(beadsGhost && ghostMat)}
+                        roughness={0.85}
+                        metalness={beadsLit ? 0 : (finish?.metalness ?? 0.4)}
+                      />
+                    </mesh>
+                  ))}
+                {showCaps &&
+                  b.tube.caps.map((g, i) => (
+                    <mesh key={`cap-${i}`} geometry={g}>
+                      <meshStandardMaterial color={ghost ? c.ghost : c.plug} {...(ghost && ghostMat)} roughness={0.6} />
+                    </mesh>
+                  ))}
+              </group>
+            );
+          }
           return (
             <mesh key={b.key} position={pos} castShadow={!ghost}>
               <boxGeometry args={b.size} />

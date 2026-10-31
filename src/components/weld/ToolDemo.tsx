@@ -51,8 +51,8 @@ export function ToolDemo({ action }: { action: ToolAction }) {
     // the motor points away from the viewer so the disc and sparks stay in sight
     const sideways = Math.abs(normal.y) > 0.9 ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
     if (kind === 'cut') {
-      // disc stands on its rim, facing along the tube; the motor sticks out sideways
-      const body = Math.abs(normal.z) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, -1);
+      // disc stands on its rim, facing along its cut (square or 45°); the motor sticks out square to it
+      const body = new THREE.Vector3().crossVectors(UP, normal).normalize();
       return { disc: align(normal), discAt: new THREE.Vector3(0, DISC_R, 0), body: align(body), bodyDir: body, travel, len };
     }
     if (kind === 'grind') {
