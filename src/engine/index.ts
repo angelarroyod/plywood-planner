@@ -11,6 +11,7 @@ export * from './cost.ts';
 export * from './parts/door.ts';
 export * from './parts/merge.ts';
 export * from './parts/drawer.ts';
+export * from './parts/wall.ts';
 export { bookshelf, generateBookshelf } from './templates/bookshelf.ts';
 export { sideTable, generateSideTable } from './templates/side-table.ts';
 export { closet, generateCloset } from './templates/closet.ts';
