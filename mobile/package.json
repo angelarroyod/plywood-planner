@@ -3,9 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
-    "@expo-google-fonts/archivo": "^0.4.2",
-    "@expo-google-fonts/barlow-condensed": "^0.4.1",
-    "@expo-google-fonts/roboto-mono": "^0.4.2",
+    "@expo-google-fonts/atkinson-hyperlegible-mono": "^0.4.1",
+    "@expo-google-fonts/atkinson-hyperlegible-next": "^0.4.1",
     "@expo/ui": "~57.0.15",
     "expo": "~57.0.19",
     "expo-camera": "~57.0.4",

@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Display, Mono } from '@/components/ui';
+import { Caption, Mono } from '@/components/ui';
 import { nest, type Design } from '@/lib/engine';
-import { color, radius } from '@/theme';
+import { makeStyles, radius, usePalette } from '@/theme';
 
 /** Hojas / Piezas / Merma per material — the numbers that decide a trip to the maderería. */
 export function useStats(design: Design) {
@@ -28,36 +28,34 @@ export function useStats(design: Design) {
   }, [design]);
 }
 
-export function StatCards({ cards }: { cards: { label: string; value: string; sub: string }[] }) {
+/** The summary strip: ruled cells on one sheet-white card, value over label. */
+export function StatCards({ cards }: { cards: { label: string; value: string; sub?: string }[] }) {
+  const s = useStyles();
+  const sc = usePalette();
   return (
-    <View style={styles.row}>
+    <View style={s.row}>
       {cards.map((c, i) => (
-        <View key={`${c.label}-${i}`} style={styles.card}>
-          <Mono tone={color.textSoft} size={9} style={{ letterSpacing: 1.3, textTransform: 'uppercase' }}>
-            {c.label}
-          </Mono>
-          <Display size={26} style={{ marginTop: 3 }}>
+        <View key={`${c.label}-${i}`} style={[s.cell, i > 0 && s.divider]}>
+          <Mono size={20} bold>
             {c.value}
-          </Display>
-          <Mono tone={color.textFaint} size={9}>
-            {c.sub}
           </Mono>
+          <Caption tone={sc.inkSoft}>{c.label}</Caption>
+          {c.sub && <Caption numberOfLines={2}>{c.sub}</Caption>}
         </View>
       ))}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 8 },
-  card: {
-    flex: 1,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderTopWidth: 2,
-    borderTopColor: color.red,
-    backgroundColor: color.card,
-    padding: 10,
+const useStyles = makeStyles((c) => ({
+  row: {
+    flexDirection: 'row',
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.rule,
+    backgroundColor: c.panel,
+    overflow: 'hidden',
   },
-});
+  cell: { flex: 1, paddingHorizontal: 10, paddingVertical: 10, gap: 2 },
+  divider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: c.rule },
+}));

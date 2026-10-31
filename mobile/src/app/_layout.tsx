@@ -4,48 +4,50 @@ import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
-  BarlowCondensed_600SemiBold,
-  BarlowCondensed_700Bold,
-} from '@expo-google-fonts/barlow-condensed';
+  AtkinsonHyperlegibleNext_400Regular,
+  AtkinsonHyperlegibleNext_600SemiBold,
+  AtkinsonHyperlegibleNext_700Bold,
+  AtkinsonHyperlegibleNext_800ExtraBold,
+} from '@expo-google-fonts/atkinson-hyperlegible-next';
 import {
-  Archivo_400Regular,
-  Archivo_500Medium,
-  Archivo_600SemiBold,
-  Archivo_700Bold,
-} from '@expo-google-fonts/archivo';
-import {
-  RobotoMono_400Regular,
-  RobotoMono_500Medium,
-  RobotoMono_700Bold,
-} from '@expo-google-fonts/roboto-mono';
+  AtkinsonHyperlegibleMono_400Regular,
+  AtkinsonHyperlegibleMono_700Bold,
+} from '@expo-google-fonts/atkinson-hyperlegible-mono';
 import { AppProvider } from '@/lib/app-provider';
-import { color } from '@/theme';
+import { PaletteProvider, usePalette, useScheme } from '@/theme';
 
 export default function RootLayout() {
   const [ready] = useFonts({
-    BarlowCondensed_600SemiBold,
-    BarlowCondensed_700Bold,
-    Archivo_400Regular,
-    Archivo_500Medium,
-    Archivo_600SemiBold,
-    Archivo_700Bold,
-    RobotoMono_400Regular,
-    RobotoMono_500Medium,
-    RobotoMono_700Bold,
+    AtkinsonHyperlegibleNext_400Regular,
+    AtkinsonHyperlegibleNext_600SemiBold,
+    AtkinsonHyperlegibleNext_700Bold,
+    AtkinsonHyperlegibleNext_800ExtraBold,
+    AtkinsonHyperlegibleMono_400Regular,
+    AtkinsonHyperlegibleMono_700Bold,
   });
 
-  // The whole design is condensed caps and tabular figures — showing it in
-  // system fonts first would reflow every screen, so hold on the ground color.
-  if (!ready) return <View style={{ flex: 1, backgroundColor: color.bg }} />;
+  return (
+    <PaletteProvider>
+      <Shell ready={ready} />
+    </PaletteProvider>
+  );
+}
+
+function Shell({ ready }: { ready: boolean }) {
+  const c = usePalette();
+  const scheme = useScheme();
+
+  // Every measurement is set in the mono — showing system fonts first would reflow every screen.
+  if (!ready) return <View style={{ flex: 1, backgroundColor: c.paper }} />;
 
   return (
     <SafeAreaProvider>
       <AppProvider>
-        <StatusBar style="light" />
+        <StatusBar style={scheme === 'night' ? 'light' : 'dark'} />
         <Stack
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: color.bg },
+            contentStyle: { backgroundColor: c.paper },
             animation: 'slide_from_right',
           }}
         >
