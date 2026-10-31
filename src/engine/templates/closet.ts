@@ -26,6 +26,7 @@ import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
 import { MIN_DOOR_THICKNESS, doorSet, doorWidth } from '../parts/door.ts';
 import { drawerSet } from '../parts/drawer.ts';
 import { mergeHardware } from '../parts/merge.ts';
+import { WALL_HARDWARE, wallStep } from '../parts/wall.ts';
 import { spanishList } from '../labels.ts';
 
 const PLINTH = 70; // mm, zoclo height: keeps mop water off the base
@@ -266,6 +267,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
   const hardware = mergeHardware([
     { type: 'confirmat', size: '5x50', qty: (2 + shelfLike) * 4 + 2 },
     { type: 'screw', size: '3.5x16', qty: backScrews },
+    ...WALL_HARDWARE,
     ...rodHardware,
     ...drawer.hardware,
     ...door.hardware,
@@ -339,6 +341,7 @@ export function generateCloset(raw: TemplateParams): GenerateResult {
       panelRefs: ['back'],
       explodeOffsets: { back: [0, 0, -200] },
     },
+    wallStep('clóset', false),
     ...rodSteps,
     ...drawer.steps,
     ...door.steps,

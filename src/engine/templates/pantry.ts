@@ -23,6 +23,7 @@ import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
 import { MIN_DOOR_THICKNESS, doorSet, doorWidth } from '../parts/door.ts';
 import { drawerSet } from '../parts/drawer.ts';
 import { mergeHardware } from '../parts/merge.ts';
+import { WALL_HARDWARE, wallStep } from '../parts/wall.ts';
 import { spanishList } from '../labels.ts';
 
 const PLINTH = 70; // mm, zoclo height: keeps mop water off the base
@@ -31,7 +32,6 @@ const MIN_SHELF_GAP = 150; // mm of clear space between shelves: a can is about 
 const BACK_SCREW_SPACING = 200; // mm between back screws
 const MAX_SINGLE_DOOR = 600; // mm; a wider single door sags and racks
 const MIN_DOOR = 200; // mm; a narrower door is useless
-const BRACKET_INSET = 50; // mm from each side to an anti-tip bracket
 
 const LOWER_OPTIONS = [
   { value: 1, label: 'Puertas' },
@@ -206,9 +206,7 @@ export function generatePantry(raw: TemplateParams): GenerateResult {
   const hardware = mergeHardware([
     { type: 'confirmat', size: '5x50', qty: (2 + shelfLike) * 4 + 2 },
     { type: 'screw', size: '3.5x16', qty: backScrews },
-    { type: 'screw', size: '3.5x13', qty: 4 }, // brackets to the Tapa: 13 mm + a 2 mm bracket stays inside even 12 mm
-    { type: 'bracket', size: '2" (50 mm)', qty: 2 },
-    { type: 'wall-anchor', size: '1/4"', qty: 4 },
+    ...WALL_HARDWARE,
     ...drawer.hardware,
     ...upper.hardware,
     ...lower.hardware,
@@ -258,16 +256,7 @@ export function generatePantry(raw: TemplateParams): GenerateResult {
       panelRefs: ['back'],
       explodeOffsets: { back: [0, 0, -200] },
     },
-    {
-      title: 'Fija la alacena al muro',
-      description:
-        `Párala pegada al muro donde va a quedar. Atornilla 2 escuadras sobre la tapa, a ${BRACKET_INSET} mm de cada ` +
-        'lateral y contra el muro, con 2 tornillos 3.5×13 cada una. Marca los agujeros en el muro, barrena con broca ' +
-        'de 1/4" (para concreto si el muro es de block o tabique), mete los taquetes y atornilla las pijas. Si el techo ' +
-        'no deja espacio sobre la tapa, pon las escuadras por dentro, bajo la tapa. Llena, una alacena puede ' +
-        'voltearse: no te saltes este paso.',
-      panelRefs: ['top'],
-    },
+    wallStep('alacena', true),
     ...drawer.steps,
     ...upper.steps,
     ...lower.steps,
