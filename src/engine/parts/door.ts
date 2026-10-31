@@ -24,7 +24,15 @@ export interface DoorSetOptions {
   stock: Stock;
   mode: EdgeBandingMode;
   avoid?: { bottom: number; top: number }[]; // floor-y ranges of the case's fixed horizontal panels the hinge plates must clear
+  row?: 'upper' | 'lower'; // names the row when a case has two (a pantry's upper and lower doors); omit for one row
 }
+
+/** Ids, label and step adjective per row, so two rows on one case never share a panel or fitting id. */
+const ROWS = {
+  single: { id: 'door', handle: 'handle', label: 'Puerta', adjective: '' },
+  upper: { id: 'door-upper', handle: 'handle-upper', label: 'Puerta alta', adjective: 'alta' },
+  lower: { id: 'door-lower', handle: 'handle-lower', label: 'Puerta baja', adjective: 'baja' },
+};
 
 /** Cup hinges per door by its height, the usual rule for 35 mm hinges. */
 export function hingeCount(doorHeight: number): number {
@@ -69,15 +77,18 @@ export function doorSet(o: DoorSetOptions): PartSet {
   const handleY = Math.min(Math.max(HANDLE_HEIGHT, doorBottom + 100), doorTop - 100);
   const pair = o.count === 2;
   const sides = pair ? [-1, 1] : [-1]; // −1 = hinged on the left
+  const row = ROWS[o.row ?? 'single'];
+  const adj = row.adjective ? ` ${row.adjective}${pair ? 's' : ''}` : '';
+  const doors = `${pair ? 'las puertas' : 'la puerta'}${adj}`; // 'la puerta', 'las puertas altas'
 
   const placements: Placement[] = sides.map((s, i): Placement => ({
-    panelId: 'door',
+    panelId: row.id,
     instance: i,
     position: [s * (o.width / 2 - t / 2), doorBottom + h / 2, o.frontZ + w / 2],
     size: [t, h, w],
   }));
   const fittings: Fitting[] = sides.map((s, i): Fitting => ({
-    id: 'handle',
+    id: row.handle,
     instance: i,
     label: 'Jaladera',
     position: [s * (o.width / 2 + HANDLE_BOX[0] / 2), handleY, o.frontZ + w - HANDLE_FROM_EDGE],
@@ -86,36 +97,36 @@ export function doorSet(o: DoorSetOptions): PartSet {
 
   const steps: Omit<Step, 'order'>[] = [
     {
-      title: 'Monta las placas',
+      title: adj ? `Monta las placas de ${doors}` : 'Monta las placas',
       description:
         `Atornilla las placas de las bisagras en la cara interior ${pair ? 'de cada lateral' : 'del lateral izquierdo'}, ` +
         `a ${PLATE_SETBACK} mm del frente, a ${plates.join(' · ')} mm del piso. ` +
         `Las puertas vienen barrenadas de la maderería; si las barrenas tú: broca Forstner de ${CUP.diameter} mm, ` +
         `${CUP.depth} mm de profundidad, centro a ${CUP.fromEdge} mm del canto.`,
-      panelRefs: ['door'],
+      panelRefs: [row.id],
     },
     {
-      title: pair ? 'Cuelga las puertas' : 'Cuelga la puerta',
+      title: `Cuelga ${doors}`,
       description:
         'Engancha cada bisagra en su placa y ajústala con sus tornillos (lado, fondo y altura) hasta dejar ' +
         `${GAP} mm de luz alrededor${pair ? ` y ${PAIR_GAP} mm entre las puertas` : ''}.`,
-      panelRefs: ['door'],
-      explodeOffsets: { door: [0, 0, 150] },
+      panelRefs: [row.id],
+      explodeOffsets: { [row.id]: [0, 0, 150] },
     },
     {
-      title: pair ? 'Pon las jaladeras' : 'Pon la jaladera',
+      title: `Pon ${pair ? 'las jaladeras' : 'la jaladera'}${adj ? ` de ${doors}` : ''}`,
       description:
         `Barrena 2 agujeros de 5 mm separados ${HANDLE_SPACING} mm, a ${HANDLE_FROM_EDGE} mm del canto que cierra ` +
         `y centrados a ${Math.round(handleY)} mm del piso, y atornilla ${pair ? 'cada jaladera' : 'la jaladera'}.`,
-      panelRefs: ['door', 'handle'],
+      panelRefs: [row.id, row.handle],
     },
   ];
 
   return {
     panels: [
       {
-        id: 'door',
-        label: 'Puerta',
+        id: row.id,
+        label: row.label,
         length: h,
         width: w,
         stock: o.stock,
@@ -130,7 +141,7 @@ export function doorSet(o: DoorSetOptions): PartSet {
       { type: 'handle', size: `${HANDLE_SPACING} mm`, qty: o.count },
     ],
     fittings,
-    boring: [{ panelId: 'door', kind: 'hinge-cup', ...CUP, along }],
+    boring: [{ panelId: row.id, kind: 'hinge-cup', ...CUP, along }],
     steps,
   };
 }

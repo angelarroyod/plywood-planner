@@ -20,7 +20,7 @@ export function overlappingBoxes(d: Pick<Design, 'placements'> & { fittings?: De
 
 /** Smallest vertical gap between a drawer box part and a fixed horizontal panel above or below it (closed position). */
 export function drawerBoxClearance(d: Design): number {
-  const flats = d.placements.filter((p) => ['top', 'bottom', 'drawer-shelf', 'hat-shelf', 'shelf'].includes(p.panelId));
+  const flats = d.placements.filter((p) => ['top', 'bottom', 'drawer-shelf', 'hat-shelf', 'fixed-shelf', 'shelf'].includes(p.panelId));
   const boxes = d.placements.filter((p) => ['drawer-side', 'drawer-end', 'drawer-bottom'].includes(p.panelId));
   let min = Infinity;
   for (const b of boxes)

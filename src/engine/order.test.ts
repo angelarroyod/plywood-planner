@@ -31,7 +31,7 @@ describe('buildOrder', () => {
     ]);
     expect(order.cuts).toEqual({ count: 12, meters: 12.2 });
     expect(order.edgeBanding).toBe('yard');
-    expect(order.hardware.map((h) => h.qty)).toEqual([20, 32]);
+    expect(order.hardware.map((h) => h.qty)).toEqual([20, 32, 4, 2, 4]); // 1200 mm tall: fixed to the wall
   });
 
   it('marks grain only where it matters', () => {
@@ -62,7 +62,8 @@ describe('orderText', () => {
         '',
         'Cubrecanto de chapa de pino 22 mm: 7.1 m. Por favor enchápenlo en los cantos marcados.',
         'Cortes: 12 (12.2 m lineales).',
-        'Herrajes: Tornillo confirmat 5x50 × 20 · Tornillo 3.5x16 × 32',
+        'Herrajes: Tornillo confirmat 5x50 × 20 · Tornillo 3.5x16 × 32 · Tornillo 3.5x13 × 4 · ' +
+          'Escuadra metálica 2" (50 mm) × 2 · Taquete con pija para muro 1/4" × 4',
       ].join('\n'),
     );
   });

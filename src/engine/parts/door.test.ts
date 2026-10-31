@@ -99,6 +99,29 @@ describe('doorSet', () => {
     expect(d.steps[0]!.description).toContain('a 172 · 773 · 1323 · 1898 mm del piso.');
   });
 
+  it('names a second row of doors so two rows on one case never share ids', () => {
+    const upper = doorSet({ ...BASE, row: 'upper' });
+    expect(upper.panels[0]).toMatchObject({ id: 'door-upper', label: 'Puerta alta' });
+    expect(upper.fittings.map((f) => f.id)).toEqual(['handle-upper', 'handle-upper']);
+    expect(upper.boring[0]!.panelId).toBe('door-upper');
+    expect(upper.placements.map((p) => p.panelId)).toEqual(['door-upper', 'door-upper']);
+    expect(upper.steps.map((s) => s.title)).toEqual([
+      'Monta las placas de las puertas altas',
+      'Cuelga las puertas altas',
+      'Pon las jaladeras de las puertas altas',
+    ]);
+    expect(upper.steps.map((s) => s.panelRefs)).toEqual([['door-upper'], ['door-upper'], ['door-upper', 'handle-upper']]);
+    expect(upper.steps[1]!.explodeOffsets).toEqual({ 'door-upper': [0, 0, 150] });
+
+    const lower = doorSet({ ...BASE, count: 1, width: 500, top: 900, row: 'lower' });
+    expect(lower.panels[0]).toMatchObject({ id: 'door-lower', label: 'Puerta baja' });
+    expect(lower.steps.map((s) => s.title)).toEqual([
+      'Monta las placas de la puerta baja',
+      'Cuelga la puerta baja',
+      'Pon la jaladera de la puerta baja',
+    ]);
+  });
+
   it('returns nothing without doors', () => {
     expect(doorSet({ ...BASE, count: 0 })).toEqual({
       panels: [],

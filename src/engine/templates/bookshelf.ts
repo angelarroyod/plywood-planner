@@ -20,9 +20,12 @@ import {
   prepSentence,
 } from '../edge-banding.ts';
 import { paramIssues, resolveParams, spanIssue } from '../validation.ts';
+import { mergeHardware } from '../parts/merge.ts';
+import { WALL_HARDWARE, wallStep } from '../parts/wall.ts';
 
 const MIN_SHELF_GAP = 100; // mm of clear space between shelves
 const BACK_SCREW_SPACING = 200; // mm between back screws, around the edge and along each shelf
+const WALL_FIX_HEIGHT = 1200; // mm from which a full bookshelf can tip over and gets fixed to the wall
 
 const params: ParamSpec[] = [
   { kind: 'number', key: 'width', label: 'Ancho', unit: 'mm', min: 300, max: 1200, step: 10, default: 800 },
@@ -42,7 +45,8 @@ const params: ParamSpec[] = [
 
 /**
  * Bookshelf: two sides, top, bottom, N fixed shelves, and a Fibracel back that
- * keeps the case from racking. `depth` is the overall depth, back included.
+ * keeps the case from racking. `depth` is the overall depth, back included. From 1200 mm tall it is
+ * fixed to the wall with two brackets, since a full one can tip over.
  */
 export function generateBookshelf(raw: TemplateParams): GenerateResult {
   const p = resolveParams(params, raw);
@@ -101,6 +105,7 @@ export function generateBookshelf(raw: TemplateParams): GenerateResult {
     placements.push({ panelId: 'shelf', instance: i - 1, position: [0, y, zc], size: [span, t, Dc] });
   }
 
+  const wallFixed = H >= WALL_FIX_HEIGHT;
   const backScrews =
     Math.ceil((2 * (W + H)) / BACK_SCREW_SPACING) + N * Math.ceil(span / BACK_SCREW_SPACING);
 
@@ -138,6 +143,7 @@ export function generateBookshelf(raw: TemplateParams): GenerateResult {
       panelRefs: ['back'],
       explodeOffsets: { back: [0, 0, -200] },
     },
+    ...(wallFixed ? [wallStep('librero', false)] : []),
   ];
 
   const design: Design = {
@@ -145,10 +151,11 @@ export function generateBookshelf(raw: TemplateParams): GenerateResult {
     params: p,
     panels,
     placements,
-    hardware: [
+    hardware: mergeHardware([
       { type: 'confirmat', size: '5x50', qty: (N + 2) * 4 },
       { type: 'screw', size: '3.5x16', qty: backScrews },
-    ],
+      ...(wallFixed ? WALL_HARDWARE : []),
+    ]),
     fittings: [],
     boring: [],
     steps: steps.map((s, i) => ({ ...s, order: i + 1 })),

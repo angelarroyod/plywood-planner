@@ -15,7 +15,13 @@ const FULL: Prices = {
   sheets: { 3: 950, 5: 180 },
   cut: { unit: 'meter', price: 4 },
   bands: { 'Cubrecanto de chapa de pino 22 mm': 12 },
-  hardware: { 'confirmat 5x50': 2, 'screw 3.5x16': 0.5 },
+  hardware: {
+    'confirmat 5x50': 2,
+    'screw 3.5x16': 0.5,
+    'screw 3.5x13': 0.5,
+    'bracket 2" (50 mm)': 15,
+    'wall-anchor 1/4"': 3,
+  },
   boring: 5,
 };
 
@@ -28,13 +34,16 @@ describe('orderCost', () => {
       ['band:Cubrecanto de chapa de pino 22 mm', 'Cubrecanto de chapa de pino 22 mm', 7.1, 'm', 12],
       ['hw:confirmat 5x50', 'Tornillo confirmat 5x50', 20, 'pza', 2],
       ['hw:screw 3.5x16', 'Tornillo 3.5x16', 32, 'pza', 0.5],
+      ['hw:screw 3.5x13', 'Tornillo 3.5x13', 4, 'pza', 0.5],
+      ['hw:bracket 2" (50 mm)', 'Escuadra metálica 2" (50 mm)', 2, 'pza', 15],
+      ['hw:wall-anchor 1/4"', 'Taquete con pija para muro 1/4"', 4, 'pza', 3],
     ]);
   });
 
   it('adds up every priced line', () => {
     const { total, missing } = orderCost(order(), FULL);
-    // 950 + 180 + 12.2·4 + 7.1·12 + 20·2 + 32·0.5 = 950 + 180 + 48.8 + 85.2 + 40 + 16
-    expect(total).toBeCloseTo(1320);
+    // 950 + 180 + 12.2·4 + 7.1·12 + 20·2 + 32·0.5 + 4·0.5 + 2·15 + 4·3 = 950 + 180 + 48.8 + 85.2 + 40 + 16 + 2 + 30 + 12
+    expect(total).toBeCloseTo(1364);
     expect(missing).toBe(0);
   });
 
@@ -47,7 +56,7 @@ describe('orderCost', () => {
     const partial: Prices = { ...EMPTY_PRICES, sheets: { 3: 950, 5: 0 }, hardware: { 'confirmat 5x50': -1 } };
     const { lines, total, missing } = orderCost(order(), partial);
     expect(total).toBe(950);
-    expect(missing).toBe(5); // Fibracel (0), cut, band, confirmat (negative), screw
+    expect(missing).toBe(8); // Fibracel (0), cut, band, confirmat (negative), 2 screws, bracket, anchor
     expect(lines.find((l) => l.key === 'sheet:5')).toMatchObject({ price: null, subtotal: null });
   });
 
