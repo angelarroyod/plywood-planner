@@ -1,14 +1,15 @@
 import { Canvas, useThree } from '@react-three/fiber';
 import { Edges, Html, Line, OrbitControls } from '@react-three/drei';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { BufferGeometry } from 'three';
+import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
+import { Vector3, type BufferGeometry, type PerspectiveCamera } from 'three';
 import { WELD_REF, type Tube, type TubeEnd, type TubePlacement } from '../engine/index.ts';
 import type { Fitting, Placement, Step, Vec3 } from '../engine/types.ts';
 import { useAppStore, type Theme } from '../state/store.ts';
 import { beadGeometry, capGeometry, tubeGeometry } from './weld/tubeMesh.ts';
 
 const EXPLODE_FACTOR = 1.6; // panels move away from the centroid by this factor
-const HOME: Vec3 = [1600, 1400, 2000]; // camera start, front-right and above
+const HOME: Vec3 = [1600, 1400, 2000]; // camera start before framing; its direction is kept
+const FIT_MARGIN = 1.25; // room for the dimension labels and the stage's corner overlays
 
 /**
  * WebGL cannot read CSS variables, so the notebook palette is mirrored here per
@@ -268,7 +269,7 @@ export function Viewer3D({
         {children}
 
         <OrbitControls target={centroid} makeDefault />
-        <HomeCamera trigger={home} target={centroid} />
+        <FrameCamera trigger={home} boxes={boxes} target={centroid} />
       </Canvas>
 
       {readout && (
@@ -313,16 +314,39 @@ export function Viewer3D({
   );
 }
 
-/** Puts the camera back at its starting view whenever `trigger` changes (never on mount). */
-function HomeCamera({ trigger, target }: { trigger: number; target: Vec3 }) {
-  const camera = useThree((s) => s.camera);
+/**
+ * Frames the design from HOME's direction: the camera backs off just far enough
+ * for every corner of every box to fit the canvas's fov and aspect, looking at
+ * the panels' centroid. Runs on mount, on a template change and on "Vista
+ * general" — never on a param change, so a slider drag doesn't move the camera.
+ */
+function FrameCamera({ trigger, boxes, target }: { trigger: number; boxes: { position: Vec3; size: Vec3 }[]; target: Vec3 }) {
+  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+  const size = useThree((s) => s.size);
   const controls = useThree((s) => s.controls) as unknown as { target: { set: (...v: Vec3) => void }; update: () => void } | null;
-  useEffect(() => {
-    if (trigger === 0) return;
-    camera.position.set(...HOME);
+  const templateKey = useAppStore((s) => (s.mode === 'metal' ? s.weldTemplateId : s.templateId));
+  useLayoutEffect(() => {
+    if (!boxes.length || !size.height) return;
+    const back = new Vector3(...HOME).normalize(); // from the target toward the camera
+    const right = new Vector3(0, 1, 0).cross(back).normalize();
+    const up = back.clone().cross(right);
+    const tanV = Math.tan((camera.fov * Math.PI) / 360) / FIT_MARGIN;
+    const tanH = tanV * (size.width / size.height);
+    const t = new Vector3(...target);
+    const rel = new Vector3();
+    let dist = 0;
+    for (const b of boxes) {
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+        rel.set(b.position[0] + (sx * b.size[0]) / 2, b.position[1] + (sy * b.size[1]) / 2, b.position[2] + (sz * b.size[2]) / 2).sub(t);
+        const z = rel.dot(back); // a corner nearer the camera needs the camera further back
+        dist = Math.max(dist, z + Math.abs(rel.dot(right)) / tanH, z + Math.abs(rel.dot(up)) / tanV);
+      }
+    }
+    camera.position.copy(back).multiplyScalar(dist).add(t);
+    camera.lookAt(t);
     controls?.target.set(...target);
     controls?.update();
-  }, [trigger]); // target and camera are read fresh on each trigger
+  }, [trigger, templateKey]); // boxes, target and size are read fresh on each framing
   return null;
 }
 
