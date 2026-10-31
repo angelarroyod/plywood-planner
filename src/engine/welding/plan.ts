@@ -1,4 +1,4 @@
-import { BAR_LENGTH, CUT_KERF, END_TRIM, SAFETY_GEAR, TOOL_LABELS, type ToolId } from './catalog.ts';
+import { BAR_LENGTH, CUT_KERF, END_TRIM, SAFETY_GEAR, TOOL_LABELS, tubeSize, type ToolId } from './catalog.ts';
 import type { Member, WeldDesign } from './types.ts';
 
 // ---- Bar cut plan ----
@@ -126,6 +126,9 @@ export function shoppingList(d: WeldDesign, bars: BarLayout[]): ShoppingGroup[] 
           note: `≈ ${kg.toFixed(1)} kg. Pide que te lo corten en tramos que quepan en tu carro si hace falta.`,
         },
         { label: 'Pijas para metal 8 × 3/4"', qty: '1 bolsa (25 pzas)', note: 'Para fijar la madera.' },
+        ...(d.caps.length > 0
+          ? [{ label: `Tapón plástico para PTR ${tubeSize(d.params['size']!).label}`, qty: plural(d.caps.length, 'pza', 'pzas'), note: 'Para las bocas abiertas del tubo.' }]
+          : []),
       ],
     },
     { title: 'Soldadura', lines: welding },

@@ -41,9 +41,23 @@ A second workshop next to the board furniture: beginner metal projects built fro
   Tools and safety gear are listed separately, and the whole list shares as plain text. There are no prices: they come from the user, as on the wood side, and are left for later.
 - **PDF:** `WeldPrintReport` prints the settings, cut plan, shopping list and steps.
 
+## Shop-true 3D
+
+The model must match what gets cut and welded, so nobody is surprised at the bench.
+
+- **Tube:** hollow, with its real wall for the gauge and rounded corners (outer radius 2 × wall).
+- **Lengths:** every piece is drawn exactly as long as its cut-list length.
+- **Miters:** a mitered rail runs to its long points, and its ends lean back 45° from the outer face. Two rails meeting at a corner share one cut plane (`endPlane`).
+- **Beads:** a fillet runs all round each welded tube end, where the joint is. Their count is the joint count, and their perimeters give the bead length; a 45° seam crosses two faces diagonally.
+- **Plugs:** every open end gets a plastic plug. This covers the feet, the open ends of square-cut top rails and the open leg tops of a shelf. Plugs are bought in the shopping list and tapped in after painting.
+- **Steps:**
+  - beads appear from the welding step on, and the weld and grind steps light them;
+  - plugs appear from the paint step;
+  - the cut demo's disc stands on the real 45° plane.
+
 ## Not yet
 
 - Native app screens for Metal mode (the engine is already shared).
 - Prices and cost.
 - Angle, flat bar and round profiles; gates, railings and brackets.
-- Mitered ends drawn at 45° in 3D: they are boxes today, and the cut plan carries the 45°.
+- Wood joinery in 3D (screws, hinge boring, slides at their real positions).

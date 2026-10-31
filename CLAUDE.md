@@ -56,6 +56,13 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Templates must produce panels that always fit a sheet within their param limits; `nest()` throws otherwise.
 - Welding (`src/engine/welding/`) is a parallel domain, not more `Panel`s:
   - `WeldTemplate.generate` returns a `WeldDesign` of `Member`s (cut lengths of one `Tube`), with `Placement.panelId` = member id so `Viewer3D` draws it.
+  - The 3D is the shop truth, not an illustration:
+    - each `TubePlacement` box is exactly its member's cut length, with `axis`, `ends` and, for miters, the `outer` face carrying the long points;
+    - `endPlane` is the one source of every cut plane, so mitered partners share a plane;
+    - `welds` lists each tube end that gets a bead (`joints` = its length, `weldLength` sums their perimeters), and `caps` lists every open end, which becomes plastic plugs in the shopping list;
+    - `Tube.radius` (2 × wall) rounds the profile.
+
+    The web draws hollow tube from these in `components/weld/tubeMesh.ts`; beads show from the weld step and plugs from the paint step, and `WELD_REF` in `panelRefs` lights the beads.
   - `planBars` packs members into 6.10 m bars (first-fit decreasing, `END_TRIM` + `CUT_KERF`).
   - `weldSettings` is the only source of amps, consumable, polarity and gas.
   - `WeldStep` extends `Step` with `tools` and an optional `ToolAction`, which only the client animates.

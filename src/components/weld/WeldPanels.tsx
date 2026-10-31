@@ -5,6 +5,7 @@ import {
   END_ANGLE as ENDS,
   SAFETY_GEAR,
   SQUARE_END_STEP,
+  WELD_REF,
   barCutTip,
   planBars,
   settingsNote,
@@ -266,8 +267,14 @@ export function WeldCuts({ design, stale }: { design: WeldDesign; stale: boolean
 
 /** Steps beside the 3D model, with a looping demo of the tool each step uses. */
 export function WeldSteps({ design, stale }: { design: WeldDesign; stale: boolean }) {
-  const labels = useMemo(() => Object.fromEntries(design.members.map((m) => [m.id, m.label])), [design]);
+  const labels = useMemo(
+    () => ({ ...Object.fromEntries(design.members.map((m) => [m.id, m.label])), [WELD_REF]: 'Cordones de soldadura' }),
+    [design],
+  );
   const finish = finishOf(design);
+  // beads appear once they are welded, plugs once the paint is dry
+  const weldedAt = design.steps.find((s) => s.action?.kind === 'weld')?.order ?? Infinity;
+  const pluggedAt = design.steps.find((s) => s.action?.kind === 'paint')?.order ?? Infinity;
 
   const viewer = (step: WeldStep | null) => {
     const a = step?.action;
@@ -275,7 +282,14 @@ export function WeldSteps({ design, stale }: { design: WeldDesign; stale: boolea
     const span = a ? Math.hypot(a.to[0] - a.from[0], a.to[1] - a.from[1], a.to[2] - a.from[2]) : 0;
     return (
       <div className="relative h-full">
-        <Viewer3D design={design} stale={stale} highlightStep={step} finish={finish}>
+        <Viewer3D
+          design={design}
+          stale={stale}
+          highlightStep={step}
+          finish={finish}
+          showWelds={!step || step.order >= weldedAt}
+          showCaps={!step || step.order >= pluggedAt}
+        >
           {a && <ToolDemo key={step!.order} action={a} />}
           <FocusRig focus={focus} distance={Math.max(950, span * 1.4)} />
         </Viewer3D>

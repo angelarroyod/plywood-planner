@@ -41,6 +41,7 @@ export interface Tube {
   label: string; // 'PTR 1" cal. 16'
   side: number; // mm
   wall: number; // mm — drives amperage
+  radius: number; // mm, outer corner: cold-formed tube is bent round about 2 × wall
   gauge: number;
   kgPerM: number;
 }
@@ -56,6 +57,7 @@ export function tube(sizeId: number, gauge: number): Tube {
     label: `PTR ${size.label} cal. ${gauge}`,
     side: size.side,
     wall,
+    radius: 2 * wall,
     gauge,
     kgPerM: Math.round(section * STEEL_DENSITY * 100) / 100,
   };
@@ -199,7 +201,8 @@ export type ToolId =
   | 'level'
   | 'chipper'
   | 'drill'
-  | 'brush';
+  | 'brush'
+  | 'mallet';
 
 /** Spanish names; 'welder' is replaced by the chosen process's machine. */
 export const TOOL_LABELS: Record<ToolId, string> = {
@@ -215,6 +218,7 @@ export const TOOL_LABELS: Record<ToolId, string> = {
   chipper: 'Piqueta y cepillo de alambre',
   drill: 'Taladro con broca para metal de 5/32"',
   brush: 'Brocha o pistola para pintar',
+  mallet: 'Mazo de goma',
 };
 
 /** Always required, whatever the project. */

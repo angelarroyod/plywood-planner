@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { overlappingBoxes } from '../templates/testing.ts';
 import type { TemplateParams } from '../types.ts';
 import { BAR_LENGTH, weldProcess, weldSettings } from './catalog.ts';
+import { endPlane } from './geometry.ts';
 import { barCutTip, planBars, shoppingList, shoppingText, toolLabel } from './plan.ts';
 import { generateWeldShelf, generateWeldStool, generateWeldTable, weldTemplates } from './templates.ts';
-import type { WeldDesign, WeldResult } from './types.ts';
+import { WELD_REF, type WeldDesign, type WeldResult } from './types.ts';
 
 function ok(r: WeldResult): WeldDesign {
   if (!r.ok) throw new Error(r.issues.map((i) => i.message).join('\n'));
@@ -57,8 +58,16 @@ describe.each(weldTemplates)('$name defaults', (t) => {
     expect(overlappingBoxes(d)).toEqual([]);
   });
 
+  it('draws every piece exactly as long as its cut', () => {
+    for (const p of d.placements) {
+      const m = d.members.find((x) => x.id === p.panelId)!;
+      expect(p.size[p.axis]).toBe(m.length);
+      expect(p.ends).toBe(m.ends);
+    }
+  });
+
   it('steps only name real members and keep tool demos near the model', () => {
-    const ids = new Set(d.members.map((m) => m.id));
+    const ids = new Set([...d.members.map((m) => m.id), WELD_REF]);
     for (const s of d.steps) for (const ref of s.panelRefs) expect(ids).toContain(ref);
     const W = d.params['width']!;
     const D = d.params['depth']!;
@@ -88,10 +97,53 @@ describe('frame geometry', () => {
     expect(d.weldLength).toBe(Math.round(16 * 4 * d.tube.side));
   });
 
-  it('mitered top rails are cut to the full outside size', () => {
+  it('mitered top rails are cut to the full outside size and meet on shared 45° planes', () => {
     const d = ok(generateWeldTable({ joint: 2, depth: 600 }));
     expect(d.members.find((m) => m.id === 'top-short')).toMatchObject({ length: 600, ends: 'miter' });
-    expect(overlappingBoxes(d)).toEqual([]);
+    // the boxes share each corner cube; the miter splits it between the two rails
+    expect(overlappingBoxes(d).sort()).toEqual([
+      'top-long#0 × top-short#0',
+      'top-long#0 × top-short#1',
+      'top-long#1 × top-short#0',
+      'top-long#1 × top-short#1',
+    ]);
+    const cuts = d.placements
+      .filter((p) => p.ends === 'miter')
+      .flatMap((p) => [endPlane(p, 0), endPlane(p, 1)]);
+    const dot = (a: number[], b: number[]) => a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!;
+    let seams = 0;
+    for (let i = 0; i < cuts.length; i++)
+      for (let j = i + 1; j < cuts.length; j++) {
+        const [a, b] = [cuts[i]!, cuts[j]!];
+        const gap = a.point.map((v, k) => b.point[k]! - v);
+        if (dot(a.normal, b.normal) < -0.999999 && Math.abs(dot(gap, a.normal)) < 1e-9 && Math.hypot(...gap) < d.tube.side) seams++;
+      }
+    expect(seams).toBe(4);
+  });
+
+  it('a miter leans back from its long point on the outer face', () => {
+    const d = ok(generateWeldTable({ joint: 2, width: 1000 }));
+    const front = d.placements.find((p) => p.panelId === 'top-long' && p.position[2] > 0)!;
+    const { point, normal } = endPlane(front, 1);
+    const s = d.tube.side;
+    // on the outer (front) face the cut reaches the full 500 mm; on the inner face it stops a side short
+    const along = (zOff: number) => point[0] - (normal[2] * zOff) / normal[0];
+    expect(along(s / 2)).toBeCloseTo(500);
+    expect(along(-s / 2)).toBeCloseTo(500 - s);
+  });
+
+  it('welds every joint all round and plugs every open end', () => {
+    const square = ok(generateWeldTable({}));
+    expect(square.welds).toHaveLength(square.joints);
+    expect(square.caps).toHaveLength(8); // 4 feet + the long rails' 4 open ends
+    const miter = ok(generateWeldTable({ joint: 2 }));
+    expect(miter.caps).toHaveLength(4); // feet only
+    const s = miter.tube.side;
+    expect(miter.weldLength).toBe(Math.round(12 * 4 * s + 4 * (2 + 2 * Math.SQRT2) * s));
+    const shelf = ok(generateWeldShelf({}));
+    expect(shelf.caps).toHaveLength(8); // feet + open leg tops
+    const caps = shoppingList(shelf, planBars(shelf.members))[0]!.lines.find((l) => l.label.startsWith('Tapón'));
+    expect(caps?.qty).toBe('8 pzas');
   });
 
   it('a shelf rail fits between the legs', () => {
