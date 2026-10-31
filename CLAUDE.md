@@ -60,6 +60,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
   - `weldSettings` is the only source of amps, consumable, polarity and gas.
   - `WeldStep` extends `Step` with `tools` and an optional `ToolAction`, which only the client animates.
   - Catalog ids (tube sizes, gauges, processes, finishes) are stored in params, so never renumber them.
+  - Copy both clients show around the bar plan and the amps lives in `plan.ts`: `END_ANGLE`, `SQUARE_END_STEP`, `barCutTip`, `settingsNote`, plus `shoppingText` for sharing.
 
 ## UI conventions
 
@@ -111,6 +112,10 @@ A furniture template is NOT a static 3D model. It is a pure function:
   - `components/ui.tsx` holds the kit: `Display`, `Title`, `RuleLabel`, `Body`, `Caption`, `Mono`, `Hi` (the highlighter), `Chip`, `PrimaryButton` (ballpoint fill), `SecondaryButton` (quiet), `IssueNote` (red wash and line icon), `StalePill`, `ScaleChip`, `GridBackdrop` (the cuadrícula, on work stages only), `Thumb` and `Mark`.
   - Two night tokens differ from DESIGN.md so every text pair holds AA: `pieceDims` is dark ink on the night piece, and cut-badge numerals use `onMark`, which is dark ink at night.
   - Preview without a Mac: `npm run web` in `mobile/` (react-native-web) at phone size.
+- Madera | Metal: `AppState.mode` picks the workshop, switched on the templates screen. Wood and metal template ids share `paramsByTemplate`, and `setParams` applies a suggestion's fix in one step.
+  - Metal screens live in `src/screens/result/weld.tsx`: Diseño (model in its finish plus the amps card), Cortes (bar plan, saw list, tappable piece list), Pasos (the shared `StepList` with each step's tools) and Compras (`shoppingList`, shared as `shoppingText` through React Native's `Share`).
+  - Suggestions and their one-click fixes sit under the params on the measure screen.
+  - The 3D tool demo is web only.
 - Screens live in `src/app` (routes only) and `src/screens` (bodies), per Expo's project-structure guidance.
 - Not real yet, by design: saved projects and the account footer are fixtures (needs Phase 6), and the camera screen's distance is simulated and labelled as such — LiDAR needs a custom ARKit native module.
 - `patch-package` (approved, dev-only) runs on `postinstall` and applies `mobile/patches/`. Its one patch makes `query-string@7` (pinned by expo-router 57) read `.default` from `decode-uri-component`, which `overrides` forces to the ESM-only 0.5.0 for GHSA-vcc3-ghjq-m6fr. Drop the patch, that override, and patch-package once expo-router stops depending on `query-string@7`; if `npm ci` reports the patch failed to apply, that is the signal to check.
@@ -149,7 +154,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
   - **5.4 Fit this space**: enter a niche W × H × D (the mobile measure screen feeds it) and the template sizes itself with clearance.
   - **5.5 Tool-aware steps**: ask what tools the user owns. With only a screwdriver, every cut goes to the lumber yard, holes are pre-drilled (the yard/me drilling choice lives here), and joinery switches to confirmat.
   - **5.6 Offcut suggestions**: small projects that fit a layout's leftover rectangles.
-- [ ] **Welding projects (Metal mode)** — spec: `docs/superpowers/specs/2026-10-30-welding-projects-design.md`. Madera | Metal switch; `src/engine/welding/` (PTR templates: mesa, banco alto, estante; bar cut plan; `weldSettings` amps per process and wall; shopping list; suggestions with one-click fixes; `ToolAction` per step for the 3D tool demo). Web only so far. *Implemented; awaiting user approval.*
+- [ ] **Welding projects (Metal mode)** — spec: `docs/superpowers/specs/2026-10-30-welding-projects-design.md`. Madera | Metal switch; `src/engine/welding/` (PTR templates: mesa, banco alto, estante; bar cut plan; `weldSettings` amps per process and wall; shopping list; suggestions with one-click fixes; `ToolAction` per step for the 3D tool demo). Web and iOS; the tool demo is web only. *Implemented; awaiting user approval.*
 - [ ] **Phase 6 — Community (do not start)**: Supabase auth, save/share/remix designs.
 - [ ] **Phase 7 — Pro + partners** (needs Phase 6 backend).
   - Carpenter mode (paid tier): quote with labor + margin, branded client PDF, shareable 3D link.

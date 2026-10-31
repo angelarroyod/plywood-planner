@@ -284,6 +284,43 @@ export function Chip({
   );
 }
 
+/** Raised track; the active segment is sheet white with the Lift shadow and its icon in ballpoint. */
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: { id: T; label: string; icon: string }[];
+  value: T;
+  onChange: (id: T) => void;
+  label: string;
+}) {
+  const c = usePalette();
+  const s = useStyles();
+  return (
+    <View style={s.segTrack} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      {options.map((o) => {
+        const on = o.id === value;
+        return (
+          <Pressable
+            key={o.id}
+            onPress={() => onChange(o.id)}
+            style={[s.seg, on && s.segOn]}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: on }}
+          >
+            <Svg viewBox="0 0 16 16" width={16} height={16}>
+              <Path d={o.icon} fill="none" stroke={on ? c.accentInk : c.inkSoft} strokeWidth={1.4} strokeLinejoin="round" />
+            </Svg>
+            <Text style={[s.segLabel, on && { color: c.ink }]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 /** Back chevron + label, the standard nav affordance. */
 export function BackLink({ label, onPress }: { label: string; onPress: () => void }) {
   const c = usePalette();
@@ -436,6 +473,10 @@ const useStyles = makeStyles((c) => ({
   chipLabel: { fontFamily: font.semi, fontSize: 14, color: c.inkSoft, flexShrink: 1 },
   chipLabelOn: { fontFamily: font.bold, color: c.accentInk },
   swatch: { height: 14, width: 14, borderRadius: 7, borderWidth: 1, borderColor: c.ruleStrong },
+  segTrack: { flexDirection: 'row', borderRadius: radius.xl, backgroundColor: c.raised, padding: 4 },
+  seg: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 40, borderRadius: radius.lg },
+  segOn: { backgroundColor: c.panel, ...shadow.lift },
+  segLabel: { fontFamily: font.bold, fontSize: 14, color: c.inkSoft },
   header: {
     paddingHorizontal: space.lg,
     paddingBottom: space.md,

@@ -2,16 +2,24 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { BackLink, Body, Display, PrimaryButton, ScreenHeader, Thumb, Title } from '@/components/ui';
-import { templates } from '@/lib/engine';
-import { useApp } from '@/lib/store';
+import { BackLink, Body, Display, PrimaryButton, ScreenHeader, Segmented, Thumb, Title } from '@/components/ui';
+import { templates, weldTemplates } from '@/lib/engine';
+import { useApp, type Mode } from '@/lib/store';
 import { ON_ACCENT, TNUM, font, makeStyles, radius, space, usePalette } from '@/theme';
+
+const MODES: { id: Mode; label: string; icon: string }[] = [
+  { id: 'wood', label: 'Madera', icon: 'M2.5 6h11M2.5 8.5h11M2.5 11h11M2.5 4.5h11v8h-11z' },
+  { id: 'metal', label: 'Metal', icon: 'M3 3h10v10H3zM5.5 5.5h5v5h-5z' },
+];
 
 export default function Templates() {
   const insets = useSafeAreaInsets();
   const c = usePalette();
   const s = useStyles();
-  const { templateId, setTemplate } = useApp();
+  const { mode, setMode, templateId, weldTemplateId, setTemplate } = useApp();
+  const metal = mode === 'metal';
+  const items = metal ? weldTemplates : templates;
+  const selected = metal ? weldTemplateId : templateId;
 
   return (
     <View style={s.root}>
@@ -19,11 +27,14 @@ export default function Templates() {
         <BackLink label="Proyectos" onPress={() => router.back()} />
         <Display>¿Qué vas a hacer?</Display>
         <Body size={14}>Elige una plantilla</Body>
+        <View style={{ marginTop: 12 }}>
+          <Segmented label="Tipo de proyecto" options={MODES} value={mode} onChange={setMode} />
+        </View>
       </ScreenHeader>
 
       <ScrollView contentContainerStyle={s.list}>
-        {templates.map((t) => {
-          const active = t.id === templateId;
+        {items.map((t) => {
+          const active = t.id === selected;
           const ranges = t.params.flatMap((p) => (p.kind === 'number' ? [p] : [])).slice(0, 3);
           return (
             <Pressable
