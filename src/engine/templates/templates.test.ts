@@ -3,6 +3,7 @@ import { bookshelf } from './bookshelf.ts';
 import { sideTable } from './side-table.ts';
 import { closet } from './closet.ts';
 import { tvStand } from './tv-stand.ts';
+import { pantry } from './pantry.ts';
 import { nest } from '../nesting.ts';
 import type { Design, Template, TemplateParams } from '../types.ts';
 import { FIBRACEL_3 } from '../stock.ts';
@@ -18,7 +19,7 @@ function totalQty(design: Design): number {
   return design.panels.reduce((sum, p) => sum + p.qty, 0);
 }
 
-for (const template of [bookshelf, sideTable, closet, tvStand]) {
+for (const template of [bookshelf, sideTable, closet, tvStand, pantry]) {
   describe(`${template.id} (shared invariants)`, () => {
     const design = designOrThrow(template);
 
@@ -89,6 +90,9 @@ describe('bookshelf', () => {
     expect(design.hardware).toEqual([
       { type: 'confirmat', size: '5x50', qty: 20 }, // (3+2)*4
       { type: 'screw', size: '3.5x16', qty: 32 }, // ⌈2·(800+1200)/200⌉ + 3·⌈764/200⌉ = 20 + 12
+      { type: 'screw', size: '3.5x13', qty: 4 }, // 1200 mm tall: fixed to the wall
+      { type: 'bracket', size: '2" (50 mm)', qty: 2 },
+      { type: 'wall-anchor', size: '1/4"', qty: 4 },
     ]);
   });
 
@@ -114,14 +118,17 @@ describe('bookshelf', () => {
     }
   });
 
-  it('ends with a step that screws on the back', () => {
+  it('screws on the back, then fixes a bookshelf from 1200 mm tall to the wall', () => {
     const design = designOrThrow(bookshelf);
-    expect(design.steps.at(-1)).toMatchObject({
-      order: 5,
-      title: 'Coloca el fondo',
-      panelRefs: ['back'],
-      explodeOffsets: { back: [0, 0, -200] },
-    });
+    expect(design.steps.slice(-2)).toMatchObject([
+      { order: 5, title: 'Coloca el fondo', panelRefs: ['back'], explodeOffsets: { back: [0, 0, -200] } },
+      { order: 6, title: 'Fija el librero al muro', panelRefs: ['top'] },
+    ]);
+    expect(design.steps.at(-1)!.description).toMatch(/^Páralo pegado al muro.*Lleno, un librero puede voltearse/);
+
+    const low = designOrThrow(bookshelf, { height: 1190 });
+    expect(low.steps.at(-1)).toMatchObject({ order: 5, title: 'Coloca el fondo' });
+    expect(low.hardware.map((h) => h.type)).toEqual(['confirmat', 'screw']);
   });
 
   it('nests the back on its own Fibracel sheet', () => {
@@ -247,12 +254,12 @@ describe('edge banding in templates', () => {
   it('adds an ironing step when the user bands at home', () => {
     const shelf = designOrThrow(bookshelf, { edgeBanding: 2 });
     expect(shelf.edgeBanding).toBe('diy');
-    expect(shelf.steps.map((s) => s.order)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(shelf.steps.map((s) => s.order)).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(shelf.steps[1]).toMatchObject({
       title: 'Aplica el cubrecanto',
       panelRefs: ['side', 'top', 'bottom', 'shelf'],
     });
-    expect(shelf.steps.at(-1)).toMatchObject({ order: 6, title: 'Coloca el fondo' });
+    expect(shelf.steps.at(-1)).toMatchObject({ order: 7, title: 'Fija el librero al muro' });
 
     const table = designOrThrow(sideTable, { edgeBanding: 2 });
     expect(table.steps.map((s) => s.order)).toEqual([1, 2, 3, 4, 5]);

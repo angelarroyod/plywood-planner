@@ -8,6 +8,7 @@ const THUMBS: Record<string, ReactNode> = {
   'side-table': <path d="M6 12h28M9 12v22M31 12v22M9 28h22" />,
   closet: <path d="M8 4h24v32H8zM20 4v32M8 9h24M12 14h4m8 0h4M8 31h24" />,
   'tv-stand': <path d="M4 14h32v16H4zM20 14v16M8 22h8M24 22h8M7 30v4m26-4v4" />,
+  pantry: <path d="M12 4h16v32H12zM12 22h16M12 33h16M25 17v3M25 24v3" />,
   'weld-table': <path d="M4 13h32M4 15.5h32M7 15.5v20M33 15.5v20M7 29h26" />,
   'weld-stool': <path d="M11 10h18M11 12.5h18M13 12.5v24M27 12.5v24M13 26h14" />,
   'weld-shelf': <path d="M9 4v32M31 4v32M9 6h22M9 16h22M9 26h22M9 34h22" />,

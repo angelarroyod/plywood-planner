@@ -87,6 +87,9 @@ describe('closet', () => {
     expect(designOf().hardware).toEqual([
       { type: 'confirmat', size: '5x50', qty: 26 }, // (Tapa, Base, Maletero, 3 entrepaños)·4 + zoclo 2
       { type: 'screw', size: '3.5x16', qty: 44 }, // ⌈2·(800+2000)/200⌉ + 4·⌈764/200⌉ = 28 + 16
+      { type: 'screw', size: '3.5x13', qty: 4 },
+      { type: 'bracket', size: '2" (50 mm)', qty: 2 },
+      { type: 'wall-anchor', size: '1/4"', qty: 4 },
       { type: 'rod', size: '15×30 mm', qty: 1, cutTo: 762 },
       { type: 'rod-support', size: '15×30 mm', qty: 2 },
       { type: 'hinge', size: '35 mm recta', qty: 8 },
@@ -112,10 +115,11 @@ describe('closet', () => {
       [2, 'Arma la caja acostada'],
       [3, 'Instala el maletero y los entrepaños'],
       [4, 'Verifica la escuadra y coloca el fondo'],
-      [5, 'Pon el tubo'],
-      [6, 'Monta las placas'],
-      [7, 'Cuelga las puertas'],
-      [8, 'Pon las jaladeras'],
+      [5, 'Fija el clóset al muro'],
+      [6, 'Pon el tubo'],
+      [7, 'Monta las placas'],
+      [8, 'Cuelga las puertas'],
+      [9, 'Pon las jaladeras'],
     ]);
     expect(steps[0]!.description).toContain(
       'Marca en los laterales la cara de abajo de cada pieza: base a 70 mm, entrepaños a 229 · 387 · 546 mm, maletero a 1614 mm.',
@@ -126,9 +130,11 @@ describe('closet', () => {
         'cara lisa hacia el frente, cada 20 cm, a los laterales, a la tapa, a la base (a 79 mm del borde de abajo), ' +
         'al maletero y a cada entrepaño. Al pararlo gira sobre su diagonal, que mide 2075 mm: revisa que libre tu techo.',
     );
-    expect(steps[4]).toMatchObject({ panelRefs: ['rod'], explodeOffsets: { rod: [0, 0, 200] } });
-    expect(steps[4]!.description).toContain('a 1564 mm del piso y a 274 mm del frente');
-    expect(steps[4]!.description).toContain('Corta el tubo a 762 mm');
+    expect(steps[4]).toMatchObject({ panelRefs: ['top'] });
+    expect(steps[4]!.description).toMatch(/^Páralo pegado al muro.*Lleno, un clóset puede voltearse/);
+    expect(steps[5]).toMatchObject({ panelRefs: ['rod'], explodeOffsets: { rod: [0, 0, 200] } });
+    expect(steps[5]!.description).toContain('a 1564 mm del piso y a 274 mm del frente');
+    expect(steps[5]!.description).toContain('Corta el tubo a 762 mm');
   });
 
   it('adds the ironing step when banding at home', () => {
@@ -318,6 +324,9 @@ describe('closet drawers', () => {
     expect(designOf(colgar).hardware).toEqual([
       { type: 'confirmat', size: '5x50', qty: 34 }, // (Tapa, Base, Maletero, techo de cajones)·4 + zoclo 2 + 2 boxes·8
       { type: 'screw', size: '3.5x16', qty: 70 }, // back 28 + 2 runs·4, and 2 drawer bottoms·17
+      { type: 'screw', size: '3.5x13', qty: 4 },
+      { type: 'bracket', size: '2" (50 mm)', qty: 2 },
+      { type: 'wall-anchor', size: '1/4"', qty: 4 },
       { type: 'rod', size: '15×30 mm', qty: 1, cutTo: 762 },
       { type: 'rod-support', size: '15×30 mm', qty: 2 },
       { type: 'screw', size: '3.5x25', qty: 8 },
@@ -335,6 +344,7 @@ describe('closet drawers', () => {
       'Arma la caja acostada',
       'Instala el techo de los cajones y el maletero',
       'Verifica la escuadra y coloca el fondo',
+      'Fija el clóset al muro',
       'Pon el tubo',
       'Arma las cajas',
       'Monta las correderas',
@@ -350,6 +360,6 @@ describe('closet drawers', () => {
     expect(steps[3]!.description).toContain(
       'a la base (a 79 mm del borde de abajo), al techo de los cajones y al maletero.',
     );
-    expect(steps[6]!.description).toContain('centrada a 87 · 290 mm sobre la base');
+    expect(steps[7]!.description).toContain('centrada a 87 · 290 mm sobre la base');
   });
 });
