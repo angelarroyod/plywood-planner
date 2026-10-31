@@ -133,7 +133,7 @@ export type ParamSpec =
       key: string;
       label: string;
       unit: 'mm' | '';
-      options: { value: number; label: string }[]; // label is shown, value is stored
+      options: { value: number; label: string; swatch?: string }[]; // label is shown, value is stored; swatch is a colour chip
       default: number;
     };
 

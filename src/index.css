@@ -1,78 +1,101 @@
 @import "tailwindcss";
 
-/* "Taller" in two lights. The paper palette is the base — print inherits it
-   untouched — and the dark shop is a screen-only override further down, so
-   there is exactly one palette per medium and components never branch. */
+/* "Cuaderno de cuadro": the maker's grid notebook. Paper is the base palette
+   in @theme (print inherits it untouched); the night notebook is a screen-only
+   override further down, so there is one palette per medium and components
+   never branch. Ballpoint blue marks selection and primary actions, margin red
+   is kept for cuts and errors, the highlighter marks the active piece or step. */
 @theme {
-  --font-display: "Barlow Condensed", "Archivo", ui-sans-serif, sans-serif;
-  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Roboto Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font-display: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SFMono-Regular", monospace;
 
-  --color-paper: #f1ebdf;
-  --color-panel: #fbf8f2;
-  --color-raised: #f4e5cd;
-  --color-ink: #1d1913;
-  --color-ink-soft: #5f564a;
-  --color-ink-faint: #75695a;
-  --color-rule: #ded3c1;
-  --color-rule-strong: #b9ab93;
-  --color-ply: #8a5a25;
-  --color-ply-tint: #f4e5cd;
+  --color-paper: #f4f7fb;
+  --color-panel: #ffffff;
+  --color-raised: #eef2f8;
+  --color-ink: #141a2b;
+  --color-ink-soft: #4a5263;
+  --color-ink-faint: #5d6576; /* ≥5:1 on every surface */
+  --color-rule: #dfe5ee;
+  --color-rule-strong: #b7c2d3;
+
+  /* Ballpoint blue. `accent` fills and borders, `accent-ink` is the same ink as text. */
+  --color-accent: #2340c8;
+  --color-accent-ink: #2340c8;
+  --color-accent-tint: #e9edff;
+
+  /* Highlighter: the active piece or step, always under ink-coloured text. */
+  --color-hi: #ffe14d;
+
+  /* Margin red: cut lines, errors, invalid. Text uses cut-ink. */
+  --color-cut: #d93a2f;
+  --color-cut-ink: #b8281e;
+  --color-cut-tint: #fdecea;
+
+  /* Wood, for legends and the cut diagram's pieces. */
+  --color-ply: #b5763a;
+  --color-ply-tint: #f6e6d2;
   --color-ply-deep: #8a5a25;
-  --color-cut: #b03410;
-  --color-cut-tint: #f8e2d9;
 
-  /* Cut-diagram SVG. Kept as tokens so a theme re-skins the same markup
-     without a second component. */
-  --color-sheet: #faf6ef;
-  --color-sheet-edge: #c9bda6;
-  --color-piece: #e9c186;
-  --color-piece-edge: #8a5a25;
-  --color-piece-label: #3d2a11;
+  /* The cuadrícula: 20 px cells, a stronger line every 100 px. Work stages only. */
+  --color-grid: #dcecf7;
+  --color-grid-major: #b3d6ee;
+
+  /* Cut-diagram SVG. Kept as tokens so a theme re-skins the same markup. */
+  --color-sheet: #ffffff;
+  --color-sheet-edge: #b7c2d3;
+  --color-piece: #f1d4ae;
+  --color-piece-edge: #9b6430;
+  --color-piece-label: #3a2410;
   --color-piece-dims: #6b4b22;
-  --color-grain: #8a5a25;
-  --color-mark: #1d1913;
+  --color-grain: #9b6430;
+  --color-mark: #d93a2f;
 
-  /* 3D viewer ground, read by Viewer3D for its backdrop. */
-  --color-stage-near: #fbf7ef;
-  --color-stage-far: #e8e0d0;
-
-  --grain-opacity: 0.2;
-  --grain-blend: multiply;
+  /* 3D viewer backdrop, read by Viewer3D. */
+  --color-stage-near: #fbfdff;
+  --color-stage-far: #eaf1f8;
 }
 
 /* Unlayered so it beats @theme's own layer. Screen-only: print never sees it. */
 @media screen {
   :root:not([data-theme="light"]) {
-    --color-paper: #0e0f11;
-    --color-panel: #14161a;
-    --color-raised: #23262b;
-    --color-ink: #f5f6f7;
-    --color-ink-soft: #9ba0a6;
-    --color-ink-faint: #6e747c;
-    --color-rule: #2e3238;
-    --color-rule-strong: #3a3f45;
-    --color-ply: #c08a4e;
-    --color-ply-tint: #23262b;
-    --color-ply-deep: #c08a4e;
-    --color-cut: #db011c;
-    --color-cut-tint: #2a0f14;
+    --color-paper: #0c1226;
+    --color-panel: #121a33;
+    --color-raised: #1b2546;
+    --color-ink: #eef2ff;
+    --color-ink-soft: #b3bdd6;
+    --color-ink-faint: #97a2bf;
+    --color-rule: #26315a;
+    --color-rule-strong: #34427a;
 
-    --color-sheet: #1a1c20;
-    --color-sheet-edge: #3a3f45;
-    --color-piece: #c08a4e;
-    --color-piece-edge: #8a5f2c;
+    --color-accent: #3d5be8;
+    --color-accent-ink: #9fb0ff;
+    --color-accent-tint: #1d2a5c;
+
+    --color-hi: #ffe14d;
+
+    --color-cut: #ff6b5e;
+    --color-cut-ink: #ff8a7f;
+    --color-cut-tint: #3a1620;
+
+    --color-ply: #d9a066;
+    --color-ply-tint: #2a2418;
+    --color-ply-deep: #d9a066;
+
+    --color-grid: #172245;
+    --color-grid-major: #24356a;
+
+    --color-sheet: #121a33;
+    --color-sheet-edge: #34427a;
+    --color-piece: #d9a066;
+    --color-piece-edge: #9b6430;
     --color-piece-label: #1a1206;
-    --color-piece-dims: #f5f6f7;
+    --color-piece-dims: #eef2ff;
     --color-grain: #6b4b22;
-    --color-mark: #db011c;
+    --color-mark: #ff6b5e;
 
-    --color-stage-near: #23262b;
-    --color-stage-far: #0e0f11;
-
-    /* Noise reads as sensor grain on graphite, as paper tooth on white. */
-    --grain-opacity: 0.07;
-    --grain-blend: overlay;
+    --color-stage-near: #142047;
+    --color-stage-far: #0c1226;
 
     color-scheme: dark;
   }
@@ -81,127 +104,180 @@
 @layer base {
   html {
     color-scheme: light;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-paper font-sans text-ink antialiased;
+    font-size: 15px;
+    line-height: 1.5;
   }
 
-  /* Grain. Sits above everything, passes clicks through, never prints. */
-  body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    pointer-events: none;
-    opacity: var(--grain-opacity);
-    mix-blend-mode: var(--grain-blend);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Every number is a measurement: tabular figures so columns line up. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
   }
 
   a {
-    color: var(--color-cut);
+    color: var(--color-accent-ink);
     text-decoration: none;
   }
   a:hover {
-    color: var(--color-ply);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-cut);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
 
-  /* Sliders as calipers: hairline track, red-collared block thumb. */
+  button {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: var(--color-hi);
+    color: #141a2b;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule-strong) transparent;
+  }
+
+  /* Sliders: a hairline track filled in ballpoint up to the thumb (--fill, set
+     inline), and a round thumb ringed in the same ink. */
   input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 1.25rem;
+    height: 1.75rem;
     margin: 0;
     background: transparent;
     cursor: ew-resize;
+    --fill: 50%;
   }
   input[type="range"]::-webkit-slider-runnable-track {
-    height: 2px;
-    background: var(--color-rule);
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(
+      to right,
+      var(--color-accent) var(--fill),
+      var(--color-rule) var(--fill)
+    );
   }
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 10px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     margin-top: -8px;
-    border-radius: 1px;
-    border: 3px solid var(--color-cut);
-    background: var(--color-ink);
-    box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
-    transition: background 0.15s ease, height 0.15s ease, margin-top 0.15s ease;
+    border-radius: 50%;
+    border: 2px solid var(--color-accent);
+    background: var(--color-panel);
+    box-shadow: 0 1px 3px rgb(20 26 43 / 0.25);
+    transition: transform 0.15s ease;
   }
-  input[type="range"]:hover::-webkit-slider-thumb {
-    background: var(--color-cut);
-    height: 22px;
-    margin-top: -10px;
+  input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1.15);
   }
   input[type="range"]::-moz-range-track {
-    height: 2px;
+    height: 4px;
+    border-radius: 2px;
     background: var(--color-rule);
   }
-  input[type="range"]::-moz-range-thumb {
-    width: 10px;
-    height: 18px;
-    border: 3px solid var(--color-cut);
-    border-radius: 1px;
-    background: var(--color-ink);
+  input[type="range"]::-moz-range-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-accent);
   }
-  input[type="range"][data-invalid="true"]::-webkit-slider-thumb,
-  input[type="range"][data-invalid="true"]::-moz-range-thumb {
-    background: var(--color-cut);
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--color-accent);
+    background: var(--color-panel);
+  }
+  input[type="range"][data-invalid="true"]::-webkit-slider-thumb {
+    border-color: var(--color-cut);
   }
 
-  ::selection {
-    background: var(--color-cut);
-    color: #fff;
+  /* Number fields read as ink on the page: no spinner chrome. */
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 }
 
 @layer components {
-  /* Condensed caps — the display voice, always uppercase with a hair of tracking. */
+  /* The display voice: heavy, sentence case, a hair tight. */
   .display {
-    @apply font-display uppercase tracking-[0.01em];
+    @apply font-display font-extrabold tracking-[-0.01em];
   }
 
-  /* Section heading: mono small-caps followed by a hairline rule to the edge. */
+  /* Section heading followed by a hairline to the edge. */
   .rule-label {
-    @apply flex items-center gap-3 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft;
+    @apply flex items-center gap-3 text-[13px] font-bold text-ink-soft;
   }
   .rule-label::after {
     content: "";
     @apply h-px flex-1 bg-rule;
   }
 
-  /* Ruler tick strip — the app's one recurring ornament. */
-  .ruler {
-    background-image: repeating-linear-gradient(
-      to right,
-      var(--color-rule) 0 1px,
-      transparent 1px 9px
+  /* The cuadrícula: true-scale grid for work stages (cut sheets, bar plans). */
+  .stage-grid {
+    background-color: var(--color-stage-near);
+    background-image:
+      linear-gradient(var(--color-grid-major) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-grid-major) 1px, transparent 1px),
+      linear-gradient(var(--color-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+    background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+  }
+
+  /* Highlighter stroke behind text: the active step's title, a selected piece. */
+  .hi {
+    background-image: linear-gradient(
+      transparent 52%,
+      var(--color-hi) 52%,
+      var(--color-hi) 90%,
+      transparent 90%
     );
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  :root:not([data-theme="light"]) .hi {
+    color: #141a2b;
+    background-image: linear-gradient(var(--color-hi), var(--color-hi));
+    border-radius: 3px;
+    padding: 0 3px;
   }
 
   .card {
-    @apply rounded-lg border border-rule bg-panel;
+    @apply rounded-xl border border-rule bg-panel;
   }
 
   .rise {
-    animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise {
+      animation: none;
+    }
   }
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
   }
 }
 
@@ -218,9 +294,5 @@
 
   body {
     background: #fff;
-  }
-
-  body::after {
-    display: none;
   }
 }

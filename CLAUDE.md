@@ -54,18 +54,55 @@ A furniture template is NOT a static 3D model. It is a pure function:
   - `Design.boring` lists the holes the lumber yard drills (hinge cups). `Order.boring` points at the drilled piece's order line, and `Prices.boring` prices each hole.
   - `hardwareText` is the only hardware-line format, including `cutTo` for items cut to size (the closet rod). Hardware headings read "Herrajes".
 - Templates must produce panels that always fit a sheet within their param limits; `nest()` throws otherwise.
+- Welding (`src/engine/welding/`) is a parallel domain, not more `Panel`s:
+  - `WeldTemplate.generate` returns a `WeldDesign` of `Member`s (cut lengths of one `Tube`), with `Placement.panelId` = member id so `Viewer3D` draws it.
+  - The 3D is the shop truth, not an illustration:
+    - each `TubePlacement` box is exactly its member's cut length, with `axis`, `ends` and, for miters, the `outer` face carrying the long points;
+    - `endPlane` is the one source of every cut plane, so mitered partners share a plane;
+    - `welds` lists each tube end that gets a bead (`joints` = its length, `weldLength` sums their perimeters), and `caps` lists every open end, which becomes plastic plugs in the shopping list;
+    - `Tube.radius` (2 × wall) rounds the profile.
+
+    The web draws hollow tube from these in `components/weld/tubeMesh.ts`; beads show from the weld step and plugs from the paint step, and `WELD_REF` in `panelRefs` lights the beads.
+  - `planBars` packs members into 6.10 m bars (first-fit decreasing, `END_TRIM` + `CUT_KERF`).
+  - `weldSettings` is the only source of amps, consumable, polarity and gas.
+  - `WeldStep` extends `Step` with `tools` and an optional `ToolAction`, which only the client animates.
+  - Catalog ids (tube sizes, gauges, processes, finishes) are stored in params, so never renumber them.
 
 ## UI conventions
 
 - Zustand stores raw state only (template id, user-touched params, exploded flag, view, active step, prices). Designs, orders and costs are derived per render — never stored. Only `prices` persists through Zustand `persist` (`localStorage` key `planificador.prices`, `partialize`d to prices alone); the theme persists separately under `planificador.theme` because it must be readable before React mounts. Everything else resets per session.
 - While params are invalid, the viewer keeps the last valid design dimmed with an overlay message; issues render under their field via `paramKey`.
 - Sliders are clamped to param ranges, so only cross-param issues (span, shelf fit) surface in the UI — that is intended.
-- Visual language is "taller nocturno" (dark industrial shop drawing) — the default of two themes, and the one to design against: graphite grounds, plywood amber, one signal-red `cut` accent that marks every selected/active/invalid state. All tokens live in `@theme` in `src/index.css` (Tailwind v4 — there is no config file), so use `bg-paper`/`bg-panel`/`bg-raised`/`text-ink-soft`/`text-ink-faint`/`border-rule`/`text-ply`, never raw `neutral-*` or `amber-*`.
-- Two themes, one palette per medium. The **paper** palette is the base in `@theme`; the dark shop is a screen-only override (`@media screen { :root:not([data-theme="light"]) }`, unlayered so it beats `@theme`). Print inherits paper for free and only re-binds `--color-paper`/`--color-panel` to true white. Add a new color token to **both** the `@theme` block and the dark override — never to the print block.
-- `data-theme` is written to `<html>` by `src/main.tsx` (initial value + a `useAppStore.subscribe`), so there is no first-paint flash; the choice persists in `localStorage` under `planificador.theme`. Components never read the theme — they read tokens — with one exception: `Viewer3D` mirrors the palette in a `PALETTE` record because WebGL cannot read CSS variables. Its backdrop is the exception's exception, a CSS gradient off `--color-stage-near/far`.
-- Components never branch on medium — that is why `SheetSvg` fills use `var(--color-piece)` etc. rather than hex.
-- Fonts: Barlow Condensed (`font-display`, always uppercase — use the `.display` class, which bundles family + uppercase + tracking), Archivo (body), Roboto Mono (`font-mono` — every number, measurement, and small-caps label). Loaded from Google Fonts in `index.html`.
-- Reusable bits in `@layer components`: `.display` (condensed caps), `.rule-label` (section heading + hairline), `.ruler` (tick strip), `.rise` (view-change entry animation). Selected states are `border-cut bg-raised` with a 2px hard offset red shadow.
+- Visual language is "Cuaderno de cuadro", a maker's grid notebook; DESIGN.md records it in full.
+  - Ballpoint blue `accent` marks selected, active and primary.
+  - Highlighter `hi` marks the active step or piece, and in 3D the step's parts.
+  - Margin red `cut` is kept for cut lines, errors and invalid states.
+  - The cuadrícula (`.stage-grid`, `--color-grid*`) appears only on work stages.
+- Tokens:
+  - All tokens live in `@theme` in `src/index.css` (Tailwind v4 has no config file). Use `bg-paper`/`bg-panel`/`bg-raised`/`text-ink-soft`/`text-ink-faint`/`border-rule`/`bg-accent`/`text-accent-ink`, never raw palette classes.
+  - Coloured text uses the `-ink` token (`text-accent-ink`, `text-cut-ink`), which is lighter at night so it clears 4.5:1. `accent` and `cut` are for fills and borders.
+  - Screen text is never below 11 px.
+  - No hard offset shadows and no coloured side stripes on callouts.
+- Two themes, one palette per medium. The **paper** palette is the base in `@theme`; the night notebook is a screen-only override (`@media screen { :root:not([data-theme="light"]) }`, unlayered so it beats `@theme`). Print inherits paper for free and only re-binds `--color-paper`/`--color-panel` to true white. Add a new colour token to **both** the `@theme` block and the night override, never to the print block.
+- Theme switching:
+  - `src/main.tsx` writes `data-theme` to `<html>` (initial value plus a `useAppStore.subscribe`), so there is no first-paint flash. A saved choice in `localStorage` (`planificador.theme`) wins; otherwise the system preference applies.
+  - Components never read the theme, only tokens, with one exception: `Viewer3D` mirrors the palette in a `PALETTE` record because WebGL cannot read CSS variables. In a step, parts it names turn highlighter, the rest become translucent pencil ghosts, and a rim light separates dark tube from the night page.
+- Components never branch on medium; that is why `SheetSvg` fills use `var(--color-piece)` etc. rather than hex.
+- Fonts come from Google Fonts in `index.html`:
+  - Atkinson Hyperlegible Next for all UI and display. `.display` is the heavy sentence-case voice; there is no uppercase tracked labelling.
+  - Atkinson Hyperlegible Mono (`font-mono`) for every number and measurement only, with tabular figures. Its slashed zero is the face's own legibility glyph.
+- Layout:
+  - Desktop: a 64 px top bar (mode switch, view tabs, theme, Exportar PDF), a 340 px rail and the stage.
+  - Below `lg`: the stage first, the rail under it (Diseño only), and the view tabs as a bottom bar. It is the same `role="tablist"` element, repositioned.
+- Reusable bits in `@layer components`:
+  - `.display`: heading voice.
+  - `.rule-label`: section heading followed by a hairline.
+  - `.stage-grid`: the cuadrícula.
+  - `.hi`: highlighter stroke behind text.
+  - `.card`.
+  - `.rise`: view-change entry, off under reduced motion.
+
+  Selected states are `border-accent bg-accent-tint`. While a slider drags, `store.readout` shows its value large over the stage.
 - `@types/react` is pinned to v18 via `overrides` in `pnpm-workspace.yaml`; without it, transitive deps pull v19 types and JSX breaks. `three` is installed as a required peer of @react-three/fiber.
 
 ## Native app (`mobile/`)
@@ -73,7 +110,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Expo SDK 57 + Expo Router, npm (not pnpm — Expo's tooling assumes it, and `.npmrc` sets `legacy-peer-deps`). It is a separate install; the web app's pnpm workspace does not cover it.
 - **It imports the same `src/engine/`, never a copy.** `mobile/src/lib/engine.ts` is the single re-export, `metro.config.js` adds `../src/engine` to `watchFolders`, and `tsconfig.json` maps `@engine/*`. Editing the engine changes both clients — that is the point, so do not fork it.
 - Anything user-facing that both clients need (validation copy, `HARDWARE_LABELS`, template names) belongs in the engine, not in a client's components. The engine stays free of React/DOM/three, but it does own Spanish copy.
-- 3D is `expo-gl` + plain `three` driven imperatively (`components/viewer-3d.tsx`), not react-three-fiber — same visual spec as the web viewer without coupling to a renderer's React version. Cut diagrams are `react-native-svg`, mirroring `SheetSvg`.
+- 3D is `expo-gl` + plain `three` driven imperatively (`components/viewer-3d.tsx`), not react-three-fiber — same visual spec as the web viewer without coupling to a renderer's React version. The web moved to the "Cuaderno de cuadro" world on 2026-10-30; the iOS screens and viewer still carry the previous dark-shop palette until their own redesign pass, which works from DESIGN.md. Cut diagrams are `react-native-svg`, mirroring `SheetSvg`.
 - Screens live in `src/app` (routes only) and `src/screens` (bodies), per Expo's project-structure guidance.
 - Not real yet, by design: saved projects and the account footer are fixtures (needs Phase 6), and the camera screen's distance is simulated and labelled as such — LiDAR needs a custom ARKit native module.
 - `patch-package` (approved, dev-only) runs on `postinstall` and applies `mobile/patches/`. Its one patch makes `query-string@7` (pinned by expo-router 57) read `.default` from `decode-uri-component`, which `overrides` forces to the ESM-only 0.5.0 for GHSA-vcc3-ghjq-m6fr. Drop the patch, that override, and patch-package once expo-router stops depending on `query-string@7`; if `npm ci` reports the patch failed to apply, that is the signal to check.
@@ -112,6 +149,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
   - **5.4 Fit this space**: enter a niche W × H × D (the mobile measure screen feeds it) and the template sizes itself with clearance.
   - **5.5 Tool-aware steps**: ask what tools the user owns. With only a screwdriver, every cut goes to the lumber yard, holes are pre-drilled (the yard/me drilling choice lives here), and joinery switches to confirmat.
   - **5.6 Offcut suggestions**: small projects that fit a layout's leftover rectangles.
+- [ ] **Welding projects (Metal mode)** — spec: `docs/superpowers/specs/2026-10-30-welding-projects-design.md`. Madera | Metal switch; `src/engine/welding/` (PTR templates: mesa, banco alto, estante; bar cut plan; `weldSettings` amps per process and wall; shopping list; suggestions with one-click fixes; `ToolAction` per step for the 3D tool demo). Web only so far. *Implemented; awaiting user approval.*
 - [ ] **Phase 6 — Community (do not start)**: Supabase auth, save/share/remix designs.
 - [ ] **Phase 7 — Pro + partners** (needs Phase 6 backend).
   - Carpenter mode (paid tier): quote with labor + margin, branded client PDF, shareable 3D link.

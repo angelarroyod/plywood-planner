@@ -1,31 +1,39 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { TemplateParams } from '../engine/types.ts';
-import { templates } from '../engine/index.ts';
+import { templates, weldTemplates } from '../engine/index.ts';
 import { EMPTY_PRICES, normalizePrices, type Prices } from '../engine/cost.ts';
 
 export type View = 'design' | 'cuts' | 'steps' | 'order';
 export type Theme = 'dark' | 'light';
+export type Mode = 'wood' | 'metal'; // furniture from boards, or welded tube projects
 
 // ponytail: its own key — `persist` below is named for prices and resets
 // everything else, and the theme has to be readable before React mounts.
 const THEME_KEY = 'planificador.theme';
 
-/** Screen default is the dark shop; the choice survives reloads. */
+/** A saved choice wins; otherwise follow the system, since the app is used both at a desk and in daylight. */
 function initialTheme(): Theme {
-  return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark';
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === 'light' || saved === 'dark') return saved;
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 interface AppState {
+  mode: Mode;
   templateId: string;
-  paramsByTemplate: Record<string, TemplateParams>; // sparse: only user-touched keys
+  weldTemplateId: string;
+  paramsByTemplate: Record<string, TemplateParams>; // sparse: only user-touched keys; wood and metal ids never collide
   exploded: boolean;
   view: View;
   activeStep: number | null; // Step.order, null = no highlight
   prices: Prices; // user-entered MXN prices, saved across visits
   theme: Theme; // saved across visits under its own key
-  setTemplate: (id: string) => void;
+  readout: Readout | null; // the slider being dragged, shown big over the stage
+  setMode: (mode: Mode) => void;
+  setTemplate: (id: string) => void; // in the current mode
   setParam: (key: string, value: number) => void;
+  setParams: (params: TemplateParams) => void; // several at once, e.g. a suggestion's fix
   toggleExploded: () => void;
   setView: (view: View) => void;
   setActiveStep: (order: number | null) => void;
@@ -36,30 +44,46 @@ interface AppState {
   setHardwarePrice: (key: string, price: number) => void;
   setBoringPrice: (price: number) => void;
   toggleTheme: () => void;
+  setReadout: (readout: Readout | null) => void;
+}
+
+export interface Readout {
+  key: string; // param key, e.g. 'width'
+  label: string;
+  value: number;
+  unit: string;
 }
 
 const clamp = (price: number) => Math.max(0, price);
 
+// Params whose change adds or removes a step, so step numbers shift.
+const STEP_KEYS = new Set(['edgeBanding', 'lower']);
+
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      mode: 'wood',
       templateId: templates[0]!.id,
+      weldTemplateId: weldTemplates[0]!.id,
       paramsByTemplate: {},
       exploded: false,
       view: 'design',
       activeStep: null,
       prices: EMPTY_PRICES,
       theme: initialTheme(),
-      setTemplate: (id) => set({ templateId: id, activeStep: null }),
-      setParam: (key, value) =>
-        set((s) => ({
-          paramsByTemplate: {
-            ...s.paramsByTemplate,
-            [s.templateId]: { ...s.paramsByTemplate[s.templateId], [key]: value },
-          },
-          // the Cubrecanto choice adds/removes a step, so step numbers shift
-          ...(key === 'edgeBanding' ? { activeStep: null } : null),
-        })),
+      readout: null,
+      setMode: (mode) => set({ mode, activeStep: null }),
+      setTemplate: (id) =>
+        set((s) => (s.mode === 'metal' ? { weldTemplateId: id, activeStep: null } : { templateId: id, activeStep: null })),
+      setParam: (key, value) => get().setParams({ [key]: value }),
+      setParams: (params) =>
+        set((s) => {
+          const id = s.mode === 'metal' ? s.weldTemplateId : s.templateId;
+          return {
+            paramsByTemplate: { ...s.paramsByTemplate, [id]: { ...s.paramsByTemplate[id], ...params } },
+            ...(Object.keys(params).some((k) => STEP_KEYS.has(k)) ? { activeStep: null } : null),
+          };
+        }),
       toggleExploded: () => set((s) => ({ exploded: !s.exploded })),
       setView: (view) => set({ view }),
       setActiveStep: (order) => set({ activeStep: order }),
@@ -72,6 +96,7 @@ export const useAppStore = create<AppState>()(
       setHardwarePrice: (key, price) =>
         set((s) => ({ prices: { ...s.prices, hardware: { ...s.prices.hardware, [key]: clamp(price) } } })),
       setBoringPrice: (price) => set((s) => ({ prices: { ...s.prices, boring: clamp(price) } })),
+      setReadout: (readout) => set({ readout }),
       toggleTheme: () =>
         set((s) => {
           const theme: Theme = s.theme === 'dark' ? 'light' : 'dark';

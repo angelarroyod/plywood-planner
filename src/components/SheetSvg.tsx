@@ -7,14 +7,16 @@ interface Props {
   labels: Record<string, string>; // panelId → Spanish label
   edges: Record<string, EdgeBands>; // panelId → banded edges
   className?: string;
+  highlight?: string | null; // panelId swept with the highlighter, from the piece list
+  onPiece?: (panelId: string | null) => void; // hover a piece to light its row
 }
 
 const BAND_INSET = 7; // mm; banded edges are 14 mm lines that stay inside the piece
 
-const MONO = 'Roboto Mono, ui-monospace, monospace';
+const MONO = 'Atkinson Hyperlegible Mono, ui-monospace, monospace';
 
 /** One sheet as SVG, 1 SVG unit = 1 mm, sized by its stock. Shared by screen view and print report. */
-export function SheetSvg({ sheet, labels, edges, className }: Props) {
+export function SheetSvg({ sheet, labels, edges, className, highlight = null, onPiece }: Props) {
   const { width: w, length: h } = sheet.stock.sheet;
   const tick = 90; // corner registration mark length
 
@@ -38,13 +40,17 @@ export function SheetSvg({ sheet, labels, edges, className }: Props) {
       />
 
       {sheet.pieces.map((p) => (
-        <g key={`${p.panelId}-${p.instance}`}>
+        <g
+          key={`${p.panelId}-${p.instance}`}
+          onPointerEnter={onPiece && (() => onPiece(p.panelId))}
+          onPointerLeave={onPiece && (() => onPiece(null))}
+        >
           <rect
             x={p.x}
             y={p.y}
             width={p.width}
             height={p.length}
-            fill="var(--color-piece)"
+            fill={p.panelId === highlight ? 'var(--color-hi)' : 'var(--color-piece)'}
             stroke="var(--color-piece-edge)"
             strokeWidth={5}
           />
@@ -96,18 +102,22 @@ export function SheetSvg({ sheet, labels, edges, className }: Props) {
       ))}
 
       {sheet.stock.hasGrain && (
-        <text
-          x={26}
-          y={h / 2}
-          fontSize={40}
-          fontFamily={MONO}
-          fill="var(--color-ink-faint)"
-          letterSpacing={10}
-          textAnchor="middle"
-          transform={`rotate(-90 26 ${h / 2})`}
-        >
-          ↑ VETA
-        </text>
+        <g fill="none" stroke="var(--color-ink-faint)" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round">
+          <path d={`M 26 ${h / 2 - 70} V ${h / 2 - 230} M 12 ${h / 2 - 212} L 26 ${h / 2 - 230} L 40 ${h / 2 - 212}`} />
+          <text
+            x={26}
+            y={h / 2}
+            fontSize={40}
+            fontFamily={MONO}
+            fill="var(--color-ink-faint)"
+            stroke="none"
+            textAnchor="middle"
+            dominantBaseline="central"
+            transform={`rotate(-90 26 ${h / 2})`}
+          >
+            Veta
+          </text>
+        </g>
       )}
 
       {/* Numbered cuts, drawn last so they sit on top; placed where the saw enters. */}
