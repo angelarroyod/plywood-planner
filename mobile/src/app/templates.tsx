@@ -1,70 +1,73 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BackLink, Body, Display, Kicker, Mono, PrimaryButton, ScreenHeader } from '@/components/ui';
-import { templates } from '@/lib/engine';
-import { useApp } from '@/lib/store';
-import { color, radius, space } from '@/theme';
+import Svg, { Path } from 'react-native-svg';
+import { BackLink, Body, Display, PrimaryButton, ScreenHeader, Segmented, Thumb, Title } from '@/components/ui';
+import { templates, weldTemplates } from '@/lib/engine';
+import { useApp, type Mode } from '@/lib/store';
+import { ON_ACCENT, TNUM, font, makeStyles, radius, space, usePalette } from '@/theme';
 
-const KIND: Record<string, string> = { bookshelf: 'estantería', 'side-table': 'mesa', closet: 'clóset', 'tv-stand': 'mueble' };
+const MODES: { id: Mode; label: string; icon: string }[] = [
+  { id: 'wood', label: 'Madera', icon: 'M2.5 6h11M2.5 8.5h11M2.5 11h11M2.5 4.5h11v8h-11z' },
+  { id: 'metal', label: 'Metal', icon: 'M3 3h10v10H3zM5.5 5.5h5v5h-5z' },
+];
 
 export default function Templates() {
   const insets = useSafeAreaInsets();
-  const { templateId, setTemplate } = useApp();
+  const c = usePalette();
+  const s = useStyles();
+  const { mode, setMode, templateId, weldTemplateId, setTemplate } = useApp();
+  const metal = mode === 'metal';
+  const items = metal ? weldTemplates : templates;
+  const selected = metal ? weldTemplateId : templateId;
 
   return (
-    <View style={styles.root}>
+    <View style={s.root}>
       <ScreenHeader>
         <BackLink label="Proyectos" onPress={() => router.back()} />
-        <Display size={32} style={{ marginTop: 8 }}>
-          ¿Qué vas a hacer?
-        </Display>
-        <Kicker tone={color.textFaint} style={{ marginTop: 2 }}>
-          Elige una plantilla
-        </Kicker>
+        <Display>¿Qué vas a hacer?</Display>
+        <Body size={14}>Elige una plantilla</Body>
+        <View style={{ marginTop: 12 }}>
+          <Segmented label="Tipo de proyecto" options={MODES} value={mode} onChange={setMode} />
+        </View>
       </ScreenHeader>
 
-      <ScrollView contentContainerStyle={styles.list}>
-        {templates.map((t, i) => {
-          const active = t.id === templateId;
-          const chips = t.params
-            .filter((p) => p.kind === 'number')
-            .slice(0, 3)
-            .map((p) => (p.kind === 'number' ? `${p.label} ${p.min}–${p.max}` : ''));
+      <ScrollView contentContainerStyle={s.list}>
+        {items.map((t) => {
+          const active = t.id === selected;
+          const ranges = t.params.flatMap((p) => (p.kind === 'number' ? [p] : [])).slice(0, 3);
           return (
             <Pressable
               key={t.id}
               onPress={() => setTemplate(t.id)}
-              style={({ pressed }) => [
-                styles.card,
-                active && { borderColor: color.red, backgroundColor: color.redTintBg },
-                pressed && { transform: [{ scale: 0.985 }] },
-              ]}
+              style={({ pressed }) => [s.card, active && s.cardOn, pressed && !active && { backgroundColor: c.raised }]}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
-              <View style={styles.cardTop}>
-                <Mono tone={color.red} size={10} style={{ letterSpacing: 1.4 }}>
-                  {String(i + 1).padStart(2, '0')} · {KIND[t.id] ?? ''}
-                </Mono>
-                <View style={[styles.check, active && styles.checkOn]}>
-                  <Text style={{ fontSize: 14, color: active ? color.white : 'transparent' }}>✓</Text>
+              <View style={s.cardTop}>
+                <Thumb id={t.id} on={active} size={48} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Title size={17}>{t.name}</Title>
+                  <Body size={14}>{t.description}</Body>
+                </View>
+                <View style={[s.check, active && s.checkOn]}>
+                  {active && (
+                    <Svg viewBox="0 0 20 20" width={14} height={14}>
+                      <Path d="m4.5 10.5 3.5 3.5 7.5-8" fill="none" stroke={ON_ACCENT} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                    </Svg>
+                  )}
                 </View>
               </View>
 
-              <Display size={30} style={{ marginTop: 10 }}>
-                {t.name}
-              </Display>
-              <Body size={13} style={{ marginTop: 6 }}>
-                {t.description}
-              </Body>
-
-              <View style={styles.chips}>
-                {chips.map((c) => (
-                  <View key={c} style={styles.chip}>
-                    <Mono tone={color.textMuted} size={10}>
-                      {c}
-                    </Mono>
+              <View style={s.chips}>
+                {ranges.map((p) => (
+                  <View key={p.key} style={s.chip}>
+                    <Text style={s.chipLabel}>
+                      {p.label}{' '}
+                      <Text style={s.chipRange}>
+                        {p.min}–{p.max}
+                      </Text>
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -73,49 +76,50 @@ export default function Templates() {
         })}
       </ScrollView>
 
-      <View style={[styles.cta, { paddingBottom: insets.bottom + space.md }]}>
+      <View style={[s.cta, { paddingBottom: insets.bottom + space.md }]}>
         <PrimaryButton label="Elegir medidas" onPress={() => router.push('/measure')} />
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.bg },
-  list: { padding: space.xl, gap: space.md },
+const useStyles = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.paper },
+  list: { padding: space.lg, gap: space.md },
   card: {
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.card,
-    padding: space.lg,
+    borderColor: c.rule,
+    backgroundColor: c.panel,
+    padding: 14,
   },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  cardOn: { borderColor: c.accent, backgroundColor: c.accentTint },
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   check: {
-    height: 26,
-    width: 26,
+    height: 24,
+    width: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.sm,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: color.borderStrong,
-    backgroundColor: color.bg,
+    borderColor: c.ruleStrong,
+    backgroundColor: c.panel,
   },
-  checkOn: { borderColor: color.red, backgroundColor: color.red },
+  checkOn: { borderColor: c.accent, backgroundColor: c.accent },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
   chip: {
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.raised,
+    borderRadius: radius.md,
+    backgroundColor: c.raised,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
+  chipLabel: { fontFamily: font.semi, fontSize: 12, color: c.inkSoft },
+  chipRange: { fontFamily: font.mono, fontVariant: [...TNUM], color: c.ink },
   cta: {
-    paddingHorizontal: space.xl,
-    paddingTop: 14,
-    backgroundColor: color.bg,
-    borderTopWidth: 1,
-    borderTopColor: color.border,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    backgroundColor: c.panel,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.rule,
   },
-});
+}));

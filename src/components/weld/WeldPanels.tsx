@@ -2,9 +2,13 @@ import { useMemo, useState } from 'react';
 import {
   BAR_LENGTH,
   CUT_KERF,
+  END_ANGLE as ENDS,
   SAFETY_GEAR,
   WELD_REF,
+  SQUARE_END_STEP,
+  barCutTip,
   planBars,
+  settingsNote,
   shoppingList,
   shoppingText,
   toolLabel,
@@ -24,7 +28,6 @@ export function finishOf(d: WeldDesign): Finish {
     : { color: d.finish.hex, metalness: 0.85, roughness: 0.35 };
 }
 
-const ENDS = { square: '90°', miter: '45°' } as const;
 const MONO = 'Atkinson Hyperlegible Mono, ui-monospace, monospace';
 const DEMO = { cut: 'Corte con disco', grind: 'Esmerilado', tack: 'Punteo', weld: 'Cordón', measure: 'Medición', paint: 'Pintura' } as const;
 
@@ -67,8 +70,7 @@ export function SettingsCard({ design, className = '' }: { design: WeldDesign; c
         ))}
       </dl>
       <p className="mt-3 rounded-lg bg-raised px-3 py-2.5 text-[13px] leading-relaxed text-ink-soft">
-        Cada máquina marca distinto: prueba primero en un retazo del mismo tubo y sube o baja de 5 en 5 A. Si la tuya solo
-        tiene perillas de voltaje y velocidad, usa la tabla de su tapa para {tube.wall} mm.
+        {settingsNote(design)}
       </p>
     </section>
   );
@@ -207,7 +209,7 @@ export function WeldCuts({ design, stale }: { design: WeldDesign; stale: boolean
                 </div>
                 <ol className="mt-2 space-y-1 text-sm">
                   <li className="text-[13px] text-ink-soft">
-                    <span className="font-mono font-bold text-cut-ink">0.</span> Escuadra la punta de fábrica: quita 10 mm.
+                    <span className="font-mono font-bold text-cut-ink">0.</span> {SQUARE_END_STEP}
                   </li>
                   {bar.pieces.map((p, i) => (
                     <li key={i}>
@@ -253,10 +255,7 @@ export function WeldCuts({ design, stale }: { design: WeldDesign; stale: boolean
               </tbody>
             </table></div>
             <p className="mt-4 rounded-lg bg-raised px-3 py-2.5 text-[13px] leading-relaxed text-ink-soft">
-              Mide cada pieza desde la punta recién cortada. Marca con escuadra en dos caras y corta del lado del desperdicio: el
-              disco se come {CUT_KERF} mm.
-              {design.members.some((m) => m.ends === 'miter') &&
-                ' Los cortes a 45° se miden de punta larga a punta larga; voltea el tubo entre piezas para que las puntas encajen.'}
+              {barCutTip(design.members)}
             </p>
           </section>
         </div>

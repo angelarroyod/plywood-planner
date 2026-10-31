@@ -1,32 +1,45 @@
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import {
   BackLink,
   Body,
+  Chip,
   Display,
   IssueNote,
-  Kicker,
   Mono,
   PrimaryButton,
   ScreenHeader,
   Toast,
 } from '@/components/ui';
 import { Slider } from '@/components/slider';
-import { nest, resolveParams, templates } from '@/lib/engine';
+import { nest, planBars, resolveParams, templates, weldTemplates } from '@/lib/engine';
 import { useApp } from '@/lib/store';
-import { color, font, radius, space } from '@/theme';
+import { Suggestions } from '@/screens/result/weld';
+import { HI_INK, TNUM, font, makeStyles, radius, space, usePalette } from '@/theme';
 
 export default function Measure() {
   const insets = useSafeAreaInsets();
-  const { templateId, paramsByTemplate, setParam, setTab, design, issues, stale, toast } = useApp();
-  const template = templates.find((t) => t.id === templateId) ?? templates[0]!;
-  const raw = paramsByTemplate[templateId] ?? {};
+  const c = usePalette();
+  const s = useStyles();
+  const { mode, templateId, weldTemplateId, paramsByTemplate, setParam, setTab, design, weld, issues, stale, toast } = useApp();
+  const [dragging, setDragging] = useState<string | null>(null);
+  const metal = mode === 'metal';
+  const template = metal
+    ? (weldTemplates.find((t) => t.id === weldTemplateId) ?? weldTemplates[0]!)
+    : (templates.find((t) => t.id === templateId) ?? templates[0]!);
+  const raw = paramsByTemplate[template.id] ?? {};
   const params = resolveParams(template.params, raw);
 
   const summary = useMemo(() => {
+    if (metal) {
+      if (!weld) return null;
+      const bars = planBars(weld.members).length;
+      const pieces = weld.members.reduce((n, m) => n + m.qty, 0);
+      return `Con estas medidas salen ${pieces} piezas de ${bars} ${bars === 1 ? 'tramo' : 'tramos'} de ${weld.tube.label}.`;
+    }
     if (!design) return null;
     const layout = nest(design.panels);
     const pieces = design.panels.reduce((n, p) => n + p.qty, 0);
@@ -34,50 +47,44 @@ export default function Measure() {
       .map((g) => `${g.sheets} hoja${g.sheets > 1 ? 's' : ''} de ${g.stock.label.toLowerCase()}`)
       .join(' y ');
     return `Con estas medidas salen ${pieces} piezas en ${sheets}.`;
-  }, [design]);
+  }, [metal, design, weld]);
 
   return (
-    <View style={styles.root}>
+    <View style={s.root}>
       <ScreenHeader>
-        <View style={styles.headRow}>
+        <View style={s.headRow}>
           <BackLink label="Plantilla" onPress={() => router.back()} />
           <Pressable
             onPress={() => router.push('/camera')}
-            style={({ pressed }) => [styles.measureBtn, pressed && { transform: [{ scale: 0.97 }] }]}
+            style={({ pressed }) => [s.measureBtn, pressed && { backgroundColor: c.raised }]}
             accessibilityRole="button"
           >
-            <Svg viewBox="0 0 20 20" width={15} height={15}>
-              <Rect x={1.5} y={4.5} width={17} height={12} rx={2} fill="none" stroke={color.red} strokeWidth={1.6} />
-              <Circle cx={10} cy={10.5} r={3.4} fill="none" stroke={color.text} strokeWidth={1.6} />
-              <Rect x={7} y={2.5} width={6} height={2.4} rx={1} fill={color.red} />
+            <Svg viewBox="0 0 20 20" width={16} height={16}>
+              <Path d="M3 6.5h3l1.5-2h5l1.5 2h3v9H3z" fill="none" stroke={c.accentInk} strokeWidth={1.5} strokeLinejoin="round" />
+              <Circle cx={10} cy={10.8} r={2.8} fill="none" stroke={c.accentInk} strokeWidth={1.5} />
             </Svg>
-            <Mono size={10} style={{ letterSpacing: 1.2, textTransform: 'uppercase' }}>
-              Medir
-            </Mono>
+            <Text style={s.measureLabel}>Medir</Text>
           </Pressable>
         </View>
-        <Display size={32} style={{ marginTop: 8 }}>
-          Medidas
-        </Display>
-        <Kicker tone={color.textFaint} style={{ marginTop: 2 }}>
-          Medidas · mm
-        </Kicker>
+        <Display>Medidas</Display>
+        <Body size={14}>{template.name} · todo en milímetros</Body>
       </ScreenHeader>
 
-      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: space.xl }]}>
+      <ScrollView contentContainerStyle={[s.body, { paddingBottom: space.xl }]}>
         {template.params.map((spec) => {
           const value = params[spec.key]!;
           const fieldIssues = issues.filter((i) => i.paramKey === spec.key);
           const bad = fieldIssues.length > 0;
+          const lit = dragging === spec.key && !bad;
           return (
             <View key={spec.key}>
-              <View style={styles.fieldTop}>
-                <Text style={styles.fieldLabel}>{spec.label}</Text>
+              <View style={s.fieldTop}>
+                <Text style={s.fieldLabel}>{spec.label}</Text>
                 {spec.kind === 'number' && (
-                  <View style={[styles.chip, bad && styles.chipBad]}>
-                    <Text style={[styles.chipValue, bad && { color: color.errChip }]}>
+                  <View style={[s.well, bad && s.wellBad, lit && s.wellLit]}>
+                    <Text style={[s.wellValue, bad && { color: c.cutInk }, lit && { color: HI_INK }]}>
                       {value}
-                      <Text style={styles.chipUnit}>{spec.unit ? ` ${spec.unit}` : ''}</Text>
+                      {spec.unit ? <Text style={[s.wellUnit, lit && { color: HI_INK }]}> {spec.unit}</Text> : null}
                     </Text>
                   </View>
                 )}
@@ -93,38 +100,28 @@ export default function Measure() {
                     invalid={bad}
                     accessibilityLabel={spec.label}
                     onChange={(v) => setParam(spec.key, v)}
+                    onActive={(on) => setDragging(on ? spec.key : null)}
                   />
-                  <View style={styles.minmax}>
-                    <Mono tone={color.textFaint} size={10}>
+                  <View style={s.minmax}>
+                    <Mono tone={c.inkFaint} size={11}>
                       {spec.min}
                     </Mono>
-                    <Mono tone={color.textFaint} size={10}>
+                    <Mono tone={c.inkFaint} size={11}>
                       {spec.max}
                     </Mono>
                   </View>
                 </View>
               ) : (
-                <View style={styles.options}>
-                  {spec.options.map((opt) => {
-                    const on = opt.value === value;
-                    return (
-                      <Pressable
-                        key={opt.value}
-                        onPress={() => setParam(spec.key, opt.value)}
-                        style={({ pressed }) => [
-                          styles.option,
-                          on && { borderColor: color.red, backgroundColor: color.red },
-                          pressed && { transform: [{ scale: 0.97 }] },
-                        ]}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: on }}
-                      >
-                        <Mono tone={on ? color.white : color.textMuted} size={13}>
-                          {opt.label}
-                        </Mono>
-                      </Pressable>
-                    );
-                  })}
+                <View style={s.options}>
+                  {spec.options.map((opt) => (
+                    <Chip
+                      key={opt.value}
+                      label={opt.label}
+                      swatch={opt.swatch}
+                      on={opt.value === value}
+                      onPress={() => setParam(spec.key, opt.value)}
+                    />
+                  ))}
                 </View>
               )}
 
@@ -142,16 +139,17 @@ export default function Measure() {
           ))}
 
         {summary && (
-          <View style={styles.summary}>
-            <Mono tone={color.red} size={10}>
-              ≈
-            </Mono>
-            <Body style={{ flex: 1 }}>{summary}</Body>
+          <View style={s.summary}>
+            <Body tone={c.ink} size={14}>
+              {summary}
+            </Body>
           </View>
         )}
+
+        {metal && weld && <Suggestions design={weld} />}
       </ScrollView>
 
-      <View style={[styles.cta, { paddingBottom: insets.bottom + space.md }]}>
+      <View style={[s.cta, { paddingBottom: insets.bottom + space.md }]}>
         <PrimaryButton
           label="Ver diseño"
           disabled={stale}
@@ -167,66 +165,47 @@ export default function Measure() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.bg },
+const useStyles = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.paper },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   measureBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    minHeight: 38,
-    borderRadius: radius.sm,
+    gap: 6,
+    minHeight: 40,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: color.borderStrong,
-    backgroundColor: color.card,
+    borderColor: c.rule,
+    backgroundColor: c.panel,
     paddingHorizontal: 12,
   },
-  body: { paddingHorizontal: space.xl, paddingTop: 20, gap: 22 },
-  fieldTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 },
-  fieldLabel: {
-    fontFamily: font.displaySemi,
-    fontSize: 20,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: color.text,
-  },
-  chip: {
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: color.borderStrong,
-    backgroundColor: color.raised,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  chipBad: { borderColor: color.red, backgroundColor: color.errBg },
-  chipValue: { fontFamily: font.monoMed, fontSize: 18, color: color.text },
-  chipUnit: { fontFamily: font.mono, fontSize: 11, color: color.textSoft },
-  minmax: { flexDirection: 'row', justifyContent: 'space-between', marginTop: -6 },
-  options: { gap: 8, marginTop: 10 },
-  option: {
-    minHeight: 48,
-    alignItems: 'flex-start',
+  measureLabel: { fontFamily: font.bold, fontSize: 14, color: c.accentInk },
+  body: { paddingHorizontal: space.lg, paddingTop: space.lg, gap: space.lg },
+  fieldTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  fieldLabel: { flex: 1, fontFamily: font.bold, fontSize: 15, color: c.ink },
+  well: {
+    minWidth: 96,
+    minHeight: 36,
+    alignItems: 'flex-end',
     justifyContent: 'center',
-    paddingHorizontal: 14,
-    borderRadius: radius.sm,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: color.borderStrong,
-    backgroundColor: color.card,
+    borderColor: c.rule,
+    backgroundColor: c.raised,
+    paddingHorizontal: 10,
   },
-  summary: {
-    flexDirection: 'row',
-    gap: 10,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: color.border,
-    backgroundColor: color.card,
-    padding: 14,
-  },
+  wellBad: { borderColor: c.cut, backgroundColor: c.cutTint },
+  wellLit: { borderColor: c.hi, backgroundColor: c.hi },
+  wellValue: { fontFamily: font.monoBold, fontSize: 15, fontVariant: [...TNUM], color: c.accentInk },
+  wellUnit: { fontFamily: font.mono, fontSize: 12, color: c.inkFaint },
+  minmax: { flexDirection: 'row', justifyContent: 'space-between', marginTop: -6 },
+  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  summary: { borderRadius: radius.xl, backgroundColor: c.raised, padding: 14 },
   cta: {
-    paddingHorizontal: space.xl,
-    paddingTop: 14,
-    backgroundColor: color.bg,
-    borderTopWidth: 1,
-    borderTopColor: color.border,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    backgroundColor: c.panel,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.rule,
   },
-});
+}));
