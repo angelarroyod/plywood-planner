@@ -41,6 +41,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
   - drawn swung open 90° so the interior stays visible.
   - hinge cups move off fixed shelves: `doorSet` takes the floor ranges of the case's horizontal panels (`avoid`) and moves a cup whose plate (±25 mm) would hit one to the nearest clear height, so a pattern may be asymmetric — `BORING_NOTE` tells the yard to drill a pair in mirror and mark ARRIBA;
   - doors need a board of at least `MIN_DOOR_THICKNESS` (15 mm) behind the 12 mm cup; templates validate it.
+  - a case with two rows of doors (the pantry) passes `row: 'upper' | 'lower'`, which renames the panel (`door-upper` "Puerta alta"), its handle (`handle-upper`) and the step titles; a single row omits it and keeps `door` / `handle`.
 - Drawers (`drawerSet`) stack in 1–2 side-by-side columns (`stacks`), with 3 mm between fronts and 2 mm at the ends. Each drawer is:
   - a screwed box: 2 sides, 2 ends, and a Fibracel bottom screwed underneath;
   - running on telescopic slides: `slideFor` picks the longest 10"–22" pair that leaves 10 mm behind it;
@@ -146,6 +147,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
     - "Mueble para TV": two bays split by a divider, each Cajones or Entrepaño; the back stops 100 mm short of the top as a cable slot.
     - *Implemented; awaiting user approval.*
   - **5.3 More templates**, in priority order: kitchen pantry cabinet, home-office desk, bed base with drawers, shoe rack, floating shelves.
+    - **Alacena** (kitchen pantry) — spec: `docs/superpowers/specs/2026-10-30-pantry-cabinet-design.md`. Tall and shallow (300–600 mm); a fixed shelf at counter height (900 mm) splits it into shelves behind upper doors and, below, either lower doors over one shelf or 2–4 drawers. Shelves are fixed and stay 150 mm apart (a can). Two anti-tip brackets and a "Fija la alacena al muro" step (`bracket`, `wall-anchor` hardware). *Implemented; awaiting user approval.*
   - **5.4 Fit this space**: enter a niche W × H × D (the mobile measure screen feeds it) and the template sizes itself with clearance.
   - **5.5 Tool-aware steps**: ask what tools the user owns. With only a screwdriver, every cut goes to the lumber yard, holes are pre-drilled (the yard/me drilling choice lives here), and joinery switches to confirmat.
   - **5.6 Offcut suggestions**: small projects that fit a layout's leftover rectangles.

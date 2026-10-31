@@ -3,6 +3,7 @@ import { bookshelf } from './bookshelf.ts';
 import { sideTable } from './side-table.ts';
 import { closet } from './closet.ts';
 import { tvStand } from './tv-stand.ts';
+import { pantry } from './pantry.ts';
 import { nest } from '../nesting.ts';
 import type { Design, Template, TemplateParams } from '../types.ts';
 import { FIBRACEL_3 } from '../stock.ts';
@@ -18,7 +19,7 @@ function totalQty(design: Design): number {
   return design.panels.reduce((sum, p) => sum + p.qty, 0);
 }
 
-for (const template of [bookshelf, sideTable, closet, tvStand]) {
+for (const template of [bookshelf, sideTable, closet, tvStand, pantry]) {
   describe(`${template.id} (shared invariants)`, () => {
     const design = designOrThrow(template);
 
