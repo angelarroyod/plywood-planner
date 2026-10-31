@@ -67,6 +67,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
   - `weldSettings` is the only source of amps, consumable, polarity and gas.
   - `WeldStep` extends `Step` with `tools` and an optional `ToolAction`, which only the client animates.
   - Catalog ids (tube sizes, gauges, processes, finishes) are stored in params, so never renumber them.
+  - Copy both clients show around the bar plan and the amps lives in `plan.ts`: `END_ANGLE`, `SQUARE_END_STEP`, `barCutTip`, `settingsNote`, plus `shoppingText` for sharing.
 
 ## UI conventions
 
@@ -110,7 +111,18 @@ A furniture template is NOT a static 3D model. It is a pure function:
 - Expo SDK 57 + Expo Router, npm (not pnpm — Expo's tooling assumes it, and `.npmrc` sets `legacy-peer-deps`). It is a separate install; the web app's pnpm workspace does not cover it.
 - **It imports the same `src/engine/`, never a copy.** `mobile/src/lib/engine.ts` is the single re-export, `metro.config.js` adds `../src/engine` to `watchFolders`, and `tsconfig.json` maps `@engine/*`. Editing the engine changes both clients — that is the point, so do not fork it.
 - Anything user-facing that both clients need (validation copy, `HARDWARE_LABELS`, template names) belongs in the engine, not in a client's components. The engine stays free of React/DOM/three, but it does own Spanish copy.
-- 3D is `expo-gl` + plain `three` driven imperatively (`components/viewer-3d.tsx`), not react-three-fiber — same visual spec as the web viewer without coupling to a renderer's React version. The web moved to the "Cuaderno de cuadro" world on 2026-10-30; the iOS screens and viewer still carry the previous dark-shop palette until their own redesign pass, which works from DESIGN.md. Cut diagrams are `react-native-svg`, mirroring `SheetSvg`.
+- 3D is `expo-gl` + plain `three` driven imperatively (`components/viewer-3d.tsx`), not react-three-fiber — same visual spec as the web viewer without coupling to a renderer's React version. Cut diagrams are `react-native-svg`, mirroring `SheetSvg`.
+- The iOS app wears the same "Cuaderno de cuadro" world as the web (DESIGN.md):
+  - `src/theme.ts` mirrors the tokens as a `day` and a `night` palette under camelCase names. `PaletteProvider` in the root layout reads the system appearance once and passes the palette down by context (`usePalette`, `useScheme`), so a live light/dark flip repaints every screen in one pass. There is no in-app toggle.
+  - Screens build styles with `makeStyles((c) => ({…}))`, which caches one StyleSheet per palette, and read colours only from the palette. Like the web, `Viewer3D` is the one component that knows the scheme: its `PALETTE` mirrors the web viewer's, and the stage gradient is a small `DataTexture`.
+  - Fonts are `@expo-google-fonts/atkinson-hyperlegible-next` and `-mono`, loaded in `src/app/_layout.tsx`. `Mono` sets `tabular-nums`.
+  - `components/ui.tsx` holds the kit: `Display`, `Title`, `RuleLabel`, `Body`, `Caption`, `Mono`, `Hi` (the highlighter), `Chip`, `PrimaryButton` (ballpoint fill), `SecondaryButton` (quiet), `IssueNote` (red wash and line icon), `StalePill`, `ScaleChip`, `GridBackdrop` (the cuadrícula, on work stages only), `Thumb` and `Mark`.
+  - Two night tokens differ from DESIGN.md so every text pair holds AA: `pieceDims` is dark ink on the night piece, and cut-badge numerals use `onMark`, which is dark ink at night.
+  - Preview without a Mac: `npm run web` in `mobile/` (react-native-web) at phone size.
+- Madera | Metal: `AppState.mode` picks the workshop, switched on the templates screen. Wood and metal template ids share `paramsByTemplate`, and `setParams` applies a suggestion's fix in one step.
+  - Metal screens live in `src/screens/result/weld.tsx`: Diseño (model in its finish plus the amps card), Cortes (bar plan, saw list, tappable piece list), Pasos (the shared `StepList` with each step's tools) and Compras (`shoppingList`, shared as `shoppingText` through React Native's `Share`).
+  - Suggestions and their one-click fixes sit under the params on the measure screen.
+  - The 3D tool demo is web only.
 - Screens live in `src/app` (routes only) and `src/screens` (bodies), per Expo's project-structure guidance.
 - Not real yet, by design: saved projects and the account footer are fixtures (needs Phase 6), and the camera screen's distance is simulated and labelled as such — LiDAR needs a custom ARKit native module.
 - `patch-package` (approved, dev-only) runs on `postinstall` and applies `mobile/patches/`. Its one patch makes `query-string@7` (pinned by expo-router 57) read `.default` from `decode-uri-component`, which `overrides` forces to the ESM-only 0.5.0 for GHSA-vcc3-ghjq-m6fr. Drop the patch, that override, and patch-package once expo-router stops depending on `query-string@7`; if `npm ci` reports the patch failed to apply, that is the signal to check.
@@ -149,7 +161,7 @@ A furniture template is NOT a static 3D model. It is a pure function:
   - **5.4 Fit this space**: enter a niche W × H × D (the mobile measure screen feeds it) and the template sizes itself with clearance.
   - **5.5 Tool-aware steps**: ask what tools the user owns. With only a screwdriver, every cut goes to the lumber yard, holes are pre-drilled (the yard/me drilling choice lives here), and joinery switches to confirmat.
   - **5.6 Offcut suggestions**: small projects that fit a layout's leftover rectangles.
-- [ ] **Welding projects (Metal mode)** — spec: `docs/superpowers/specs/2026-10-30-welding-projects-design.md`. Madera | Metal switch; `src/engine/welding/` (PTR templates: mesa, banco alto, estante; bar cut plan; `weldSettings` amps per process and wall; shopping list; suggestions with one-click fixes; `ToolAction` per step for the 3D tool demo). Web only so far. *Implemented; awaiting user approval.*
+- [ ] **Welding projects (Metal mode)** — spec: `docs/superpowers/specs/2026-10-30-welding-projects-design.md`. Madera | Metal switch; `src/engine/welding/` (PTR templates: mesa, banco alto, estante; bar cut plan; `weldSettings` amps per process and wall; shopping list; suggestions with one-click fixes; `ToolAction` per step for the 3D tool demo). Web and iOS; the tool demo is web only. *Implemented; awaiting user approval.*
 - [ ] **Phase 6 — Community (do not start)**: Supabase auth, save/share/remix designs.
 - [ ] **Phase 7 — Pro + partners** (needs Phase 6 backend).
   - Carpenter mode (paid tier): quote with labor + margin, branded client PDF, shareable 3D link.

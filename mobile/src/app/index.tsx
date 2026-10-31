@@ -1,16 +1,8 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Body, Display, PrimaryButton } from '@/components/ui';
-import { color, font, space } from '@/theme';
-
-/** The four bars are the app's mark: plywood plies seen edge-on. */
-const BARS = [
-  { h: 52, bg: color.red },
-  { h: 64, bg: color.text },
-  { h: 38, bg: color.red },
-  { h: 58, bg: color.borderStrong },
-];
+import { Body, Display, Mark, Mono, PrimaryButton } from '@/components/ui';
+import { HI_INK, font, makeStyles, usePalette } from '@/theme';
 
 const POINTS = [
   ['Elige plantilla y medidas.', 'Te avisamos si el claro se va a pandear.'],
@@ -20,58 +12,63 @@ const POINTS = [
 
 export default function Onboarding() {
   const insets = useSafeAreaInsets();
+  const c = usePalette();
+  const s = useStyles();
   const go = () => router.push('/projects');
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 64, paddingBottom: insets.top + 24 }]}>
-      <View style={styles.bars}>
-        {BARS.map((b, i) => (
-          <View key={i} style={{ width: 13, height: b.h, backgroundColor: b.bg }} />
-        ))}
-      </View>
+    <View style={[s.root, { paddingTop: insets.top + 56, paddingBottom: insets.bottom + 16 }]}>
+      <Mark />
 
-      <Display size={56} style={styles.title}>
-        {'Diseña,\ncorta,\narma.'}
+      <Display size={40} style={s.title}>
+        {'Diseña, corta, '}
+        <Text style={{ backgroundColor: c.hi, color: HI_INK }}>arma.</Text>
       </Display>
-      <Body size={15} style={{ marginTop: 14 }}>
+      <Body size={16} style={{ marginTop: 12 }}>
         Un mueble bien planeado, sin cuentas a mano ni desperdicio de más.
       </Body>
 
-      <View style={styles.points}>
+      <View style={s.points}>
         {POINTS.map(([lead, rest], i) => (
-          <View key={i} style={styles.point}>
-            <Text style={styles.num}>{String(i + 1).padStart(2, '0')}</Text>
-            <Text style={styles.pointText}>
-              <Text style={styles.pointLead}>{lead}</Text>
-              <Text style={{ color: color.textMuted }}> {rest}</Text>
+          <View key={i} style={s.point}>
+            <View style={s.marker}>
+              <Mono tone={c.accentInk} size={13} bold>
+                {i + 1}
+              </Mono>
+            </View>
+            <Text style={s.pointText}>
+              <Text style={s.pointLead}>{lead}</Text>
+              <Text style={{ color: c.inkSoft }}> {rest}</Text>
             </Text>
           </View>
         ))}
       </View>
 
-      <PrimaryButton label="Empezar" onPress={go} style={{ marginTop: 26 }} />
-      <Pressable onPress={go} style={styles.signIn} accessibilityRole="button">
-        <Text style={styles.signInLabel}>Ya tengo proyectos · Entrar</Text>
+      <PrimaryButton label="Empezar" onPress={go} style={{ marginTop: 28 }} />
+      <Pressable onPress={go} style={s.signIn} accessibilityRole="button">
+        <Text style={s.signInLabel}>Ya tengo proyectos · Entrar</Text>
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.bg, paddingHorizontal: 26 },
-  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 5, height: 64 },
-  title: { marginTop: 24, lineHeight: 50 },
-  points: { marginTop: 'auto', gap: 14 },
+const useStyles = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.paper, paddingHorizontal: 24 },
+  title: { marginTop: 28, lineHeight: 50 },
+  points: { marginTop: 'auto', gap: 16 },
   point: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  num: { fontFamily: font.mono, fontSize: 10, paddingTop: 3, color: color.red },
-  pointText: { flex: 1, fontFamily: font.body, fontSize: 14, lineHeight: 21, color: color.text },
-  pointLead: { fontFamily: font.bodySemi, color: color.text },
-  signIn: { marginTop: 10, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  signInLabel: {
-    fontFamily: font.mono,
-    fontSize: 11,
-    letterSpacing: 1.76,
-    textTransform: 'uppercase',
-    color: color.textMuted,
+  marker: {
+    height: 30,
+    width: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: c.ruleStrong,
+    backgroundColor: c.panel,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-});
+  pointText: { flex: 1, fontFamily: font.regular, fontSize: 15, lineHeight: 22, color: c.ink, paddingTop: 3 },
+  pointLead: { fontFamily: font.bold, color: c.ink },
+  signIn: { marginTop: 8, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  signInLabel: { fontFamily: font.bold, fontSize: 14, color: c.accentInk },
+}));

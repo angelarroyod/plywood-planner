@@ -143,6 +143,26 @@ export function shoppingList(d: WeldDesign, bars: BarLayout[]): ShoppingGroup[] 
   ];
 }
 
+// ---- Copy both clients show beside the bar plan and the machine settings ----
+
+export const END_ANGLE: Record<Member['ends'], string> = { square: '90°', miter: '45°' };
+
+/** Cut 0 on every bar, before the first piece. */
+export const SQUARE_END_STEP = `Escuadra la punta de fábrica: quita ${END_TRIM} mm.`;
+
+/** How to measure and mark, under the piece list. */
+export function barCutTip(members: Member[]): string {
+  const tip = `Mide cada pieza desde la punta recién cortada. Marca con escuadra en dos caras y corta del lado del desperdicio: el disco se come ${CUT_KERF} mm.`;
+  return members.some((m) => m.ends === 'miter')
+    ? `${tip} Los cortes a 45° se miden de punta larga a punta larga; voltea el tubo entre piezas para que las puntas encajen.`
+    : tip;
+}
+
+/** Under the amps: the real calibration is a test bead on scrap. */
+export function settingsNote(d: WeldDesign): string {
+  return `Cada máquina marca distinto: prueba primero en un retazo del mismo tubo y sube o baja de 5 en 5 A. Si la tuya solo tiene perillas de voltaje y velocidad, usa la tabla de su tapa para ${d.tube.wall} mm.`;
+}
+
 /** Display name of a tool, with the chosen process's machine for 'welder'. */
 export function toolLabel(d: WeldDesign, id: ToolId): string {
   return id === 'welder' ? d.process.machine : TOOL_LABELS[id];

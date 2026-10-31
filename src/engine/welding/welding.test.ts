@@ -3,7 +3,7 @@ import { overlappingBoxes } from '../templates/testing.ts';
 import type { TemplateParams } from '../types.ts';
 import { BAR_LENGTH, weldProcess, weldSettings } from './catalog.ts';
 import { endPlane } from './geometry.ts';
-import { planBars, shoppingList, shoppingText, toolLabel } from './plan.ts';
+import { barCutTip, planBars, shoppingList, shoppingText, toolLabel } from './plan.ts';
 import { generateWeldShelf, generateWeldStool, generateWeldTable, weldTemplates } from './templates.ts';
 import { WELD_REF, type WeldDesign, type WeldResult } from './types.ts';
 
@@ -222,5 +222,12 @@ describe('shopping list', () => {
     expect(text).toContain(toolLabel(d, 'welder'));
     expect(text).toContain('Soldadora de electrodo');
     expect(text).toContain('SEGURIDAD');
+  });
+});
+
+describe('bar plan copy', () => {
+  it('adds the long-point note only when a member is mitered', () => {
+    expect(barCutTip(ok(generateWeldTable({ joint: 1 })).members)).not.toContain('45°');
+    expect(barCutTip(ok(generateWeldTable({ joint: 2 })).members)).toContain('punta larga a punta larga');
   });
 });

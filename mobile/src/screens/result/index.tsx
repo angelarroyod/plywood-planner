@@ -1,21 +1,30 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Modal, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Body, Display, Kicker, Mono, SecondaryButton, Toast } from '@/components/ui';
+import { Body, Display, Mono, SecondaryButton, Title, Toast } from '@/components/ui';
 import { buildOrder, getStock, nest, orderText, templates } from '@/lib/engine';
-import { useApp, type ResultTab } from '@/lib/store';
-import { color, font, radius, space } from '@/theme';
+import { useApp, type Mode, type ResultTab } from '@/lib/store';
+import { font, makeStyles, radius, space, usePalette } from '@/theme';
 import { CutsPane } from './cuts';
 import { ModelPane } from './model';
 import { StepsPane } from './steps';
+import { WeldCutsPane, WeldModelPane, WeldShoppingPane, WeldStepsPane, shareShopping, weldTitle } from './weld';
 
-const TABS: { id: ResultTab; label: string }[] = [
-  { id: 'model', label: 'Diseño' },
-  { id: 'cuts', label: 'Cortes' },
-  { id: 'steps', label: 'Pasos' },
-];
+const TABS: Record<Mode, { id: ResultTab; label: string }[]> = {
+  wood: [
+    { id: 'model', label: 'Diseño' },
+    { id: 'cuts', label: 'Cortes' },
+    { id: 'steps', label: 'Pasos' },
+  ],
+  metal: [
+    { id: 'model', label: 'Diseño' },
+    { id: 'cuts', label: 'Cortes' },
+    { id: 'steps', label: 'Pasos' },
+    { id: 'shop', label: 'Compras' },
+  ],
+};
 
 const EXPORTS = [
   { tag: 'PDF', label: 'Plan de corte', sub: 'Hojas, lista de piezas y pasos' },
@@ -26,96 +35,112 @@ const EXPORTS = [
 
 export function Result() {
   const insets = useSafeAreaInsets();
-  const { tab, setTab, taller, toggleTaller, toast, flash, design, templateId } = useApp();
+  const c = usePalette();
+  const s = useStyles();
+  const { mode, tab, setTab, taller, toggleTaller, toast, flash, design, weld, templateId } = useApp();
   const [sheetOpen, setSheetOpen] = useState(false);
   const template = templates.find((t) => t.id === templateId) ?? templates[0]!;
+  const metal = mode === 'metal';
 
   const meta = useMemo(() => {
+    if (metal) {
+      if (!weld) return '';
+      const p = weld.params;
+      return `${p.width} × ${p.depth} × ${p.height} · ${weld.tube.label}`;
+    }
     if (!design) return '';
     const p = design.params;
     return `${p.width} × ${p.height ?? p.depth} × ${p.depth} · ${getStock(p.material!).label}`;
-  }, [design]);
+  }, [metal, design, weld]);
 
-  const title = template.name;
-
-  if (!design) return <View style={styles.root} />;
+  if (metal ? !weld : !design) return <View style={s.root} />;
+  const title = metal ? weldTitle(weld!) : template.name;
 
   const shareOrder = () => {
-    return Share.share({ message: orderText(buildOrder(design, nest(design.panels), template.name)) }).catch(() =>
+    return Share.share({ message: orderText(buildOrder(design!, nest(design!.panels), template.name)) }).catch(() =>
       flash('No se pudo compartir'),
     );
   };
 
   return (
-    <View style={styles.root}>
-      <View style={[styles.header, { paddingTop: insets.top + space.sm }]}>
-        <View style={styles.headRow}>
-          <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button">
-            <Text style={styles.back}>‹</Text>
+    <View style={s.root}>
+      <View style={[s.header, { paddingTop: insets.top + space.xs }]}>
+        <View style={s.headRow}>
+          <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Atrás" style={s.back}>
+            <Svg viewBox="0 0 20 20" width={22} height={22}>
+              <Path d="M12.5 4 6.5 10l6 6" fill="none" stroke={c.accentInk} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
           </Pressable>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Display size={22} semi numberOfLines={1}>
+            <Display size={18} numberOfLines={1}>
               {title}
             </Display>
-            <Mono tone={color.textSoft} size={10}>
+            <Mono tone={c.inkSoft} size={12} style={{ marginTop: -2 }} numberOfLines={1}>
               {meta}
             </Mono>
           </View>
           <IconButton active={taller} onPress={toggleTaller} label="Modo taller">
-            <Svg viewBox="0 0 20 20" width={17} height={17}>
-              <Circle cx={10} cy={10} r={3.6} fill="none" stroke="currentColor" strokeWidth={1.7} />
-              <Path
-                d="M10 1.6v2.2M10 16.2v2.2M1.6 10h2.2M16.2 10h2.2M4.1 4.1l1.6 1.6M14.3 14.3l1.6 1.6M15.9 4.1l-1.6 1.6M5.7 14.3l-1.6 1.6"
-                stroke="currentColor"
-                strokeWidth={1.7}
-                strokeLinecap="round"
-              />
-            </Svg>
+            {(tint) => (
+              <Svg viewBox="0 0 20 20" width={18} height={18}>
+                <Circle cx={10} cy={10} r={3.6} fill="none" stroke={tint} strokeWidth={1.5} />
+                <Path
+                  d="M10 1.6v2.2M10 16.2v2.2M1.6 10h2.2M16.2 10h2.2M4.1 4.1l1.6 1.6M14.3 14.3l1.6 1.6M15.9 4.1l-1.6 1.6M5.7 14.3l-1.6 1.6"
+                  stroke={tint}
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                />
+              </Svg>
+            )}
           </IconButton>
-          <IconButton onPress={() => setSheetOpen(true)} label="Compartir">
-            <Svg viewBox="0 0 20 20" width={16} height={16}>
-              <Path d="M10 13V3m0 0L6.5 6.5M10 3l3.5 3.5" fill="none" stroke={color.text} strokeWidth={1.7} strokeLinecap="round" />
-              <Path d="M4 12v4.5h12V12" fill="none" stroke={color.text} strokeWidth={1.7} strokeLinecap="round" />
-            </Svg>
+          <IconButton
+            // metal has one thing to share — the shopping list — so it skips the export sheet
+            onPress={() => (metal ? shareShopping(weld!, () => flash('No se pudo compartir')) : setSheetOpen(true))}
+            label={metal ? 'Compartir lista de compras' : 'Compartir'}
+          >
+            {(tint) => (
+              <Svg viewBox="0 0 20 20" width={18} height={18}>
+                <Path d="M10 13V3m0 0L6.5 6.5M10 3l3.5 3.5" fill="none" stroke={tint} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                <Path d="M4 12v4.5h12V12" fill="none" stroke={tint} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            )}
           </IconButton>
         </View>
 
         {taller && (
-          <View style={styles.tallerBar}>
-            <View style={styles.tallerDot} />
-            <Mono tone={color.white} size={9} style={{ letterSpacing: 0.9, textTransform: 'uppercase' }}>
-              Modo taller · pantalla encendida
-            </Mono>
-            <Pressable onPress={toggleTaller} style={{ marginLeft: 'auto' }} hitSlop={8}>
-              <Mono tone={color.white} size={9} style={{ letterSpacing: 1.4, textTransform: 'uppercase' }}>
-                Salir
-              </Mono>
+          <View style={s.tallerBar}>
+            <View style={s.tallerDot} />
+            <Text style={s.tallerLabel}>Modo taller · pantalla encendida</Text>
+            <Pressable onPress={toggleTaller} style={{ marginLeft: 'auto' }} hitSlop={10} accessibilityRole="button">
+              <Text style={s.tallerLabel}>Salir</Text>
             </Pressable>
           </View>
         )}
       </View>
 
-      <View style={styles.body}>
-        {tab === 'model' && <ModelPane />}
-        {tab === 'cuts' && <CutsPane />}
-        {tab === 'steps' && <StepsPane />}
+      <View style={s.body}>
+        {!metal && tab === 'model' && <ModelPane />}
+        {!metal && tab === 'cuts' && <CutsPane />}
+        {!metal && tab === 'steps' && <StepsPane />}
+        {metal && tab === 'model' && <WeldModelPane />}
+        {metal && tab === 'cuts' && <WeldCutsPane />}
+        {metal && tab === 'steps' && <WeldStepsPane />}
+        {metal && tab === 'shop' && <WeldShoppingPane />}
       </View>
 
-      <View style={[styles.tabs, { paddingBottom: insets.bottom + space.sm }]}>
-        {TABS.map((t) => {
+      <View style={[s.tabs, { paddingBottom: insets.bottom + space.xs }]} accessibilityRole="tablist">
+        {TABS[mode].map((t) => {
           const on = tab === t.id;
+          const tint = on ? c.accentInk : c.inkSoft;
           return (
             <Pressable
               key={t.id}
               onPress={() => setTab(t.id)}
-              style={[styles.tab, on && { backgroundColor: color.red }]}
+              style={s.tab}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
             >
-              <TabIcon id={t.id} tint={on ? color.white : color.textFaint} />
-              <Text style={[styles.tabLabel, { color: on ? color.white : color.textFaint }]}>
-                {t.label}
-              </Text>
+              <TabIcon id={t.id} tint={tint} />
+              <Text style={[s.tabLabel, { color: tint }, on && { fontFamily: font.bold }]}>{t.label}</Text>
             </Pressable>
           );
         })}
@@ -124,13 +149,13 @@ export function Result() {
       <Toast message={toast} />
 
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
-        <Pressable style={styles.scrim} onPress={() => setSheetOpen(false)} accessibilityLabel="Cerrar" />
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>
-          <View style={styles.grabber} />
-          <Display size={26}>Compartir</Display>
-          <Kicker tone={color.textSoft} style={{ marginTop: 4, marginBottom: 14 }}>
-            {title}
-          </Kicker>
+        <Pressable style={s.scrim} onPress={() => setSheetOpen(false)} accessibilityLabel="Cerrar" />
+        <View style={[s.sheet, { paddingBottom: insets.bottom + space.lg }]}>
+          <View style={s.grabber} />
+          <Display>Compartir</Display>
+          <Body size={14} style={{ marginBottom: 14 }}>
+            {template.name}
+          </Body>
           <View style={{ gap: 8 }}>
             {EXPORTS.map((e) => (
               <Pressable
@@ -144,23 +169,21 @@ export function Result() {
                     flash(`${e.label} listo`); // the other exports are still fixtures
                   }
                 }}
-                style={({ pressed }) => [styles.exportRow, pressed && { borderColor: color.borderStrong }]}
+                style={({ pressed }) => [s.exportRow, pressed && { backgroundColor: c.raised }]}
                 accessibilityRole="button"
               >
-                <View style={styles.exportTag}>
-                  <Mono tone={color.white} size={12} style={{ fontFamily: font.monoBold }}>
+                <View style={s.exportTag}>
+                  <Mono tone={c.accentInk} size={12} bold>
                     {e.tag}
                   </Mono>
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Display size={19} semi>
-                    {e.label}
-                  </Display>
-                  <Body tone={color.textSoft} size={12}>
-                    {e.sub}
-                  </Body>
+                  <Title size={15}>{e.label}</Title>
+                  <Body size={13}>{e.sub}</Body>
                 </View>
-                <Text style={{ color: color.textFaint }}>›</Text>
+                <Svg viewBox="0 0 20 20" width={16} height={16}>
+                  <Path d="m7.5 4 6 6-6 6" fill="none" stroke={c.inkFaint} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
               </Pressable>
             ))}
           </View>
@@ -177,23 +200,22 @@ function IconButton({
   active,
   label,
 }: {
-  children: React.ReactNode;
+  children: (tint: string) => ReactNode;
   onPress: () => void;
   active?: boolean;
   label: string;
 }) {
+  const c = usePalette();
+  const s = useStyles();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [
-        styles.iconBtn,
-        active && { borderColor: color.red, backgroundColor: color.red },
-        pressed && { transform: [{ scale: 0.95 }] },
-      ]}
+      accessibilityState={{ selected: !!active }}
+      style={({ pressed }) => [s.iconBtn, active && s.iconBtnOn, pressed && !active && { backgroundColor: c.raised }]}
     >
-      <View style={{ opacity: active ? 1 : 0.75 }}>{children}</View>
+      {children(active ? c.accentInk : c.inkSoft)}
     </Pressable>
   );
 }
@@ -202,98 +224,91 @@ function TabIcon({ id, tint }: { id: ResultTab; tint: string }) {
   if (id === 'model') {
     return (
       <Svg viewBox="0 0 24 24" width={22} height={22}>
-        <Path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" fill="none" stroke={tint} strokeWidth={1.6} strokeLinejoin="round" />
-        <Path d="M4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke={tint} strokeWidth={1.4} />
+        <Path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" fill="none" stroke={tint} strokeWidth={1.5} strokeLinejoin="round" />
+        <Path d="M4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke={tint} strokeWidth={1.5} strokeLinejoin="round" />
+      </Svg>
+    );
+  }
+  if (id === 'shop') {
+    return (
+      <Svg viewBox="0 0 24 24" width={22} height={22}>
+        <Path d="M5 8h14l-1.2 12H6.2L5 8zM9 8V6.5a3 3 0 0 1 6 0V8" fill="none" stroke={tint} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
       </Svg>
     );
   }
   if (id === 'cuts') {
     return (
       <Svg viewBox="0 0 24 24" width={22} height={22}>
-        <Path d="M4 3h16v18H4z" fill="none" stroke={tint} strokeWidth={1.6} />
-        <Path d="M4 10h16M12 10v11" fill="none" stroke={tint} strokeWidth={1.4} />
+        <Path d="M4 3h16v18H4z" fill="none" stroke={tint} strokeWidth={1.5} strokeLinejoin="round" />
+        <Path d="M4 10h16M12 10v11" fill="none" stroke={tint} strokeWidth={1.5} />
       </Svg>
     );
   }
   return (
     <Svg viewBox="0 0 24 24" width={22} height={22}>
-      <Path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke={tint} strokeWidth={1.7} strokeLinecap="round" />
+      <Path d="M5 7h14M5 12h14M5 17h9" fill="none" stroke={tint} strokeWidth={1.5} strokeLinecap="round" />
     </Svg>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.bg },
+const useStyles = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.paper },
   header: {
-    paddingHorizontal: 18,
+    paddingHorizontal: space.md,
     paddingBottom: 10,
-    backgroundColor: color.bg,
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
+    backgroundColor: c.panel,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.rule,
   },
-  headRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  back: { fontSize: 26, lineHeight: 28, color: color.red, paddingRight: 4 },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  back: { height: 44, width: 32, alignItems: 'center', justifyContent: 'center' },
   iconBtn: {
-    minHeight: 40,
-    minWidth: 40,
+    height: 44,
+    width: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.sm,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: color.borderStrong,
-    backgroundColor: color.card,
+    borderColor: c.rule,
+    backgroundColor: c.panel,
   },
+  iconBtnOn: { borderColor: c.accent, backgroundColor: c.accentTint },
   tallerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginTop: 10,
-    borderRadius: radius.sm,
-    backgroundColor: color.red,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    borderRadius: radius.lg,
+    backgroundColor: c.accentTint,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  tallerDot: { height: 7, width: 7, borderRadius: 4, backgroundColor: color.white },
+  tallerDot: { height: 8, width: 8, borderRadius: 4, backgroundColor: c.accent },
+  tallerLabel: { fontFamily: font.bold, fontSize: 13, color: c.accentInk },
   body: { flex: 1, minHeight: 0 },
   tabs: {
     flexDirection: 'row',
-    gap: 2,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    backgroundColor: color.void,
-    borderTopWidth: 1,
-    borderTopColor: color.border,
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    backgroundColor: c.panel,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: c.rule,
   },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    minHeight: 52,
-    borderRadius: radius.sm,
-    paddingVertical: 6,
-  },
-  tabLabel: {
-    fontFamily: font.displaySemi,
-    fontSize: 13,
-    letterSpacing: 0.78,
-    textTransform: 'uppercase',
-  },
-  scrim: { flex: 1, backgroundColor: 'rgba(8,9,11,0.6)' },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, minHeight: 52 },
+  tabLabel: { fontFamily: font.semi, fontSize: 12 },
+  scrim: { flex: 1, backgroundColor: 'rgba(20,26,43,0.45)' },
   sheet: {
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    borderTopWidth: 3,
-    borderTopColor: color.red,
-    backgroundColor: color.bg,
-    paddingHorizontal: 18,
+    borderTopLeftRadius: radius.xxl,
+    borderTopRightRadius: radius.xxl,
+    backgroundColor: c.panel,
+    paddingHorizontal: space.lg,
     paddingTop: 10,
   },
   grabber: {
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: color.borderStrong,
+    backgroundColor: c.ruleStrong,
     alignSelf: 'center',
     marginBottom: 14,
   },
@@ -301,20 +316,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    minHeight: 56,
+    minHeight: 60,
     borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.sm,
-    backgroundColor: color.card,
-    paddingHorizontal: 14,
+    borderColor: c.rule,
+    borderRadius: radius.xl,
+    backgroundColor: c.panel,
+    paddingHorizontal: 12,
     paddingVertical: 10,
   },
   exportTag: {
-    height: 34,
-    width: 34,
+    height: 36,
+    width: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.sm,
-    backgroundColor: color.red,
+    borderRadius: radius.lg,
+    backgroundColor: c.accentTint,
   },
-});
+}));

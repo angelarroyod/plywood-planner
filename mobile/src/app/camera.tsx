@@ -3,9 +3,10 @@ import { router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Body, Mono, PrimaryButton, SecondaryButton } from '@/components/ui';
+import Svg, { Path } from 'react-native-svg';
+import { Body, Caption, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { useApp } from '@/lib/store';
-import { color, font, radius, space } from '@/theme';
+import { TNUM, font, makeStyles, radius, shadow, space, usePalette } from '@/theme';
 
 /**
  * Simulated reading. Real LiDAR distance needs ARKit via a custom native module
@@ -17,6 +18,8 @@ const APPLIED_MM = 810; // snapped to the width slider's 10 mm step
 
 export default function Camera() {
   const insets = useSafeAreaInsets();
+  const c = usePalette();
+  const s = useStyles();
   const { setParam, flash } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const scan = useRef(new Animated.Value(0)).current;
@@ -39,124 +42,121 @@ export default function Camera() {
   };
 
   return (
-    <View style={styles.root}>
+    <View style={s.root}>
       {permission?.granted ? (
         <CameraView style={StyleSheet.absoluteFill} facing="back" />
       ) : (
-        <View style={[StyleSheet.absoluteFill, styles.fallback]} />
+        <View style={[StyleSheet.absoluteFill, s.fallback]} />
       )}
 
+      {/* The width being measured, swept with the highlighter like a dimension being dragged. */}
       <Animated.View
         pointerEvents="none"
         style={[
-          styles.scan,
+          s.scan,
           {
-            opacity: scan.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.2, 0.85, 0.2] }),
+            opacity: scan.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.15, 0.45, 0.15] }),
             transform: [{ translateY: scan.interpolate({ inputRange: [0, 1], outputRange: [-38, 38] }) }],
           },
         ]}
       />
-      <View pointerEvents="none" style={styles.frame} />
-      <View pointerEvents="none" style={styles.readingWrap}>
-        <View style={styles.reading}>
-          <Text style={styles.readingValue}>
+      <View pointerEvents="none" style={s.frame} />
+      <View pointerEvents="none" style={s.readingWrap}>
+        <View style={s.reading}>
+          <Text style={s.readingLabel}>Ancho del hueco</Text>
+          <Text style={s.readingValue}>
             {SIMULATED_MM}
-            <Text style={styles.readingUnit}>mm</Text>
+            <Text style={s.readingUnit}> mm</Text>
           </Text>
         </View>
       </View>
 
-      <View style={[styles.top, { top: insets.top + space.sm }]}>
-        <Pressable onPress={() => router.back()} style={styles.close} accessibilityRole="button">
-          <Text style={{ color: color.text, fontSize: 16 }}>✕</Text>
+      <View style={[s.top, { top: insets.top + space.sm }]}>
+        <Pressable onPress={() => router.back()} style={s.close} accessibilityRole="button" accessibilityLabel="Cerrar">
+          <Svg viewBox="0 0 20 20" width={16} height={16}>
+            <Path d="m5 5 10 10M15 5 5 15" stroke={c.ink} strokeWidth={1.8} strokeLinecap="round" />
+          </Svg>
         </Pressable>
-        <View style={styles.badge}>
-          <Mono tone={color.white} size={10} style={{ letterSpacing: 1.2, textTransform: 'uppercase' }}>
-            Medir muro · LiDAR
-          </Mono>
+        <View style={s.badge}>
+          <Text style={s.badgeLabel}>Medir muro · LiDAR</Text>
         </View>
       </View>
 
-      <View style={[styles.bottom, { bottom: insets.bottom + space.xl }]}>
+      <View style={[s.bottom, { bottom: insets.bottom + space.md }]}>
         {!permission?.granted && (
-          <SecondaryButton
-            label="Permitir cámara"
-            onPress={requestPermission}
-            style={{ marginBottom: space.md }}
-          />
+          <SecondaryButton label="Permitir cámara" onPress={requestPermission} style={{ marginBottom: space.md }} />
         )}
-        <Body tone={color.textMuted} size={14} style={{ textAlign: 'center', marginBottom: 6 }}>
+        <Body tone={c.ink} size={14} style={{ textAlign: 'center' }}>
           Apunta a los dos extremos del hueco. Mantén el teléfono paralelo al muro.
         </Body>
-        <Mono tone={color.textFaint} size={9} style={styles.disclaimer}>
-          Lectura simulada · LiDAR real requiere módulo nativo
-        </Mono>
-        <View style={styles.actions}>
+        <Caption style={{ textAlign: 'center', marginTop: 4, marginBottom: 12 }}>
+          Lectura simulada: el LiDAR real requiere un módulo nativo
+        </Caption>
+        <View style={s.actions}>
           <SecondaryButton label="Cancelar" onPress={() => router.back()} style={{ flex: 1, minHeight: 52 }} />
-          <PrimaryButton
-            label={`Usar ${SIMULATED_MM} mm`}
-            onPress={apply}
-            style={{ flex: 2, minHeight: 52 }}
-          />
+          <PrimaryButton label={`Usar ${SIMULATED_MM} mm`} onPress={apply} style={{ flex: 2 }} />
         </View>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#08090B' },
-  fallback: { backgroundColor: '#16181B' },
-  scan: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: '38%',
-    height: 120,
-    backgroundColor: 'rgba(219,1,28,0.28)',
-  },
+const useStyles = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: '#08090b' }, // under the camera feed, whatever the theme
+  fallback: { backgroundColor: '#1b2546' },
+  scan: { position: 'absolute', left: 0, right: 0, top: '38%', height: 120, backgroundColor: c.hi },
   frame: {
     position: 'absolute',
     left: 56,
     right: 56,
     top: '34%',
     height: 150,
-    borderWidth: 1,
+    borderRadius: radius.xl,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: 'rgba(245,246,247,0.45)',
+    borderColor: 'rgba(255,255,255,0.7)',
   },
   readingWrap: {
     position: 'absolute',
-    left: 56,
-    right: 56,
+    left: 40,
+    right: 40,
     top: '34%',
     height: 150,
     alignItems: 'center',
     justifyContent: 'center',
   },
   reading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: radius.sm,
-    borderLeftWidth: 3,
-    borderLeftColor: color.red,
-    backgroundColor: 'rgba(8,9,11,0.8)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: c.rule,
+    backgroundColor: c.panel,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    ...shadow.float,
   },
-  readingValue: { fontFamily: font.monoMed, fontSize: 24, color: color.text },
-  readingUnit: { fontFamily: font.mono, fontSize: 11, color: color.textSoft },
-  top: { position: 'absolute', left: space.xl, right: space.xl, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  readingLabel: { fontFamily: font.semi, fontSize: 13, color: c.inkSoft },
+  readingValue: { fontFamily: font.monoBold, fontSize: 44, lineHeight: 48, fontVariant: [...TNUM], color: c.accentInk },
+  readingUnit: { fontFamily: font.semi, fontSize: 18, color: c.inkSoft },
+  top: { position: 'absolute', left: space.lg, right: space.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   close: {
-    minHeight: 40,
-    minWidth: 40,
+    height: 44,
+    width: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.sm,
-    backgroundColor: 'rgba(8,9,11,0.65)',
+    borderRadius: 22,
+    backgroundColor: c.panel,
+    ...shadow.float,
   },
-  badge: { borderRadius: radius.sm, backgroundColor: color.red, paddingHorizontal: 12, paddingVertical: 8 },
-  bottom: { position: 'absolute', left: space.xl, right: space.xl },
-  disclaimer: { textAlign: 'center', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14 },
+  badge: { borderRadius: radius.pill, backgroundColor: c.panel, paddingHorizontal: 14, paddingVertical: 8, ...shadow.float },
+  badgeLabel: { fontFamily: font.bold, fontSize: 13, color: c.accentInk },
+  bottom: {
+    position: 'absolute',
+    left: space.md,
+    right: space.md,
+    borderRadius: radius.xxl,
+    backgroundColor: c.panel,
+    padding: space.lg,
+    ...shadow.float,
+  },
   actions: { flexDirection: 'row', gap: 10 },
-});
+}));
