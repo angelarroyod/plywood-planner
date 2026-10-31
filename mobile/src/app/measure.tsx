@@ -15,21 +15,31 @@ import {
   Toast,
 } from '@/components/ui';
 import { Slider } from '@/components/slider';
-import { nest, resolveParams, templates } from '@/lib/engine';
+import { nest, planBars, resolveParams, templates, weldTemplates } from '@/lib/engine';
 import { useApp } from '@/lib/store';
+import { Suggestions } from '@/screens/result/weld';
 import { HI_INK, TNUM, font, makeStyles, radius, space, usePalette } from '@/theme';
 
 export default function Measure() {
   const insets = useSafeAreaInsets();
   const c = usePalette();
   const s = useStyles();
-  const { templateId, paramsByTemplate, setParam, setTab, design, issues, stale, toast } = useApp();
+  const { mode, templateId, weldTemplateId, paramsByTemplate, setParam, setTab, design, weld, issues, stale, toast } = useApp();
   const [dragging, setDragging] = useState<string | null>(null);
-  const template = templates.find((t) => t.id === templateId) ?? templates[0]!;
-  const raw = paramsByTemplate[templateId] ?? {};
+  const metal = mode === 'metal';
+  const template = metal
+    ? (weldTemplates.find((t) => t.id === weldTemplateId) ?? weldTemplates[0]!)
+    : (templates.find((t) => t.id === templateId) ?? templates[0]!);
+  const raw = paramsByTemplate[template.id] ?? {};
   const params = resolveParams(template.params, raw);
 
   const summary = useMemo(() => {
+    if (metal) {
+      if (!weld) return null;
+      const bars = planBars(weld.members).length;
+      const pieces = weld.members.reduce((n, m) => n + m.qty, 0);
+      return `Con estas medidas salen ${pieces} piezas de ${bars} ${bars === 1 ? 'tramo' : 'tramos'} de ${weld.tube.label}.`;
+    }
     if (!design) return null;
     const layout = nest(design.panels);
     const pieces = design.panels.reduce((n, p) => n + p.qty, 0);
@@ -37,7 +47,7 @@ export default function Measure() {
       .map((g) => `${g.sheets} hoja${g.sheets > 1 ? 's' : ''} de ${g.stock.label.toLowerCase()}`)
       .join(' y ');
     return `Con estas medidas salen ${pieces} piezas en ${sheets}.`;
-  }, [design]);
+  }, [metal, design, weld]);
 
   return (
     <View style={s.root}>
@@ -135,6 +145,8 @@ export default function Measure() {
             </Body>
           </View>
         )}
+
+        {metal && weld && <Suggestions design={weld} />}
       </ScrollView>
 
       <View style={[s.cta, { paddingBottom: insets.bottom + space.md }]}>

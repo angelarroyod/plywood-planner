@@ -5,17 +5,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Body, Display, Mono, SecondaryButton, Title, Toast } from '@/components/ui';
 import { buildOrder, getStock, nest, orderText, templates } from '@/lib/engine';
-import { useApp, type ResultTab } from '@/lib/store';
+import { useApp, type Mode, type ResultTab } from '@/lib/store';
 import { font, makeStyles, radius, space, usePalette } from '@/theme';
 import { CutsPane } from './cuts';
 import { ModelPane } from './model';
 import { StepsPane } from './steps';
+import { WeldCutsPane, WeldModelPane, WeldShoppingPane, WeldStepsPane, shareShopping, weldTitle } from './weld';
 
-const TABS: { id: ResultTab; label: string }[] = [
-  { id: 'model', label: 'Diseño' },
-  { id: 'cuts', label: 'Cortes' },
-  { id: 'steps', label: 'Pasos' },
-];
+const TABS: Record<Mode, { id: ResultTab; label: string }[]> = {
+  wood: [
+    { id: 'model', label: 'Diseño' },
+    { id: 'cuts', label: 'Cortes' },
+    { id: 'steps', label: 'Pasos' },
+  ],
+  metal: [
+    { id: 'model', label: 'Diseño' },
+    { id: 'cuts', label: 'Cortes' },
+    { id: 'steps', label: 'Pasos' },
+    { id: 'shop', label: 'Compras' },
+  ],
+};
 
 const EXPORTS = [
   { tag: 'PDF', label: 'Plan de corte', sub: 'Hojas, lista de piezas y pasos' },
@@ -28,20 +37,27 @@ export function Result() {
   const insets = useSafeAreaInsets();
   const c = usePalette();
   const s = useStyles();
-  const { tab, setTab, taller, toggleTaller, toast, flash, design, templateId } = useApp();
+  const { mode, tab, setTab, taller, toggleTaller, toast, flash, design, weld, templateId } = useApp();
   const [sheetOpen, setSheetOpen] = useState(false);
   const template = templates.find((t) => t.id === templateId) ?? templates[0]!;
+  const metal = mode === 'metal';
 
   const meta = useMemo(() => {
+    if (metal) {
+      if (!weld) return '';
+      const p = weld.params;
+      return `${p.width} × ${p.depth} × ${p.height} · ${weld.tube.label}`;
+    }
     if (!design) return '';
     const p = design.params;
     return `${p.width} × ${p.height ?? p.depth} × ${p.depth} · ${getStock(p.material!).label}`;
-  }, [design]);
+  }, [metal, design, weld]);
 
-  if (!design) return <View style={s.root} />;
+  if (metal ? !weld : !design) return <View style={s.root} />;
+  const title = metal ? weldTitle(weld!) : template.name;
 
   const shareOrder = () => {
-    return Share.share({ message: orderText(buildOrder(design, nest(design.panels), template.name)) }).catch(() =>
+    return Share.share({ message: orderText(buildOrder(design!, nest(design!.panels), template.name)) }).catch(() =>
       flash('No se pudo compartir'),
     );
   };
@@ -57,7 +73,7 @@ export function Result() {
           </Pressable>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Display size={18} numberOfLines={1}>
-              {template.name}
+              {title}
             </Display>
             <Mono tone={c.inkSoft} size={12} style={{ marginTop: -2 }} numberOfLines={1}>
               {meta}
@@ -76,7 +92,11 @@ export function Result() {
               </Svg>
             )}
           </IconButton>
-          <IconButton onPress={() => setSheetOpen(true)} label="Compartir">
+          <IconButton
+            // metal has one thing to share — the shopping list — so it skips the export sheet
+            onPress={() => (metal ? shareShopping(weld!, () => flash('No se pudo compartir')) : setSheetOpen(true))}
+            label={metal ? 'Compartir lista de compras' : 'Compartir'}
+          >
             {(tint) => (
               <Svg viewBox="0 0 20 20" width={18} height={18}>
                 <Path d="M10 13V3m0 0L6.5 6.5M10 3l3.5 3.5" fill="none" stroke={tint} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
@@ -98,13 +118,17 @@ export function Result() {
       </View>
 
       <View style={s.body}>
-        {tab === 'model' && <ModelPane />}
-        {tab === 'cuts' && <CutsPane />}
-        {tab === 'steps' && <StepsPane />}
+        {!metal && tab === 'model' && <ModelPane />}
+        {!metal && tab === 'cuts' && <CutsPane />}
+        {!metal && tab === 'steps' && <StepsPane />}
+        {metal && tab === 'model' && <WeldModelPane />}
+        {metal && tab === 'cuts' && <WeldCutsPane />}
+        {metal && tab === 'steps' && <WeldStepsPane />}
+        {metal && tab === 'shop' && <WeldShoppingPane />}
       </View>
 
       <View style={[s.tabs, { paddingBottom: insets.bottom + space.xs }]} accessibilityRole="tablist">
-        {TABS.map((t) => {
+        {TABS[mode].map((t) => {
           const on = tab === t.id;
           const tint = on ? c.accentInk : c.inkSoft;
           return (
@@ -202,6 +226,13 @@ function TabIcon({ id, tint }: { id: ResultTab; tint: string }) {
       <Svg viewBox="0 0 24 24" width={22} height={22}>
         <Path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" fill="none" stroke={tint} strokeWidth={1.5} strokeLinejoin="round" />
         <Path d="M4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke={tint} strokeWidth={1.5} strokeLinejoin="round" />
+      </Svg>
+    );
+  }
+  if (id === 'shop') {
+    return (
+      <Svg viewBox="0 0 24 24" width={22} height={22}>
+        <Path d="M5 8h14l-1.2 12H6.2L5 8zM9 8V6.5a3 3 0 0 1 6 0V8" fill="none" stroke={tint} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
       </Svg>
     );
   }

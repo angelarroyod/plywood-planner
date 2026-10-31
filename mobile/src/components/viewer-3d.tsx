@@ -67,10 +67,18 @@ const PALETTE: Record<Scheme, {
   },
 };
 
+/** Paint or bare steel for welded projects; boards keep the plywood palette. */
+export interface Finish {
+  color: string;
+  metalness: number;
+  roughness: number;
+}
+
 interface Props {
   design: { templateId: string; params: unknown; placements: Placement[]; fittings?: Fitting[] };
   exploded: boolean;
   highlightStep?: Step | null;
+  finish?: Finish;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -136,11 +144,11 @@ function disposeAll(parent: THREE.Object3D) {
  * Three.js driven imperatively on expo-gl's WebGL2 context — the same visual
  * spec as the web viewer without a react-three-fiber/React version coupling.
  */
-export function Viewer3D({ design, exploded, highlightStep = null, style }: Props) {
+export function Viewer3D({ design, exploded, highlightStep = null, finish, style }: Props) {
   const scheme = useScheme();
   // The GL callback fires once, so the loop reads the latest props through a ref.
-  const props = useRef({ design, exploded, highlightStep, scheme });
-  props.current = { design, exploded, highlightStep, scheme };
+  const props = useRef({ design, exploded, highlightStep, finish, scheme });
+  props.current = { design, exploded, highlightStep, finish, scheme };
 
   const gl = useRef<Scene3D | null>(null);
 
@@ -216,10 +224,10 @@ export function Viewer3D({ design, exploded, highlightStep = null, style }: Prop
   /** Rebuild the meshes only when something visible actually changed. */
   const build = () => {
     const g = gl.current;
-    const { design: d, exploded: ex, highlightStep: step, scheme: s } = props.current;
+    const { design: d, exploded: ex, highlightStep: step, finish, scheme: s } = props.current;
     if (!g || !d) return;
 
-    const sig = JSON.stringify([d.templateId, d.params, ex, step?.order ?? null, s]);
+    const sig = JSON.stringify([d.templateId, d.params, ex, step?.order ?? null, s, finish ?? null]);
     if (sig === g.signature) return;
     g.signature = sig;
     paintStage(g, s);
@@ -257,12 +265,12 @@ export function Viewer3D({ design, exploded, highlightStep = null, style }: Prop
       const mesh = new THREE.Mesh(
         geo,
         new THREE.MeshStandardMaterial({
-          color: ghost ? c.ghost : lit ? c.highlight : b.steel ? c.steel : c.base,
+          color: ghost ? c.ghost : lit ? c.highlight : b.steel ? c.steel : (finish?.color ?? c.base),
           transparent: ghost,
           opacity: ghost ? c.ghostOpacity : 1,
           depthWrite: !ghost,
-          roughness: b.steel ? 0.35 : lit ? 0.6 : 0.7,
-          metalness: b.steel ? 0.6 : 0,
+          roughness: b.steel ? 0.35 : lit ? 0.6 : (finish?.roughness ?? 0.7),
+          metalness: b.steel ? 0.6 : lit ? 0 : (finish?.metalness ?? 0),
         }),
       );
       mesh.position.set(pos[0], pos[1], pos[2]);
@@ -271,7 +279,7 @@ export function Viewer3D({ design, exploded, highlightStep = null, style }: Prop
         new THREE.LineSegments(
           new THREE.EdgesGeometry(geo),
           new THREE.LineBasicMaterial({
-            color: ghost ? c.ghostEdge : b.steel ? c.steel : c.edge,
+            color: ghost ? c.ghostEdge : b.steel || finish ? c.steel : c.edge,
             transparent: ghost,
             opacity: ghost ? 0.7 : 1,
           }),
@@ -290,7 +298,7 @@ export function Viewer3D({ design, exploded, highlightStep = null, style }: Prop
     place(g.orbit, g.camera);
   };
 
-  useEffect(build, [design, exploded, highlightStep, scheme]);
+  useEffect(build, [design, exploded, highlightStep, finish, scheme]);
 
   const onContextCreate = (ctx: ExpoWebGLRenderingContext) => {
     const width = ctx.drawingBufferWidth;

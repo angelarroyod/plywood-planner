@@ -2,26 +2,27 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Caption, Display, Mono, RuleLabel, ScreenHeader, Thumb, Title } from '@/components/ui';
-import { useApp } from '@/lib/store';
+import { useApp, type Mode } from '@/lib/store';
 import { ON_ACCENT, font, makeStyles, radius, space, usePalette } from '@/theme';
 
 /**
  * Design fixtures, not stored data — saved projects need Phase 6 (Supabase).
  * Opening one just seeds the template so the rest of the flow is real.
  */
-const PROJECTS = [
-  { name: 'Librero sala', meta: '800 × 1200 × 300 · 18 mm', when: 'hoy', template: 'bookshelf' },
-  { name: 'Mesa auxiliar', meta: '500 × 350 × 450 · 15 mm', when: 'ayer', template: 'side-table' },
-  { name: 'Librero taller', meta: '1100 × 1800 × 350 · 18 mm', when: '12 may', template: 'bookshelf' },
+const PROJECTS: { name: string; meta: string; when: string; template: string; mode: Mode }[] = [
+  { name: 'Librero sala', meta: '800 × 1200 × 300 · 18 mm', when: 'hoy', template: 'bookshelf', mode: 'wood' },
+  { name: 'Mesa de trabajo', meta: '1200 × 600 × 750 · PTR 1 1/2"', when: 'ayer', template: 'weld-table', mode: 'metal' },
+  { name: 'Mesa auxiliar', meta: '500 × 350 × 450 · 15 mm', when: '12 may', template: 'side-table', mode: 'wood' },
 ];
 
 export default function Projects() {
   const insets = useSafeAreaInsets();
   const c = usePalette();
   const s = useStyles();
-  const { setTemplate, setTab } = useApp();
+  const { setMode, setTemplate, setTab } = useApp();
 
-  const open = (templateId: string) => {
+  const open = (mode: Mode, templateId: string) => {
+    setMode(mode);
     setTemplate(templateId);
     setTab('model');
     router.push('/result');
@@ -39,7 +40,7 @@ export default function Projects() {
           {PROJECTS.map((p) => (
             <Pressable
               key={p.name}
-              onPress={() => open(p.template)}
+              onPress={() => open(p.mode, p.template)}
               style={({ pressed }) => [s.row, pressed && s.pressed]}
               accessibilityRole="button"
             >

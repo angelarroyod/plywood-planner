@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useKeepAwake } from 'expo-keep-awake';
-import { templates, type Design, type TemplateParams } from './engine';
+import { templates, weldTemplates, type Design, type TemplateParams, type WeldDesign } from './engine';
 import { AppContext, type AppState, type ResultTab } from './store';
 
 const INITIAL: AppState = {
+  mode: 'wood',
   templateId: templates[0]!.id,
+  weldTemplateId: weldTemplates[0]!.id,
   paramsByTemplate: {},
   exploded: false,
   tab: 'model',
@@ -13,6 +15,16 @@ const INITIAL: AppState = {
   doneSteps: [],
   taller: false,
 };
+
+// Params whose change adds or removes a step, so step numbers shift.
+const STEP_KEYS = new Set(['edgeBanding', 'lower']);
+
+/** Keeps the last valid design so the views stay put while the user fixes an out-of-range combo. */
+function useLastGood<T>(design: T | null): T | null {
+  const last = useRef<T | null>(null);
+  if (design) last.current = design;
+  return last.current;
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [s, setS] = useState<AppState>(INITIAL);
@@ -30,38 +42,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const template = templates.find((t) => t.id === s.templateId) ?? templates[0]!;
+  const weldTemplate = weldTemplates.find((t) => t.id === s.weldTemplateId) ?? weldTemplates[0]!;
   const params: TemplateParams = s.paramsByTemplate[template.id] ?? {};
+  const weldParams: TemplateParams = s.paramsByTemplate[weldTemplate.id] ?? {};
   const result = useMemo(() => template.generate(params), [template, params]);
-
-  // Keep showing the last valid design while the user fixes an out-of-range combo.
-  const lastGood = useRef<Design | null>(null);
-  if (result.ok) lastGood.current = result.design;
-  const design = result.ok ? result.design : lastGood.current;
+  const weldResult = useMemo(() => weldTemplate.generate(weldParams), [weldTemplate, weldParams]);
+  const design = useLastGood<Design>(result.ok ? result.design : null);
+  const weld = useLastGood<WeldDesign>(weldResult.ok ? weldResult.design : null);
+  const active = s.mode === 'metal' ? weldResult : result;
 
   const value = useMemo(
     () => ({
       ...s,
       toast,
       design,
-      stale: !result.ok,
-      issues: result.ok ? [] : result.issues,
+      weld,
+      stale: !active.ok,
+      issues: active.ok ? [] : active.issues,
+      setMode: (mode: AppState['mode']) =>
+        setS((p) => (p.mode === mode ? p : { ...p, mode, tab: 'model', activeStep: 1, checked: [], doneSteps: [] })),
       setTemplate: (id: string) =>
-        setS((p) => ({ ...p, templateId: id, activeStep: 1, checked: [], doneSteps: [] })),
-      setParam: (key: string, value: number) =>
-        setS((p) => {
-          if (p.paramsByTemplate[p.templateId]?.[key] === value) return p;
-          return {
-            ...p,
-            paramsByTemplate: {
-              ...p.paramsByTemplate,
-              [p.templateId]: { ...p.paramsByTemplate[p.templateId], [key]: value },
-            },
-            // cut ids ("{sheet}:{n}") follow the layout, which any param can change
-            checked: [],
-            // the Cubrecanto choice adds/removes a step, so step numbers shift
-            ...(key === 'edgeBanding' ? { activeStep: INITIAL.activeStep, doneSteps: [] } : null),
-          };
-        }),
+        setS((p) => ({
+          ...p,
+          ...(p.mode === 'metal' ? { weldTemplateId: id } : { templateId: id }),
+          activeStep: 1,
+          checked: [],
+          doneSteps: [],
+        })),
+      setParam: (key: string, value: number) => setParams({ [key]: value }),
+      setParams,
       setTab: (tab: ResultTab) => setS((p) => ({ ...p, tab })),
       setActiveStep: (order: number) => setS((p) => ({ ...p, activeStep: order })),
       toggleExploded: () => setS((p) => ({ ...p, exploded: !p.exploded })),
@@ -83,7 +92,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toggleTaller: () => setS((p) => ({ ...p, taller: !p.taller })),
       flash,
     }),
-    [s, toast, design, result, flash],
+    [s, toast, design, weld, active, flash],
   );
 
   return (
@@ -92,6 +101,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       {children}
     </AppContext.Provider>
   );
+
+  function setParams(next: TemplateParams) {
+    setS((p) => {
+      const id = p.mode === 'metal' ? p.weldTemplateId : p.templateId;
+      const current = p.paramsByTemplate[id];
+      if (Object.entries(next).every(([k, v]) => current?.[k] === v)) return p;
+      return {
+        ...p,
+        paramsByTemplate: { ...p.paramsByTemplate, [id]: { ...current, ...next } },
+        // cut ids ("{sheet}:{n}") follow the layout, which any param can change
+        checked: [],
+        ...(Object.keys(next).some((k) => STEP_KEYS.has(k)) ? { activeStep: INITIAL.activeStep, doneSteps: [] } : null),
+      };
+    });
+  }
 }
 
 /** Workshop mode promises "pantalla encendida" — this is what keeps that true. */
